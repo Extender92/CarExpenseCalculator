@@ -17,6 +17,11 @@ const integerFormatter = new Intl.NumberFormat("sv-SE", {
   maximumFractionDigits: 0,
 });
 
+const dateTimeFormatter = new Intl.DateTimeFormat("sv-SE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
 const missingCategoryLabels = {
   vehicleTax: "fordonsskatt",
   insurance: "försäkring",
@@ -51,6 +56,10 @@ export function formatInteger(value: number) {
   return integerFormatter.format(value);
 }
 
+export function formatDateTime(value: string) {
+  return dateTimeFormatter.format(new Date(value));
+}
+
 export function formatDistance(kilometres: number) {
   return `${formatQuantity(kilometres)} km (${formatQuantity(kilometres / 10)} mil)`;
 }
@@ -78,6 +87,7 @@ export function fieldErrorId(path: string) {
 export function fieldLabel(path: string) {
   const normalized = path.replace(/^\$\.?/, "");
   const exactLabels: Record<string, string> = {
+    registrationNumber: "Registreringsnummer",
     vehicleLabel: "Bilens namn",
     calculationPeriodMonths: "Beräkningsperiod",
     purchasePriceSek: "Inköpspris",
@@ -140,6 +150,20 @@ export function validationProblemToErrors(problem?: ValidationProblemDetails): V
   const result: ValidationErrors = {};
   for (const [rawPath, messages] of Object.entries(problem?.errors ?? {})) {
     const path = normalizeServerPath(rawPath);
+    result[path] = messages.map(translateServerMessage);
+  }
+  return result;
+}
+
+export function savedValidationProblemToErrors(
+  problem?: ValidationProblemDetails,
+): ValidationErrors {
+  const result: ValidationErrors = {};
+  for (const [rawPath, messages] of Object.entries(problem?.errors ?? {})) {
+    const normalized = normalizeServerPath(rawPath);
+    const path = normalized === "scenario"
+      ? "form"
+      : normalized.replace(/^scenario\./, "");
     result[path] = messages.map(translateServerMessage);
   }
   return result;

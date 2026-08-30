@@ -6,13 +6,33 @@ import {
   LoaderCircle,
   Plus,
   ReceiptText,
+  RotateCcw,
+  Save,
   Trash2,
 } from "lucide-react";
-import { forwardRef, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   calculateManualScenario,
+  createSavedCostScenario,
+  deleteSavedCostScenario,
+  getSavedCostScenario,
+  getSavedCostScenarioByRegistration,
+  listSavedCostScenarios,
   ManualCalculationApiError,
+  replaceSavedCostScenario,
+  SavedCostScenarioApiError,
+  type ManualCalculationRequest,
   type ManualCalculationResult,
+  type SavedCostScenarioResponse,
+  type SavedCostScenarioSummary,
 } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,12 +50,24 @@ import {
   ResultSummary,
 } from "@/features/manual-calculator/ManualCalculationResultView";
 import {
+  SavedScenariosPanel,
+  type SavedListState,
+} from "@/features/manual-calculator/SavedScenariosPanel";
+import {
   fieldDomId,
   fieldErrorId,
   fieldLabel,
   formatQuantity,
+  savedValidationProblemToErrors,
   validationProblemToErrors,
 } from "@/features/manual-calculator/presentation";
+import {
+  normalizeRegistrationNumber,
+  savedScenarioMetadata,
+  savedScenarioToForm,
+  validateRegistrationNumber,
+  type OpenedSavedScenario,
+} from "@/features/manual-calculator/saved-scenarios";
 import {
   convertMilToKilometres,
   validateManualCalculationForm,
@@ -44,34 +76,113 @@ import {
 import { cn } from "@/lib/utils";
 
 type RequestState = "idle" | "submitting" | "success" | "error";
+type PersistenceOperation = "idle" | "opening" | "saving" | "deleting";
+type NoticeTone = "success" | "warning" | "error";
+
+type PendingConfirmation =
+  | { kind: "new" }
+  | { kind: "open"; scenario: SavedCostScenarioSummary }
+  | { kind: "delete"; scenario: SavedCostScenarioSummary }
+  | {
+      kind: "duplicate";
+      existing: SavedCostScenarioResponse;
+      request: ManualCalculationRequest;
+    }
+  | { kind: "reload"; vehicleId: string };
 
 export function ManualCalculatorPage() {
   const [form, setForm] = useState(createInitialManualCalculationForm);
+  const [registrationNumber, setRegistrationNumber] = useState("");
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [hasValidated, setHasValidated] = useState(false);
+  const [hasValidatedForSave, setHasValidatedForSave] = useState(false);
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [requestError, setRequestError] = useState<string | null>(null);
   const [result, setResult] = useState<ManualCalculationResult | null>(null);
   const [resultIsStale, setResultIsStale] = useState(false);
+  const [resultIsPersisted, setResultIsPersisted] = useState(false);
+  const [savedScenarios, setSavedScenarios] = useState<SavedCostScenarioSummary[]>([]);
+  const [savedListState, setSavedListState] = useState<SavedListState>("loading");
+  const [savedListError, setSavedListError] = useState<string | null>(null);
+  const [currentSaved, setCurrentSaved] = useState<OpenedSavedScenario | null>(null);
+  const [draftIsDirty, setDraftIsDirty] = useState(false);
+  const [persistenceOperation, setPersistenceOperation] = useState<PersistenceOperation>("idle");
+  const [persistenceNotice, setPersistenceNotice] = useState<{
+    tone: NoticeTone;
+    message: string;
+  } | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const resultSummaryRef = useRef<HTMLDivElement>(null);
+  const confirmationRef = useRef<HTMLDivElement>(null);
+
+  const refreshSavedScenarios = useCallback(async () => {
+    setSavedListState("loading");
+    setSavedListError(null);
+    try {
+      setSavedScenarios(await listSavedCostScenarios());
+      setSavedListState("ready");
+    } catch (error) {
+      setSavedListState("error");
+      setSavedListError(savedOperationMessage(error, "Sparade bilar kunde inte hämtas. Kontrollera databasen och försök igen."));
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    listSavedCostScenarios()
+      .then((scenarios) => {
+        if (!cancelled) {
+          setSavedScenarios(scenarios);
+          setSavedListState("ready");
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setSavedListState("error");
+          setSavedListError(savedOperationMessage(
+            error,
+            "Sparade bilar kunde inte hämtas. Kontrollera databasen och försök igen.",
+          ));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function updateForm(updater: (current: ManualCalculationForm) => ManualCalculationForm) {
     const next = updater(form);
     setForm(next);
     setRequestError(null);
+    setPersistenceNotice(null);
+    setPendingConfirmation(null);
+    setDraftIsDirty(true);
     if (hasValidated) {
-      setErrors(validateManualCalculationForm(next).errors);
+      setErrors(validatePage(next, registrationNumber, hasValidatedForSave).errors);
     }
     if (result) {
       setResultIsStale(true);
     }
   }
 
+  function updateRegistrationNumber(value: string) {
+    setRegistrationNumber(value);
+    setPersistenceNotice(null);
+    setPendingConfirmation(null);
+    setDraftIsDirty(true);
+    if (hasValidatedForSave) {
+      setErrors(validatePage(form, value, true).errors);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHasValidated(true);
+    setHasValidatedForSave(false);
     setRequestError(null);
+    setPersistenceNotice(null);
 
     const validation = validateManualCalculationForm(form);
     setErrors(validation.errors);
@@ -86,6 +197,7 @@ export function ManualCalculatorPage() {
       const nextResult = await calculateManualScenario(validation.request);
       setResult(nextResult);
       setResultIsStale(false);
+      setResultIsPersisted(false);
       setErrors({});
       setRequestState("success");
       focusAfterRender(() => resultSummaryRef.current);
@@ -105,6 +217,304 @@ export function ManualCalculatorPage() {
         focusAfterRender(() => errorSummaryRef.current);
       }
     }
+  }
+
+  function applySavedScenario(saved: SavedCostScenarioResponse, message: string) {
+    setForm(savedScenarioToForm(saved));
+    setRegistrationNumber(saved.registrationNumber);
+    setCurrentSaved(savedScenarioMetadata(saved));
+    setResult(saved.result);
+    setResultIsStale(false);
+    setResultIsPersisted(true);
+    setDraftIsDirty(false);
+    setErrors({});
+    setHasValidated(false);
+    setHasValidatedForSave(false);
+    setRequestError(null);
+    setPendingConfirmation(null);
+    setPersistenceNotice({ tone: "success", message });
+    focusAfterRender(() => resultSummaryRef.current);
+  }
+
+  function resetToNewDraft() {
+    setForm(createInitialManualCalculationForm());
+    setRegistrationNumber("");
+    setCurrentSaved(null);
+    setResult(null);
+    setResultIsStale(false);
+    setResultIsPersisted(false);
+    setDraftIsDirty(false);
+    setErrors({});
+    setHasValidated(false);
+    setHasValidatedForSave(false);
+    setRequestError(null);
+    setPersistenceNotice(null);
+    setPendingConfirmation(null);
+  }
+
+  function requestNewDraft() {
+    if (currentSaved || draftIsDirty) {
+      showConfirmation({ kind: "new" });
+      return;
+    }
+    resetToNewDraft();
+  }
+
+  function requestOpenScenario(scenario: SavedCostScenarioSummary) {
+    if (scenario.vehicleId === currentSaved?.vehicleId) {
+      return;
+    }
+    if (currentSaved || draftIsDirty) {
+      showConfirmation({ kind: "open", scenario });
+      return;
+    }
+    void openScenario(scenario.vehicleId);
+  }
+
+  async function openScenario(vehicleId: string) {
+    setPersistenceOperation("opening");
+    setPersistenceNotice(null);
+    setPendingConfirmation(null);
+    try {
+      const saved = await getSavedCostScenario(vehicleId);
+      applySavedScenario(saved, "Den sparade bilen har öppnats.");
+    } catch (error) {
+      if (isSavedProblem(error, "savedCostScenarioNotFound")) {
+        if (currentSaved?.vehicleId === vehicleId) {
+          keepCurrentAsUnsavedDraft();
+        }
+        setPersistenceNotice({
+          tone: "warning",
+          message: "Bilen finns inte längre. Listan har uppdaterats och dina nuvarande uppgifter har behållits.",
+        });
+        void refreshSavedScenarios();
+      } else {
+        setPersistenceNotice({
+          tone: "error",
+          message: savedOperationMessage(error, "Den sparade bilen kunde inte öppnas. Försök igen."),
+        });
+      }
+    } finally {
+      setPersistenceOperation("idle");
+    }
+  }
+
+  async function handleSave() {
+    setHasValidated(true);
+    setHasValidatedForSave(true);
+    setRequestError(null);
+    setPersistenceNotice(null);
+    setPendingConfirmation(null);
+
+    const validation = validatePage(form, registrationNumber, true);
+    setErrors(validation.errors);
+    if (!validation.request || !validation.normalizedRegistrationNumber) {
+      focusAfterRender(() => errorSummaryRef.current);
+      return;
+    }
+
+    setPersistenceOperation("saving");
+    try {
+      if (currentSaved) {
+        const saved = await replaceSavedCostScenario(currentSaved.vehicleId, {
+          expectedRevision: currentSaved.revision,
+          scenario: validation.request,
+        });
+        applySavedScenario(saved, "Ändringarna har sparats.");
+      } else {
+        const saved = await createSavedCostScenario({
+          registrationNumber: validation.normalizedRegistrationNumber,
+          scenario: validation.request,
+        });
+        applySavedScenario(saved, "Bilen har sparats.");
+      }
+      await refreshSavedScenarios();
+    } catch (error) {
+      await handleSaveFailure(
+        error,
+        validation.request,
+        validation.normalizedRegistrationNumber,
+        currentSaved?.vehicleId,
+      );
+    } finally {
+      setPersistenceOperation("idle");
+    }
+  }
+
+  async function handleSaveFailure(
+    error: unknown,
+    request: ManualCalculationRequest,
+    normalizedRegistration: string,
+    conflictVehicleId?: string,
+  ) {
+    if (error instanceof SavedCostScenarioApiError && error.validationProblem) {
+      const serverErrors = savedValidationProblemToErrors(error.validationProblem);
+      setErrors(serverErrors);
+      setRequestError(
+        Object.keys(serverErrors).length > 0
+          ? "Servern hittade värden som behöver rättas innan bilen kan sparas."
+          : error.message,
+      );
+      focusAfterRender(() => errorSummaryRef.current);
+      return;
+    }
+
+    if (isSavedProblem(error, "registrationNumberConflict")) {
+      try {
+        const existing = error.problem?.existingVehicleId
+          ? await getSavedCostScenario(error.problem.existingVehicleId)
+          : await getSavedCostScenarioByRegistration(normalizedRegistration);
+        showConfirmation({ kind: "duplicate", existing, request });
+      } catch (lookupError) {
+        setPersistenceNotice({
+          tone: "error",
+          message: savedOperationMessage(
+            lookupError,
+            "Bilen finns redan, men den befintliga kalkylen kunde inte hämtas.",
+          ),
+        });
+      }
+      return;
+    }
+
+    const affectedVehicleId = currentSaved?.vehicleId ?? conflictVehicleId;
+    if (isSavedProblem(error, "revisionConflict") && affectedVehicleId) {
+      setPersistenceNotice({
+        tone: "warning",
+        message: "Bilen har ändrats sedan du öppnade den. Dina ändringar är kvar och inget har skrivits över.",
+      });
+      showConfirmation({ kind: "reload", vehicleId: affectedVehicleId });
+      return;
+    }
+
+    if (isSavedProblem(error, "savedCostScenarioNotFound") && affectedVehicleId) {
+      if (currentSaved?.vehicleId === affectedVehicleId) {
+        keepCurrentAsUnsavedDraft();
+      }
+      setPersistenceNotice({
+        tone: "warning",
+        message: "Den sparade bilen finns inte längre. Dina uppgifter är kvar som en osparad kalkyl.",
+      });
+      void refreshSavedScenarios();
+      return;
+    }
+
+    setPersistenceNotice({
+      tone: "error",
+      message: savedOperationMessage(error, "Bilen kunde inte sparas. Dina uppgifter finns kvar."),
+    });
+  }
+
+  async function replaceDuplicate() {
+    if (pendingConfirmation?.kind !== "duplicate") {
+      return;
+    }
+    const { existing, request } = pendingConfirmation;
+    setPendingConfirmation(null);
+    setPersistenceOperation("saving");
+    try {
+      const saved = await replaceSavedCostScenario(existing.vehicleId, {
+        expectedRevision: existing.revision,
+        scenario: request,
+      });
+      applySavedScenario(saved, "Den tidigare sparade kalkylen har ersatts.");
+      await refreshSavedScenarios();
+    } catch (error) {
+      await handleSaveFailure(error, request, existing.registrationNumber, existing.vehicleId);
+    } finally {
+      setPersistenceOperation("idle");
+    }
+  }
+
+  function requestDeleteScenario(scenario: SavedCostScenarioSummary) {
+    showConfirmation({ kind: "delete", scenario });
+  }
+
+  async function deleteScenario(scenario: SavedCostScenarioSummary) {
+    setPendingConfirmation(null);
+    setPersistenceOperation("deleting");
+    const deletingCurrent = scenario.vehicleId === currentSaved?.vehicleId;
+    const expectedRevision = deletingCurrent ? currentSaved.revision : scenario.revision;
+    try {
+      await deleteSavedCostScenario(scenario.vehicleId, expectedRevision);
+      if (deletingCurrent) {
+        keepCurrentAsUnsavedDraft();
+        setPersistenceNotice({
+          tone: "success",
+          message: "Bilen har tagits bort permanent. Formuläret och resultatet finns kvar som en osparad kalkyl.",
+        });
+      } else {
+        setPersistenceNotice({ tone: "success", message: "Bilen har tagits bort permanent." });
+      }
+      setSavedScenarios((current) => current.filter((item) => item.vehicleId !== scenario.vehicleId));
+      await refreshSavedScenarios();
+    } catch (error) {
+      if (isSavedProblem(error, "savedCostScenarioNotFound")) {
+        if (deletingCurrent) {
+          keepCurrentAsUnsavedDraft();
+        }
+        setPersistenceNotice({
+          tone: "warning",
+          message: "Bilen var redan borttagen. Listan har uppdaterats och dina formulärvärden har behållits.",
+        });
+        await refreshSavedScenarios();
+      } else if (isSavedProblem(error, "revisionConflict")) {
+        setPersistenceNotice({
+          tone: "warning",
+          message: "Bilen har ändrats och kunde därför inte tas bort. Inget har raderats.",
+        });
+        if (deletingCurrent) {
+          showConfirmation({ kind: "reload", vehicleId: scenario.vehicleId });
+        }
+        await refreshSavedScenarios();
+      } else {
+        setPersistenceNotice({
+          tone: "error",
+          message: savedOperationMessage(error, "Bilen kunde inte tas bort. Försök igen."),
+        });
+      }
+    } finally {
+      setPersistenceOperation("idle");
+    }
+  }
+
+  function keepCurrentAsUnsavedDraft() {
+    setCurrentSaved(null);
+    setDraftIsDirty(true);
+    setResultIsPersisted(false);
+    setRegistrationNumber((current) => normalizeRegistrationNumber(current));
+  }
+
+  function showConfirmation(confirmation: PendingConfirmation) {
+    setPendingConfirmation(confirmation);
+    focusAfterRender(() => confirmationRef.current);
+  }
+
+  function confirmPendingAction() {
+    const confirmation = pendingConfirmation;
+    if (!confirmation) {
+      return;
+    }
+
+    if (confirmation.kind === "new") {
+      resetToNewDraft();
+    } else if (confirmation.kind === "open") {
+      void openScenario(confirmation.scenario.vehicleId);
+    } else if (confirmation.kind === "delete") {
+      void deleteScenario(confirmation.scenario);
+    } else if (confirmation.kind === "duplicate") {
+      void replaceDuplicate();
+    } else {
+      void openScenario(confirmation.vehicleId);
+    }
+  }
+
+  function openDuplicateInstead() {
+    if (pendingConfirmation?.kind !== "duplicate") {
+      return;
+    }
+    applySavedScenario(pendingConfirmation.existing, "Den befintliga sparade bilen har öppnats.");
+    void refreshSavedScenarios();
   }
 
   function updateEnergySource(
@@ -144,23 +554,60 @@ export function ManualCalculatorPage() {
   }
 
   const totalDistanceKilometres = convertMilToKilometres(form.annualDistanceMil);
+  const persistenceBusy = persistenceOperation !== "idle";
+  const formBusy = requestState === "submitting"
+    || persistenceOperation === "saving"
+    || persistenceOperation === "opening";
 
   return (
     <div className="space-y-10">
       <header className="border-b border-slate-800 pb-8">
-        <Badge variant="success">Tillgänglig</Badge>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Manuell kalkyl</h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400">
-          Räkna på bilens kassaflöde och ägandekostnad med dina egna antaganden. Inget sparas och
-          beräkningen fungerar utan externa datakällor eller AI.
-        </p>
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+          <div>
+            <Badge variant="success">Tillgänglig</Badge>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Manuell kalkyl</h1>
+            <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400">
+              Räkna på bilens kassaflöde och ägandekostnad med dina egna antaganden. Förhandsvisning
+              fungerar utan databasen, och färdiga bilscenarier kan sparas lokalt.
+            </p>
+          </div>
+          <Button type="button" variant="secondary" disabled={formBusy} onClick={requestNewDraft}>
+            <RotateCcw size={17} /> Ny kalkyl
+          </Button>
+        </div>
       </header>
 
+      <SavedScenariosPanel
+        state={savedListState}
+        scenarios={savedScenarios}
+        error={savedListError}
+        currentVehicleId={currentSaved?.vehicleId ?? null}
+        busy={persistenceBusy}
+        onRetry={() => void refreshSavedScenarios()}
+        onOpen={requestOpenScenario}
+        onDelete={requestDeleteScenario}
+      />
+
+      {persistenceNotice && (
+        <PersistenceNotice tone={persistenceNotice.tone} message={persistenceNotice.message} />
+      )}
+
+      {pendingConfirmation && (
+        <ConfirmationPanel
+          ref={confirmationRef}
+          confirmation={pendingConfirmation}
+          busy={persistenceBusy}
+          onConfirm={confirmPendingAction}
+          onOpenExisting={pendingConfirmation.kind === "duplicate" ? openDuplicateInstead : undefined}
+          onCancel={() => setPendingConfirmation(null)}
+        />
+      )}
+
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,0.8fr)]">
-        <form onSubmit={handleSubmit} noValidate aria-busy={requestState === "submitting"} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate aria-busy={formBusy} className="space-y-6">
           <ErrorSummary ref={errorSummaryRef} errors={errors} requestError={requestError} />
 
-          <fieldset disabled={requestState === "submitting"} className="contents">
+          <fieldset disabled={formBusy} className="contents">
             <FormSection
               icon={CarFront}
               title="Scenario"
@@ -173,8 +620,25 @@ export function ManualCalculatorPage() {
                   value={form.vehicleLabel}
                   onChange={(value) => updateForm((current) => ({ ...current, vehicleLabel: value }))}
                   errors={errors}
-                  help="Valfritt, till exempel modell eller registreringsnummer."
+                  help="Valfritt, till exempel modell eller ett eget smeknamn."
                   maxLength={121}
+                />
+                <TextField
+                  label="Registreringsnummer"
+                  path="registrationNumber"
+                  value={registrationNumber}
+                  onChange={updateRegistrationNumber}
+                  onBlur={() => {
+                    if (!currentSaved && registrationNumber.trim()) {
+                      updateRegistrationNumber(normalizeRegistrationNumber(registrationNumber));
+                    }
+                  }}
+                  errors={errors}
+                  help={currentSaved
+                    ? "Registreringsnumret kan inte ändras. Ta bort bilen och skapa den igen för att rätta det."
+                    : "Krävs endast när bilen sparas, till exempel ABC123 eller ABC12D."}
+                  readOnly={Boolean(currentSaved)}
+                  maxLength={12}
                 />
                 <TextField
                   label="Beräkningsperiod"
@@ -502,15 +966,37 @@ export function ManualCalculatorPage() {
             </FormSection>
 
             <Card className="border-cyan-400/20 bg-cyan-400/5">
-              <CardContent className="flex flex-col items-start justify-between gap-4 pt-6 sm:flex-row sm:items-center">
+              <CardContent className="flex flex-col items-start justify-between gap-5 pt-6 lg:flex-row lg:items-center">
                 <div>
-                  <p className="font-semibold text-slate-100">Redo att räkna?</p>
-                  <p className="mt-1 text-sm text-slate-400">Beräkningen sparas inte och kan köras igen med nya värden.</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-slate-100">
+                      {currentSaved ? `${currentSaved.registrationNumber} är öppnad` : "Osparad kalkyl"}
+                    </p>
+                    {currentSaved && (
+                      <Badge variant={draftIsDirty ? "warning" : "success"}>
+                        {draftIsDirty ? "Osparade ändringar" : `Sparad revision ${currentSaved.revision}`}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Förhandsvisning sparar ingenting. Spara bil kräver ett registreringsnummer och
+                    skriver bilens aktuella kalkyl till PostgreSQL.
+                  </p>
                 </div>
-                <Button type="submit" size="lg" disabled={requestState === "submitting"}>
-                  {requestState === "submitting" ? <LoaderCircle className="animate-spin" size={18} /> : <Calculator size={18} />}
-                  {requestState === "submitting" ? "Beräknar…" : result ? "Beräkna igen" : "Beräkna kostnad"}
-                </Button>
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                  <Button type="submit" size="lg" variant="secondary" disabled={formBusy}>
+                    {requestState === "submitting" ? <LoaderCircle className="animate-spin" size={18} /> : <Calculator size={18} />}
+                    {requestState === "submitting" ? "Beräknar…" : result ? "Beräkna igen" : "Beräkna kostnad"}
+                  </Button>
+                  <Button type="button" size="lg" disabled={formBusy} onClick={() => void handleSave()}>
+                    {persistenceOperation === "saving" ? <LoaderCircle className="animate-spin" size={18} /> : <Save size={18} />}
+                    {persistenceOperation === "saving"
+                      ? "Sparar…"
+                      : currentSaved
+                        ? "Spara ändringar"
+                        : "Spara bil"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </fieldset>
@@ -518,6 +1004,12 @@ export function ManualCalculatorPage() {
           <p className="sr-only" role="status" aria-live="polite">
             {requestState === "submitting"
               ? "Beräkningen pågår."
+              : persistenceOperation === "saving"
+                ? "Bilen sparas."
+                : persistenceOperation === "opening"
+                  ? "Den sparade bilen öppnas."
+                  : persistenceOperation === "deleting"
+                    ? "Den sparade bilen tas bort."
               : requestState === "success"
                 ? "Beräkningen är klar."
                 : ""}
@@ -526,7 +1018,7 @@ export function ManualCalculatorPage() {
 
         <aside className="xl:sticky xl:top-8">
           {result ? (
-            <ResultSummary result={result} isStale={resultIsStale} summaryRef={resultSummaryRef} />
+            <ResultSummary result={result} isStale={resultIsStale} isPersisted={resultIsPersisted} summaryRef={resultSummaryRef} />
           ) : (
             <Card>
               <CardHeader>
@@ -549,7 +1041,7 @@ export function ManualCalculatorPage() {
         </aside>
       </div>
 
-      {result && <ResultDetails result={result} isStale={resultIsStale} />}
+      {result && <ResultDetails result={result} isStale={resultIsStale} isPersisted={resultIsPersisted} />}
     </div>
   );
 }
@@ -573,7 +1065,7 @@ function FormSection({ icon: Icon, title, description, children, action, path, e
   );
 }
 
-function TextField({ label, path, value, onChange, errors, help, suffix, inputMode, placeholder, required, maxLength }: { label: string; path: string; value: string; onChange: (value: string) => void; errors: ValidationErrors; help?: string; suffix?: string; inputMode?: "decimal" | "numeric"; placeholder?: string; required?: boolean; maxLength?: number }) {
+function TextField({ label, path, value, onChange, onBlur, errors, help, suffix, inputMode, placeholder, required, maxLength, disabled, readOnly }: { label: string; path: string; value: string; onChange: (value: string) => void; onBlur?: () => void; errors: ValidationErrors; help?: string; suffix?: string; inputMode?: "decimal" | "numeric"; placeholder?: string; required?: boolean; maxLength?: number; disabled?: boolean; readOnly?: boolean }) {
   const fieldErrors = errors[path];
   const describedBy = [help ? `${fieldDomId(path)}-help` : null, fieldErrors ? fieldErrorId(path) : null]
     .filter(Boolean)
@@ -584,7 +1076,7 @@ function TextField({ label, path, value, onChange, errors, help, suffix, inputMo
         {label}{required && <span className="ml-1 text-cyan-400" aria-hidden="true">*</span>}
       </label>
       <div className="relative">
-        <input id={fieldDomId(path)} name={path} type="text" inputMode={inputMode} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} maxLength={maxLength} aria-invalid={fieldErrors ? true : undefined} aria-describedby={describedBy} aria-required={required} className={cn(inputClass, suffix && "pr-20", fieldErrors && errorInputClass)} />
+        <input id={fieldDomId(path)} name={path} type="text" inputMode={inputMode} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} maxLength={maxLength} disabled={disabled} readOnly={readOnly} aria-invalid={fieldErrors ? true : undefined} aria-describedby={describedBy} aria-required={required} className={cn(inputClass, readOnly && "cursor-not-allowed bg-slate-900/80 text-slate-400", suffix && "pr-20", fieldErrors && errorInputClass)} />
         {suffix && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-slate-500">{suffix}</span>}
       </div>
       {help && <p id={`${fieldDomId(path)}-help`} className="mt-2 text-xs leading-5 text-slate-500">{help}</p>}
@@ -686,4 +1178,145 @@ const errorInputClass = "border-rose-400/60 focus:border-rose-300 focus:ring-ros
 
 function focusAfterRender(getElement: () => HTMLElement | null) {
   window.setTimeout(() => getElement()?.focus(), 0);
+}
+
+function PersistenceNotice({ tone, message }: { tone: NoticeTone; message: string }) {
+  return (
+    <div
+      role={tone === "error" ? "alert" : "status"}
+      className={cn(
+        "rounded-2xl border p-4 text-sm leading-6",
+        tone === "success" && "border-emerald-400/30 bg-emerald-400/10 text-emerald-100",
+        tone === "warning" && "border-amber-400/30 bg-amber-400/10 text-amber-100",
+        tone === "error" && "border-rose-400/30 bg-rose-400/10 text-rose-100",
+      )}
+    >
+      {message}
+    </div>
+  );
+}
+
+const ConfirmationPanel = forwardRef<HTMLDivElement, {
+  confirmation: PendingConfirmation;
+  busy: boolean;
+  onConfirm: () => void;
+  onOpenExisting?: () => void;
+  onCancel: () => void;
+}>(function ConfirmationPanel(
+  { confirmation, busy, onConfirm, onOpenExisting, onCancel },
+  ref,
+) {
+  const copy = confirmationCopy(confirmation);
+  return (
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="alertdialog"
+      aria-labelledby="saved-confirmation-title"
+      aria-describedby="saved-confirmation-description"
+      className="scroll-mt-24 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5 outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+    >
+      <h2 id="saved-confirmation-title" className="font-semibold text-amber-100">{copy.title}</h2>
+      <p id="saved-confirmation-description" className="mt-2 text-sm leading-6 text-amber-50/90">
+        {copy.description}
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button type="button" disabled={busy} onClick={onConfirm}>{copy.confirmLabel}</Button>
+        {onOpenExisting && (
+          <Button type="button" variant="secondary" disabled={busy} onClick={onOpenExisting}>
+            Öppna sparad bil
+          </Button>
+        )}
+        <Button type="button" variant="ghost" disabled={busy} onClick={onCancel}>Avbryt</Button>
+      </div>
+    </div>
+  );
+});
+
+function confirmationCopy(confirmation: PendingConfirmation) {
+  if (confirmation.kind === "new") {
+    return {
+      title: "Börja med en ny kalkyl?",
+      description: "Det öppna formuläret och resultatet ersätts. En redan sparad bil ligger kvar i databasen, men osparade ändringar försvinner.",
+      confirmLabel: "Skapa ny kalkyl",
+    };
+  }
+  if (confirmation.kind === "open") {
+    return {
+      title: `Öppna ${savedScenarioName(confirmation.scenario)}?`,
+      description: "Det nuvarande formuläret och resultatet ersätts. Osparade ändringar försvinner.",
+      confirmLabel: "Öppna bilen",
+    };
+  }
+  if (confirmation.kind === "delete") {
+    const isNamed = confirmation.scenario.vehicleLabel
+      ? `${confirmation.scenario.vehicleLabel} (${confirmation.scenario.registrationNumber})`
+      : confirmation.scenario.registrationNumber;
+    return {
+      title: `Ta bort ${isNamed} permanent?`,
+      description: "Bilen och hela dess sparade kalkyl tas bort från databasen. Åtgärden kan inte ångras.",
+      confirmLabel: "Ta bort permanent",
+    };
+  }
+  if (confirmation.kind === "duplicate") {
+    return {
+      title: `${confirmation.existing.registrationNumber} är redan sparad`,
+      description: "Välj Ersätt sparad bil för att skriva över den befintliga kalkylen med formuläret, eller öppna den sparade bilen utan att ersätta den.",
+      confirmLabel: "Ersätt sparad bil",
+    };
+  }
+  return {
+    title: "En nyare version finns",
+    description: "Hämta senaste versionen för att fortsätta. Dina osparade ändringar ersätts inte förrän du väljer att hämta den.",
+    confirmLabel: "Hämta senaste",
+  };
+}
+
+function savedScenarioName(scenario: SavedCostScenarioSummary) {
+  return scenario.vehicleLabel
+    ? `${scenario.vehicleLabel} (${scenario.registrationNumber})`
+    : scenario.registrationNumber;
+}
+
+function validatePage(
+  form: ManualCalculationForm,
+  registrationNumber: string,
+  requireRegistration: boolean,
+): {
+  errors: ValidationErrors;
+  request?: ManualCalculationRequest;
+  normalizedRegistrationNumber?: string;
+} {
+  const manualValidation = validateManualCalculationForm(form);
+  const errors = { ...manualValidation.errors };
+  let normalizedRegistrationNumber: string | undefined;
+
+  if (requireRegistration) {
+    const registrationValidation = validateRegistrationNumber(registrationNumber);
+    normalizedRegistrationNumber = registrationValidation.normalized;
+    if (registrationValidation.error) {
+      errors.registrationNumber = [registrationValidation.error];
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  return {
+    errors,
+    request: manualValidation.request,
+    normalizedRegistrationNumber,
+  };
+}
+
+function isSavedProblem(error: unknown, code: string): error is SavedCostScenarioApiError {
+  return error instanceof SavedCostScenarioApiError && error.problem?.code === code;
+}
+
+function savedOperationMessage(error: unknown, fallback: string) {
+  if (error instanceof SavedCostScenarioApiError) {
+    return error.message;
+  }
+  return fallback;
 }

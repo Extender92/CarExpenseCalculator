@@ -172,6 +172,7 @@ configuration changes:
 
 ```bash
 docker compose up --build --detach
+docker compose run --rm api migrate
 curl --fail http://localhost:8088/api/health/ready
 cd src/frontend
 npm run e2e -- --project=chromium
