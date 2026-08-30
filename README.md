@@ -137,6 +137,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 - [AI design](docs/ai-design.md)
 - [Unraid deployment](docs/deployment-unraid.md)
 - [Roadmap](docs/roadmap.md)
+- [Issue workflow](docs/issue-workflow.md)
 
 ## Security and data boundaries
 

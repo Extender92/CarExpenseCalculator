@@ -1,0 +1,83 @@
+name: Bug report
+description: Report reproducible behavior that differs from the intended result.
+title: "[Bug]: "
+labels:
+  - bug
+  - "status:needs-refinement"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include API keys, database credentials, personal data, or other secrets in the report or its logs.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly identify the incorrect behavior.
+      placeholder: Describe what is broken.
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: Describe what happened, including relevant errors.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe the intended result.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest reliable sequence that reproduces the problem.
+      placeholder: |
+        1. Start from...
+        2. Perform...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the commit, browser, runtime, deployment mode, and relevant versions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Attach only information that has been checked for credentials and personal data.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: State the observable behavior that will prove the defect is corrected.
+      placeholder: |
+        - [ ] The reproduction no longer fails
+        - [ ] A regression test covers the corrected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: List the automated and manual checks appropriate for the correction.
+    validations:
+      required: true
