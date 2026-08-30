@@ -1,0 +1,40 @@
+# Visual Studio and .NET
+.vs/
+**/[Bb]in/
+**/[Oo]bj/
+*.user
+*.suo
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# JavaScript
+node_modules/
+dist/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+secrets/
+
+# Generated API artifacts
+openapi.generated.json
+
+# Operating systems and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+
