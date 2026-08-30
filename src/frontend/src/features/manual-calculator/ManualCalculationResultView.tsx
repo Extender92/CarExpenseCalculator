@@ -16,10 +16,11 @@ import {
 interface ResultProps {
   result: ManualCalculationResult;
   isStale: boolean;
+  isPersisted: boolean;
   summaryRef?: Ref<HTMLDivElement>;
 }
 
-export function ResultSummary({ result, isStale, summaryRef }: ResultProps) {
+export function ResultSummary({ result, isStale, isPersisted, summaryRef }: ResultProps) {
   const cashLabel = result.cashFlow.isComplete ? "Totalt kassaflöde" : "Känt kassaflöde";
   const netLabel = result.netOwnershipCost?.isComplete ? "Total ägandekostnad" : "Känd ägandekostnad";
 
@@ -28,9 +29,14 @@ export function ResultSummary({ result, isStale, summaryRef }: ResultProps) {
       <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Badge variant={isStale ? "warning" : "success"}>
-            {isStale ? "Behöver räknas om" : "Aktuellt resultat"}
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={isStale ? "warning" : "success"}>
+              {isStale ? "Behöver räknas om" : "Aktuellt resultat"}
+            </Badge>
+            <Badge variant={isPersisted ? "success" : "muted"}>
+              {isPersisted ? "Sparat resultat" : "Förhandsvisning – inte sparad"}
+            </Badge>
+          </div>
           <span className="text-xs font-medium text-slate-500">{result.calculationPeriodMonths} månader</span>
         </div>
         <CardTitle id="calculation-result-title" className="pt-2">Resultat</CardTitle>
@@ -82,7 +88,7 @@ export function ResultSummary({ result, isStale, summaryRef }: ResultProps) {
   );
 }
 
-export function ResultDetails({ result, isStale }: ResultProps) {
+export function ResultDetails({ result, isStale, isPersisted }: ResultProps) {
   return (
     <section className="space-y-5" aria-labelledby="result-details-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -90,7 +96,12 @@ export function ResultDetails({ result, isStale }: ResultProps) {
           <p className="text-sm font-semibold text-cyan-400">Deterministisk beräkning</p>
           <h2 id="result-details-title" className="mt-1 text-2xl font-bold tracking-tight">Fullständig uppdelning</h2>
         </div>
-        {isStale && <Badge variant="warning">Tidigare indata</Badge>}
+        <div className="flex flex-wrap gap-2">
+          {isStale && <Badge variant="warning">Tidigare indata</Badge>}
+          <Badge variant={isPersisted ? "success" : "muted"}>
+            {isPersisted ? "Sparat resultat" : "Osparad förhandsvisning"}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">

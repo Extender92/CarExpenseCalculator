@@ -4,9 +4,10 @@
 
 This document is the decision-complete specification for the deterministic
 manual vehicle cost calculator. The Core calculation, unsaved HTTP preview
-contract, Swedish unsaved user interface, PostgreSQL persistence layer, and
-saved-scenario HTTP API are implemented. Saved-scenario UI management remains
-later work.
+contract, Swedish user interface, PostgreSQL persistence layer, saved-scenario
+HTTP API, and saved-vehicle UI management are implemented. The interface keeps
+unsaved previews independent from persistence and supports create, list/open,
+full replacement with optimistic concurrency, and permanent deletion.
 
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
@@ -123,6 +124,21 @@ registrations, stale revisions, and unsupported stored versions return `409`.
 Conflict responses include a stable `code` and relevant identity, revision, or
 version metadata. Create and replacement always calculate through Core, so a
 client cannot provide or override a trusted result snapshot.
+
+### Saved-scenario user interface
+
+The Swedish `/manual` page lists saved vehicles above the calculator. A user
+can save a valid form directly without first running an unsaved preview. Saving
+requires a supported registration number; preview calculations do not. Opening
+a saved vehicle restores its normalized inputs and stored result snapshot.
+
+Registration numbers are read-only while a saved vehicle is open. Form changes
+are marked as unsaved until an explicit full replacement succeeds. Duplicate
+registration numbers require an explicit choice to replace or open the existing
+vehicle, and revision conflicts never retry automatically. Deleting the open
+vehicle permanently removes its database aggregate while retaining the current
+form and result in browser memory as an unsaved draft. No calculator state is
+written to local storage or session storage.
 
 ### `ManualCalculationRequest`
 

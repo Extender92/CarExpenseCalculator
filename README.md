@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The runnable web foundation and the deterministic manual calculator are implemented, including the Swedish unsaved interface, Core calculations, preview API, and the PostgreSQL-backed API for one current saved scenario per vehicle. Saved-scenario UI management, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The runnable web foundation and the deterministic manual calculator are implemented, including Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. Listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -30,10 +30,14 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 
 ## Quick start with Docker
 
-Docker is the supported zero-setup development path:
+Docker is the supported development path. Apply the existing database migration
+explicitly before using saved scenarios:
 
 ```bash
-docker compose up --build
+docker compose build
+docker compose up --detach postgres
+docker compose run --rm api migrate
+docker compose up --detach api web
 ```
 
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
@@ -122,6 +126,9 @@ GitHub Actions runs the `Build, test and verify` workflow. Pull requests to `mai
 
 ```bash
 dotnet test CarExpenseCalculator.sln --configuration Release
+docker compose up --build --detach
+docker compose run --rm api migrate
+curl --fail http://localhost:8088/api/health/ready
 cd src/frontend
 npm run lint
 npm run test

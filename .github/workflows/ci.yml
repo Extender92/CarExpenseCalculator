@@ -111,6 +111,8 @@ jobs:
         working-directory: src/frontend
       - name: Build and start Docker stack
         run: docker compose up --build --detach
+      - name: Apply database migration for end-to-end tests
+        run: docker compose run --rm api migrate
       - name: Verify API readiness through Nginx
         run: curl --fail --retry 40 --retry-delay 2 --retry-all-errors http://localhost:8088/api/health/ready
       - name: Run end-to-end tests
