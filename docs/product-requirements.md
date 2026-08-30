@@ -35,7 +35,8 @@ The user enters vehicle, operating, financing, and usage values directly. Saving
 - Permit side-by-side comparison of saved candidates in a later milestone.
 - Continue showing deterministic results if AI or another external service is unavailable.
 
-## Foundation milestone
+## Current delivery status
 
-The first milestone implements only the technical shell: navigation for the three modes, API and database health, Docker deployment, tests, CI, and documentation. It does not implement scraping, automatic searches, calculations, persistence tables, or OpenAI requests.
+The repository foundation and manual-calculator milestone are implemented. The application provides the three-mode navigation, health and status endpoints, deterministic manual calculations, optional PostgreSQL-backed saved scenarios, Docker deployment, tests, CI, and documentation.
 
+Rule-based search, URL analysis, listing ingestion, automatic discovery, comparison, and OpenAI review remain future milestones.

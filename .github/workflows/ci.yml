@@ -109,10 +109,16 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
         working-directory: src/frontend
-      - name: Build and start Docker stack
-        run: docker compose up --build --detach
+      - name: Verify Compose network and port boundaries
+        run: node scripts/verify-compose-boundaries.mjs
+      - name: Build Docker images
+        run: docker compose build
+      - name: Start PostgreSQL
+        run: docker compose up --detach postgres
       - name: Apply database migration for end-to-end tests
         run: docker compose run --rm api migrate
+      - name: Start API and web
+        run: docker compose up --detach api web
       - name: Verify API readiness through Nginx
         run: curl --fail --retry 40 --retry-delay 2 --retry-all-errors http://localhost:8088/api/health/ready
       - name: Run end-to-end tests

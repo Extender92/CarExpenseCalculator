@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Response } from "@playwright/test";
 
 test("calculates the documented manual ownership scenario through the single origin", async ({ page }) => {
   await page.goto("/manual");
@@ -11,6 +11,7 @@ test("calculates the documented manual ownership scenario through the single ori
   const response = await responsePromise;
 
   expect(response.status()).toBe(200);
+  expectSameOrigin(page, response);
   await expect(page.getByText(/64\s000,00\s*kr/).first()).toBeVisible();
   await expect(page.getByText(/49\s000,00\s*kr/).first()).toBeVisible();
   await expect(page.getByText("1 200 liter")).toBeVisible();
@@ -29,7 +30,9 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
     response.url().endsWith("/api/saved-cost-scenarios") && response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Spara bil" }).click();
-  expect((await createResponsePromise).status()).toBe(201);
+  const createResponse = await createResponsePromise;
+  expect(createResponse.status()).toBe(201);
+  expectSameOrigin(page, createResponse);
 
   await expect(page.getByText("Bilen har sparats.")).toBeVisible();
   await expect(page.getByText(`${vehicleName} (${registrationNumber})`)).toBeVisible();
@@ -41,7 +44,9 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
     response.url().includes("/api/saved-cost-scenarios/") && response.request().method() === "PUT",
   );
   await page.getByRole("button", { name: "Spara ändringar" }).click();
-  expect((await replaceResponsePromise).status()).toBe(200);
+  const replaceResponse = await replaceResponsePromise;
+  expect(replaceResponse.status()).toBe(200);
+  expectSameOrigin(page, replaceResponse);
   await expect(page.getByText("Sparad revision 2")).toBeVisible();
 
   await page.reload();
@@ -57,7 +62,9 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
     response.url().includes("/api/saved-cost-scenarios/") && response.request().method() === "DELETE",
   );
   await page.getByRole("button", { name: "Ta bort permanent" }).click();
-  expect((await deleteResponsePromise).status()).toBe(204);
+  const deleteResponse = await deleteResponsePromise;
+  expect(deleteResponse.status()).toBe(204);
+  expectSameOrigin(page, deleteResponse);
 
   await expect(page.getByText(/finns kvar som en osparad kalkyl/)).toBeVisible();
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("21000");
@@ -104,4 +111,8 @@ async function fillDocumentedScenario(page: Page) {
 
 function randomRegistrationNumber() {
   return `TST${Math.floor(Math.random() * 1_000).toString().padStart(3, "0")}`;
+}
+
+function expectSameOrigin(page: Page, response: Response) {
+  expect(new URL(response.url()).origin).toBe(new URL(page.url()).origin);
 }

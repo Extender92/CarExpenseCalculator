@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The runnable web foundation and the deterministic manual calculator are implemented, including Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. Listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. Listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -42,6 +42,8 @@ docker compose up --detach api web
 
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
 
+Open **Manuell kalkyl** to calculate without saving. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Unsaved previews remain independent from PostgreSQL persistence.
+
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 
 ```bash
@@ -50,16 +52,7 @@ docker compose down
 
 Add `--volumes` only when the local development database should also be deleted.
 
-Database migrations are explicit and never run during API startup. Build the API image, start PostgreSQL, and apply pending migrations with:
-
-```bash
-docker compose build api
-docker compose up --detach postgres
-docker compose run --rm api migrate
-docker compose up --detach api web
-```
-
-See [Unraid deployment](docs/deployment-unraid.md) before applying or rolling back migrations on persistent data.
+Database migrations are explicit and never run during API startup. See [Unraid deployment](docs/deployment-unraid.md) before applying or rolling back migrations on persistent data.
 
 ## Local development
 
@@ -125,18 +118,24 @@ GitHub Actions runs the `Build, test and verify` workflow. Pull requests to `mai
 - `Docker - build and end-to-end test`
 
 ```bash
-dotnet test CarExpenseCalculator.sln --configuration Release
-docker compose up --build --detach
+dotnet restore CarExpenseCalculator.sln
+dotnet build CarExpenseCalculator.sln --configuration Release --no-restore
+dotnet test CarExpenseCalculator.sln --configuration Release --no-build
+npm --prefix src/frontend ci
+npm --prefix src/frontend run lint
+npm --prefix src/frontend run test
+npm --prefix src/frontend run build
+node scripts/verify-compose-boundaries.mjs
+docker compose build
+docker compose up --detach postgres
 docker compose run --rm api migrate
+docker compose up --detach api web
 curl --fail http://localhost:8088/api/health/ready
-cd src/frontend
-npm run lint
-npm run test
-npm run build
-npm run e2e
+npm --prefix src/frontend run e2e -- --project=chromium
+docker compose down
 ```
 
-The Playwright suite expects the Docker stack at `http://localhost:8088`.
+The Playwright suite expects the Docker stack at `http://localhost:8088`. Add `--volumes` to the final cleanup command only for a disposable database. The complete acceptance procedure and expected failure behavior are documented in [Manual calculator verification](docs/manual-calculator-verification.md).
 
 ## Repository layout
 
@@ -145,6 +144,7 @@ src/backend/       API, Core, and Infrastructure projects
 src/frontend/      React application, generated API types, and Nginx config
 tests/backend/     Architecture and PostgreSQL integration tests
 docs/              Product, architecture, integration, AI, and operations notes
+scripts/           Repository-level verification utilities
 compose.yaml       Self-contained local stack
 compose.unraid.yaml  API/web stack using the existing postgresql18 container
 ```
@@ -157,6 +157,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 
 - [Product requirements](docs/product-requirements.md)
 - [Manual calculator specification](docs/manual-calculator.md)
+- [Manual calculator verification](docs/manual-calculator-verification.md)
 - [Rules](docs/rules.md)
 - [Architecture](docs/architecture.md)
 - [Data sources](docs/data-sources.md)
