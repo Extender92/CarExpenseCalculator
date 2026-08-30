@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The runnable web foundation is implemented. It includes a Swedish dashboard, typed API contract, PostgreSQL 18 readiness, Docker and Unraid configuration, automated tests, and CI. Actual car calculations, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The runnable web foundation, deterministic manual-calculation Core, and unsaved preview API are implemented. The Swedish manual calculator interface, saved scenarios, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -77,11 +77,12 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 
 `OPENAI_API_KEY` and `OPENAI_MODEL` are documented as future settings only. The foundation does not read them or call OpenAI.
 
-## API foundation
+## API endpoints
 
 - `GET /api/health/live` – process liveness
 - `GET /api/health/ready` – readiness including PostgreSQL
 - `GET /api/system/status` – version, overall/database state, and disabled feature flags
+- `POST /api/manual-calculations` – deterministic unsaved ownership-cost preview
 - `GET /api/openapi/v1.json` – OpenAPI document used to generate frontend types
 
 Regenerate the committed TypeScript API contract while the API is running on port 5090:

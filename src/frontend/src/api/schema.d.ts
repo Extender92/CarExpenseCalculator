@@ -4,6 +4,57 @@
  */
 
 export interface paths {
+    "/api/manual-calculations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ManualCalculationRequest"];
+                    "application/*+json": components["schemas"]["ManualCalculationRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ManualCalculationResult"];
+                        "application/json": components["schemas"]["ManualCalculationResult"];
+                        "text/json": components["schemas"]["ManualCalculationResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/status": {
         parameters: {
             query?: never;
@@ -45,17 +96,208 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CalculationCompleteness: {
+            isComplete: boolean;
+            isCashFlowComplete: boolean;
+            isNetOwnershipCostAvailable: boolean;
+            missingCategories: components["schemas"]["MissingCategory"][];
+        };
+        CashFlowResult: {
+            /** Format: double */
+            acquisitionCashPaidSek: number;
+            /** Format: double */
+            loanPaymentsDuringPeriodSek: number;
+            /** Format: double */
+            energyCostSek: number;
+            /** Format: double */
+            vehicleTaxSek: null | number;
+            /** Format: double */
+            insuranceSek: null | number;
+            /** Format: double */
+            maintenanceAndRepairsSek: null | number;
+            /** Format: double */
+            otherRecurringCostSek: number;
+            /** Format: double */
+            otherOneTimeCostSek: number;
+            /** Format: double */
+            knownOperatingCostSek: number;
+            /** Format: double */
+            knownTotalSek: number;
+            /** Format: double */
+            averagePerMonthSek: number;
+            /** Format: double */
+            averagePerYearSek: number;
+            isComplete: boolean;
+        };
+        EnergyBreakdownResult: {
+            sources: components["schemas"]["EnergySourceResult"][];
+            /** Format: double */
+            totalCostSek: number;
+        };
+        EnergySourceInput: {
+            label: string;
+            unit: components["schemas"]["EnergyUnit"];
+            /** Format: double */
+            consumptionPer100Kilometres: number;
+            /** Format: double */
+            pricePerUnitSek: number;
+            /** Format: double */
+            distanceSharePercent: number;
+        };
+        EnergySourceResult: {
+            label: string;
+            unit: components["schemas"]["EnergyUnit"];
+            /** Format: double */
+            distanceSharePercent: number;
+            /** Format: double */
+            allocatedDistanceKilometres: number;
+            /** Format: double */
+            consumptionPer100Kilometres: number;
+            /** Format: double */
+            consumedQuantity: number;
+            /** Format: double */
+            pricePerUnitSek: number;
+            /** Format: double */
+            costSek: number;
+        };
+        /** @enum {unknown} */
+        EnergyUnit: "litre" | "kilowattHour" | "kilogram";
         FeatureStatusResponse: {
             ruleBasedSearch: boolean;
             urlAnalysis: boolean;
             manualCalculator: boolean;
             aiReview: boolean;
         };
+        FinancingInput: {
+            /** Format: double */
+            downPaymentSek: number;
+            /** Format: double */
+            annualNominalInterestRatePercent: number;
+            /** Format: int32 */
+            termMonths: number;
+        };
+        FinancingResult: {
+            /** Format: double */
+            downPaymentSek: number;
+            /** Format: double */
+            principalSek: number;
+            /** Format: double */
+            annualNominalInterestRatePercent: number;
+            /** Format: int32 */
+            termMonths: number;
+            /** Format: double */
+            monthlyPaymentSek: number;
+            /** Format: int32 */
+            paymentsMade: number;
+            /** Format: double */
+            loanPaymentsDuringPeriodSek: number;
+            /** Format: double */
+            principalRepaidSek: number;
+            /** Format: double */
+            interestPaidSek: number;
+            /** Format: double */
+            remainingPrincipalSek: number;
+        };
+        ManualCalculationRequest: {
+            vehicleLabel?: null | string;
+            /** Format: int32 */
+            calculationPeriodMonths: number;
+            /** Format: double */
+            purchasePriceSek: number;
+            /** Format: double */
+            expectedResidualValueSek?: null | number;
+            /** Format: double */
+            annualDistanceKilometres: number;
+            financing?: null | components["schemas"]["FinancingInput"];
+            energySources: components["schemas"]["EnergySourceInput"][];
+            vehicleTax: null | components["schemas"]["RecurringCostInput"];
+            insurance: null | components["schemas"]["RecurringCostInput"];
+            maintenanceAndRepairs: null | components["schemas"]["RecurringCostInput"];
+            otherRecurringCosts: components["schemas"]["NamedRecurringCostInput"][];
+            otherOneTimeCosts: components["schemas"]["OneTimeCostInput"][];
+        };
+        ManualCalculationResult: {
+            currency: string;
+            /** Format: int32 */
+            calculationPeriodMonths: number;
+            /** Format: double */
+            totalDistanceKilometres: number;
+            completeness: components["schemas"]["CalculationCompleteness"];
+            cashFlow: components["schemas"]["CashFlowResult"];
+            financing: null | components["schemas"]["FinancingResult"];
+            energy: components["schemas"]["EnergyBreakdownResult"];
+            otherRecurringCosts: components["schemas"]["RecurringCostResult"][];
+            otherOneTimeCosts: components["schemas"]["OneTimeCostResult"][];
+            netOwnershipCost: null | components["schemas"]["NetOwnershipCostResult"];
+        };
+        /** @enum {unknown} */
+        MissingCategory: "vehicleTax" | "insurance" | "maintenanceAndRepairs" | "residualValue";
+        NamedRecurringCostInput: {
+            label: string;
+            /** Format: double */
+            amountSek: number;
+            cadence: components["schemas"]["RecurringCostCadence"];
+        };
+        NetOwnershipCostResult: {
+            /** Format: double */
+            residualValueSek: number;
+            /** Format: double */
+            depreciationSek: number;
+            /** Format: double */
+            interestPaidSek: number;
+            /** Format: double */
+            knownOperatingCostSek: number;
+            /** Format: double */
+            knownTotalSek: number;
+            /** Format: double */
+            averagePerMonthSek: number;
+            /** Format: double */
+            averagePerYearSek: number;
+            /** Format: double */
+            estimatedEquityAtPeriodEndSek: number;
+            isComplete: boolean;
+        };
+        OneTimeCostInput: {
+            label: string;
+            /** Format: double */
+            amountSek: number;
+        };
+        OneTimeCostResult: {
+            label: string;
+            /** Format: double */
+            amountSek: number;
+        };
+        /** @enum {unknown} */
+        RecurringCostCadence: "monthly" | "annual";
+        RecurringCostInput: {
+            /** Format: double */
+            amountSek: number;
+            cadence: components["schemas"]["RecurringCostCadence"];
+        };
+        RecurringCostResult: {
+            label: string;
+            /** Format: double */
+            amountSek: number;
+            cadence: components["schemas"]["RecurringCostCadence"];
+            /** Format: double */
+            costDuringPeriodSek: number;
+        };
         SystemStatusResponse: {
             status: string;
             version: string;
             database: string;
             features: components["schemas"]["FeatureStatusResponse"];
+        };
+        ValidationProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            errors?: {
+                [key: string]: string[];
+            };
         };
     };
     responses: never;

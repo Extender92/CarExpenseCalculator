@@ -3,8 +3,8 @@
 ## Status and purpose
 
 This document is the decision-complete specification for the deterministic
-manual vehicle cost calculator. It defines the future Core calculation and the
-HTTP preview contract. It does not describe behavior that is implemented yet.
+manual vehicle cost calculator. The Core calculation and unsaved HTTP preview
+contract are implemented. Persistence and the user interface remain later work.
 
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
@@ -32,9 +32,9 @@ Cash outflow answers how much money leaves the household during the selected
 period. Net ownership cost avoids counting repaid loan principal as an expense:
 it combines depreciation, interest paid during the period, and operating costs.
 
-## Future Core operation
+## Core operation
 
-Core will expose a pure operation equivalent to:
+Core exposes a pure operation equivalent to:
 
 ```text
 Calculate(CostScenario) -> CostCalculationResult
@@ -52,9 +52,9 @@ calculation semantics, and `CostCalculationResult` maps to
 member names may follow Core conventions while preserving the same values,
 nullability, units, formulas, and validation.
 
-## Future HTTP contract
+## HTTP contract
 
-The unsaved preview endpoint will be:
+The unsaved preview endpoint is:
 
 ```http
 POST /api/manual-calculations
@@ -319,7 +319,7 @@ recalculate totals from already rounded breakdown values.
 
 `ManualCalculationResult` has the following normative JSON shape. A nullable
 property is present with `null`; it is not silently omitted. Names, nesting, and
-nullability form the future HTTP contract.
+nullability form the HTTP contract.
 
 ```text
 ManualCalculationResult
@@ -504,8 +504,8 @@ value are all explicit.
 
 ## Required calculation scenarios
 
-Future Core, API, and frontend tests must derive their expectations from this
-specification and cover at least:
+Core and API tests derive their expectations from this specification. Future
+frontend tests must use the same scenarios and cover at least:
 
 | Scenario | Required behavior |
 | --- | --- |
