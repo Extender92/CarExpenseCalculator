@@ -1,12 +1,12 @@
 # Roadmap
 
-## 0. Repository foundation
+## 0. Repository foundation — complete
 
 - Preserve and tag the console prototype.
 - Create the .NET 10, React/TypeScript, PostgreSQL, Docker, testing, CI, and documentation foundation.
 - Provide health/status contracts and Swedish placeholder routes.
 
-## 1. Manual calculator
+## 1. Manual calculator — complete
 
 - Implement the new domain model and first database migration.
 - Port valid cost-calculation ideas from the legacy prototype with explicit units and decimal money values.
@@ -38,4 +38,3 @@
 - Add bounded image selection and vision review for visible risks.
 - Evaluate prompts and model results against a curated set of known listings.
 - Add cost dashboards, prompt/version tracking, and quality metrics.
-

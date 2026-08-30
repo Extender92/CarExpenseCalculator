@@ -9,6 +9,9 @@ HTTP API, and saved-vehicle UI management are implemented. The interface keeps
 unsaved previews independent from persistence and supports create, list/open,
 full replacement with optimistic concurrency, and permanent deletion.
 
+The repeatable acceptance procedure is documented in
+[Manual calculator verification](manual-calculator-verification.md).
+
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
 locale-specific parsing.
@@ -619,7 +622,7 @@ new design does not preserve legacy behavior merely for compatibility.
 | Full lifetime loan cost shown at every yearly horizon | Reject | Include only payments and interest occurring within the selected period and report the outstanding principal. |
 | Purchase price minus independent loan amount plus total loan cost | Correct | Separate cash outflow from net ownership cost and prevent principal from being counted twice. |
 | Cumulative output for years 1-10 | Reject | Return one selected-period total plus normalized monthly and annual averages. |
-| In-memory console save prompt | Reject from calculation | Unsaved calculation is pure; persistent saved scenarios are defined in later issues. |
+| In-memory console save prompt | Reject from calculation | Unsaved calculation remains pure; the implemented web persistence layer stores scenarios outside the calculation operation. |
 
 ## Explicit exclusions
 
@@ -629,4 +632,5 @@ maintenance, tax, energy prices, or driving mix; the user supplies those values
 or the result marks them missing. The specification excludes loan balloons,
 straight-line amortization, irregular payment schedules, tax deductions,
 leasing, currency conversion, inflation, present-value calculations, automatic
-vehicle data, persistence, AI review, and image analysis.
+vehicle data, AI review, and image analysis. Saved-scenario persistence is an
+implemented outer layer and does not alter these calculation formulas.

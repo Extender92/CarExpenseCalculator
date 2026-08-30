@@ -44,19 +44,50 @@ Nginx publishes `${WEB_PORT:-8088}` and serves the React application. Requests u
 
 Copy `.env.example` to `.env` and provide local values. The `.env` file is ignored by Git. Do not place credentials in Compose YAML, React variables, source files, container images, or GitHub Actions logs.
 
-Build and start only the API and web services on Unraid:
+Validate the repository-owned port, network, and connection boundaries before deployment. The script overrides Compose variables with fixed verification values, so real deployment credentials are not required or printed:
 
 ```bash
-docker compose -f compose.unraid.yaml up --build --detach
+node scripts/verify-compose-boundaries.mjs
 ```
 
-Verify the deployment through its single published origin:
+## Initial deployment
+
+The existing `postgresql18` container must be running and attached to `car-expense-network`. Build the application images, apply the database migration, and only then start API and web:
 
 ```bash
+docker compose -f compose.unraid.yaml build
+docker compose -f compose.unraid.yaml run --rm api migrate
+docker compose -f compose.unraid.yaml up --detach api web
+```
+
+The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
+
+Verify liveness, database readiness, and feature status through the single published origin:
+
+```bash
+curl --fail http://extower.local:8088/api/health/live
+curl --fail http://extower.local:8088/api/health/ready
+curl --fail http://extower.local:8088/api/system/status
+docker compose -f compose.unraid.yaml ps
+```
+
+Use the configured `WEB_PORT` instead of `8088` when it has been changed. The Compose output must show a published port only for `web`; `api` must not have a host-port mapping. The existing `postgresql18` container must not publish PostgreSQL to the LAN for this application.
+
+Complete the browser and saved-data checks in [Manual calculator verification](manual-calculator-verification.md).
+
+## Upgrades
+
+Create and verify a PostgreSQL backup before an upgrade. Build the new images while the current application is still running, then use a short maintenance window for migration and replacement:
+
+```bash
+docker compose -f compose.unraid.yaml build
+docker compose -f compose.unraid.yaml stop web api
+docker compose -f compose.unraid.yaml run --rm api migrate
+docker compose -f compose.unraid.yaml up --detach api web
 curl --fail http://extower.local:8088/api/health/ready
 ```
 
-Use the configured `WEB_PORT` instead of `8088` when it has been changed.
+If migration fails, leave the updated services stopped, preserve the command output, and investigate before restarting. Do not attempt an arbitrary rollback against persistent data.
 
 ## Boundaries
 
@@ -64,15 +95,7 @@ This release assumes a trusted LAN. It has no HTTPS or authentication and must n
 
 ## Database migrations
 
-Migrations are an explicit one-shot backend mode. API startup never applies or rolls back schema. Build the current image before running a migration:
-
-```bash
-docker compose -f compose.unraid.yaml build api
-docker compose -f compose.unraid.yaml run --rm api migrate
-docker compose -f compose.unraid.yaml up --detach api web
-```
-
-The command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. A failure returns a nonzero exit code; inspect its output before starting the API.
+Migrations are an explicit one-shot backend mode. Normal API startup never applies, creates, or rolls back schema. The initial-deployment and upgrade procedures above are the canonical Unraid sequences.
 
 Local development uses the same image and command:
 
