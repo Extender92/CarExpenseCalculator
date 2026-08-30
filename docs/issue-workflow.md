@@ -38,8 +38,10 @@ the primary coordinating agent. Before changing anything, the agent must:
 Assignment of a ready issue authorizes the agent to replace `status:ready` with
 `status:in-progress`, create a focused branch, implement and verify the issue,
 commit and push the work, and open or update its pull request. It does not
-authorize merging the pull request or deleting branches. Those actions require
-separate user approval.
+authorize merging the pull request; merges require separate user approval. After
+an approved merge, GitHub automatically deletes the remote head branch. That
+automatic cleanup does not require another approval. Unmerged branches must not
+be deleted manually without an explicit user request.
 
 Assignment does not authorize changing the issue's scope, priority, milestone,
 dependencies, or acceptance criteria. The primary coordinating agent owns
