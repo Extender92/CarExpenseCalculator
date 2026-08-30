@@ -13,9 +13,14 @@ These instructions apply to every agent working in this repository.
 - Treat the user's current request as the immediate source of truth. Use
   `docs/product-requirements.md`, `docs/architecture.md`, and `docs/roadmap.md`
   for established product scope, technical boundaries, and delivery order.
-- Inspect GitHub Issues when the user references an issue or when the requested
-  work is already tracked there. Do not require an issue for ordinary user-
-  requested work.
+- Inspect GitHub Issues when the user references or assigns an issue or when the
+  requested work is already tracked there. When assigned an issue, read the
+  complete issue and every linked repository document before changing anything.
+- Agents never select issues themselves. The user or primary coordinating agent
+  must assign an explicit issue number. Only issues with `status:ready` and no
+  unmet dependencies may be implemented.
+- Do not require an issue for ordinary user-requested work that is not already
+  tracked.
 - Perform implementation work on an existing matching focused branch or create
   one when authorized. Do not implement changes directly on `main`.
 
@@ -92,14 +97,34 @@ These instructions apply to every agent working in this repository.
 ## Git and GitHub actions
 
 - Use focused branches and clear English commit messages.
+- Follow `docs/issue-workflow.md` for assigned issue work. Use one issue per
+  branch and pull request, with `feature/<number>-<slug>`,
+  `fix/<number>-<slug>`, `docs/<number>-<slug>`, or
+  `chore/<number>-<slug>` as the branch name.
+- Assignment of a `status:ready` issue authorizes changing that issue to
+  `status:in-progress`, creating its branch, implementing and verifying its
+  scope, committing and pushing the work, and opening or updating a pull request.
+  It does not authorize merging the pull request or deleting branches; those
+  actions always require separate user approval.
+- Assignment does not authorize changing the issue's scope, priority, milestone,
+  dependencies, or acceptance criteria. The primary coordinating agent owns
+  backlog refinement and promotes work to `status:ready` only after verifying
+  that all decisions and dependencies are resolved.
 - Read-only inspection of repository history, workflow runs, pull requests, and
   issues is allowed when relevant to the task.
 - Do not create commits, push branches, open or merge pull requests, delete
   branches, create tags, or publish releases unless the user explicitly requests
-  that action.
+  that action or the assigned-issue authorization above applies. Merge and
+  branch deletion are never included in assigned-issue authorization.
 - Do not create, edit, comment on, close, reprioritize, or assign GitHub Issues
-  unless the user explicitly requests that action.
+  unless the user explicitly requests that action. For an assigned issue, the
+  authorization above is limited to replacing `status:ready` with
+  `status:in-progress` and adding comments that link its pull request or document
+  concrete blocking evidence. It never authorizes closing, reprioritizing,
+  reassigning, or changing the issue's agreed content.
 - Use `Closes #N` only when every acceptance criterion for issue `#N` is met.
+- If assigned work becomes blocked, stop rather than guess or expand scope.
+  Comment with concrete evidence and notify the primary coordinating agent.
 - Keep the `legacy-console` tag intact as the recovery point for the old console
   implementation.
 

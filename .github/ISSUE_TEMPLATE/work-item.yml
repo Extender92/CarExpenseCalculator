@@ -1,0 +1,84 @@
+name: Work item
+description: Define a planned, decision-complete unit of repository work.
+title: ""
+labels:
+  - "status:needs-refinement"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for planned work. An item may receive `status:ready` only when its scope, dependencies, acceptance criteria, and verification are decision complete.
+
+  - type: input
+    id: goal
+    attributes:
+      label: Goal
+      description: State the concrete outcome this issue must deliver.
+      placeholder: Describe the user-visible or technical outcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevant_docs
+    attributes:
+      label: Relevant documentation
+      description: Link the repository documents and existing implementation that define the work.
+      placeholder: List paths, links, and existing behavior that must be read first.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List the behavior and deliverables included in this issue.
+      placeholder: Use a concise checklist or bullet list.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: State adjacent work that this issue must not implement.
+      placeholder: List explicit boundaries, or write "None".
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Link blocking issues and external decisions.
+      placeholder: Write "None", or list issues such as #123.
+    validations:
+      required: true
+
+  - type: textarea
+    id: contracts_data
+    attributes:
+      label: Contracts and data impact
+      description: Describe public API, type, schema, migration, configuration, or data-flow changes.
+      placeholder: Describe the impact, or write "None".
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Provide observable, decision-complete completion criteria.
+      placeholder: |
+        - [ ] First acceptance criterion
+        - [ ] Second acceptance criterion
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: List the automated and manual checks required before the pull request is ready.
+      placeholder: List exact test suites, commands, or scenarios.
+    validations:
+      required: true
