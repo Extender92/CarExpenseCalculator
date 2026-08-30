@@ -106,7 +106,13 @@ These instructions apply to every agent working in this repository.
   scope, committing and pushing the work, and opening or updating a pull request.
   It does not authorize merging the pull request; merges always require separate
   user approval. After an approved merge, GitHub automatically deletes the
-  remote head branch. That automatic cleanup does not require another approval.
+  remote head branch. The agent must then switch to `main`, pull it with
+  `--ff-only`, verify that the pull request is merged and the worktree is clean,
+  and delete the local head branch. Use `git branch -d` when Git recognizes the
+  merge. For a squash-merged branch, `git branch -D` is allowed only after those
+  checks confirm that the pull request's content is present on `main`. This
+  post-merge cleanup is included in the merge approval and needs no additional
+  approval.
 - Assignment does not authorize changing the issue's scope, priority, milestone,
   dependencies, or acceptance criteria. The primary coordinating agent owns
   backlog refinement and promotes work to `status:ready` only after verifying
@@ -117,8 +123,9 @@ These instructions apply to every agent working in this repository.
   branches, create tags, or publish releases unless the user explicitly requests
   that action or the assigned-issue authorization above applies. Merge is never
   included in assigned-issue authorization. Do not manually delete unmerged
-  branches without an explicit user request; GitHub-managed deletion of merged
-  pull-request head branches occurs automatically.
+  branches without an explicit user request. Deletion of the verified merged
+  local head branch is allowed only as part of the approved post-merge cleanup
+  above.
 - Do not create, edit, comment on, close, reprioritize, or assign GitHub Issues
   unless the user explicitly requests that action. For an assigned issue, the
   authorization above is limited to replacing `status:ready` with

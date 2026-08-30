@@ -39,9 +39,13 @@ Assignment of a ready issue authorizes the agent to replace `status:ready` with
 `status:in-progress`, create a focused branch, implement and verify the issue,
 commit and push the work, and open or update its pull request. It does not
 authorize merging the pull request; merges require separate user approval. After
-an approved merge, GitHub automatically deletes the remote head branch. That
-automatic cleanup does not require another approval. Unmerged branches must not
-be deleted manually without an explicit user request.
+an approved merge, GitHub automatically deletes the remote head branch. The
+agent then switches to `main`, pulls with `--ff-only`, verifies that the pull
+request is merged and the worktree is clean, and deletes the local head branch.
+Use `git branch -d` for a recognized merge. Use `git branch -D` after a squash
+merge only when those checks prove that the pull request content is present on
+`main`. This verified post-merge cleanup needs no additional approval. Unmerged
+branches must not be deleted manually without an explicit user request.
 
 Assignment does not authorize changing the issue's scope, priority, milestone,
 dependencies, or acceptance criteria. The primary coordinating agent owns
