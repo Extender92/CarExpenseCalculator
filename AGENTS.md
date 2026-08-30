@@ -104,8 +104,9 @@ These instructions apply to every agent working in this repository.
 - Assignment of a `status:ready` issue authorizes changing that issue to
   `status:in-progress`, creating its branch, implementing and verifying its
   scope, committing and pushing the work, and opening or updating a pull request.
-  It does not authorize merging the pull request or deleting branches; those
-  actions always require separate user approval.
+  It does not authorize merging the pull request; merges always require separate
+  user approval. After an approved merge, GitHub automatically deletes the
+  remote head branch. That automatic cleanup does not require another approval.
 - Assignment does not authorize changing the issue's scope, priority, milestone,
   dependencies, or acceptance criteria. The primary coordinating agent owns
   backlog refinement and promotes work to `status:ready` only after verifying
@@ -114,8 +115,10 @@ These instructions apply to every agent working in this repository.
   issues is allowed when relevant to the task.
 - Do not create commits, push branches, open or merge pull requests, delete
   branches, create tags, or publish releases unless the user explicitly requests
-  that action or the assigned-issue authorization above applies. Merge and
-  branch deletion are never included in assigned-issue authorization.
+  that action or the assigned-issue authorization above applies. Merge is never
+  included in assigned-issue authorization. Do not manually delete unmerged
+  branches without an explicit user request; GitHub-managed deletion of merged
+  pull-request head branches occurs automatically.
 - Do not create, edit, comment on, close, reprioritize, or assign GitHub Issues
   unless the user explicitly requests that action. For an assigned issue, the
   authorization above is limited to replacing `status:ready` with
