@@ -1,0 +1,54 @@
+name: car-expense-calculator
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-car_expense_calculator}
+      POSTGRES_USER: ${POSTGRES_USER:-car_expense_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-car_expense_dev_only}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    networks:
+      - app-network
+
+  api:
+    build:
+      context: .
+      dockerfile: src/backend/CarExpenseCalculator.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__Postgres: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-car_expense_calculator};Username=${POSTGRES_USER:-car_expense_app};Password=${POSTGRES_PASSWORD:-car_expense_dev_only}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  web:
+    build:
+      context: .
+      dockerfile: src/frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    networks:
+      - app-network
+
+volumes:
+  postgres-data:
+
+networks:
+  app-network:
+    name: car-expense-local

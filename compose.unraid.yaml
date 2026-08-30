@@ -1,0 +1,34 @@
+name: car-expense-calculator
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/backend/CarExpenseCalculator.Api/Dockerfile
+    image: car-expense-calculator-api:local
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__Postgres: >-
+        Host=postgresql18;Port=5432;Database=${POSTGRES_DB:-car_expense_calculator};Username=${POSTGRES_USER:-car_expense_app};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    networks:
+      - car-expense-network
+
+  web:
+    build:
+      context: .
+      dockerfile: src/frontend/Dockerfile
+    image: car-expense-calculator-web:local
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    networks:
+      - car-expense-network
+
+networks:
+  car-expense-network:
+    external: true
+    name: car-expense-network

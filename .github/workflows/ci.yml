@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.400
+      - name: Restore
+        run: dotnet restore CarExpenseCalculator.sln
+      - name: Build
+        run: dotnet build CarExpenseCalculator.sln --configuration Release --no-restore
+      - name: Test
+        run: dotnet test CarExpenseCalculator.sln --configuration Release --no-build
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+  api-contract:
+    name: OpenAPI contract drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.400
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: dotnet restore src/backend/CarExpenseCalculator.Api/CarExpenseCalculator.Api.csproj
+      - run: dotnet build src/backend/CarExpenseCalculator.Api/CarExpenseCalculator.Api.csproj --no-restore
+      - run: npm ci
+        working-directory: src/frontend
+      - name: Regenerate and verify the TypeScript contract
+        shell: bash
+        run: |
+          ASPNETCORE_URLS=http://localhost:5090 dotnet run \
+            --project src/backend/CarExpenseCalculator.Api \
+            --no-build --no-launch-profile &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:5090/api/openapi/v1.json > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail http://localhost:5090/api/openapi/v1.json > /dev/null
+          npm --prefix src/frontend run api:generate
+          git diff --exit-code -- src/frontend/src/api/schema.d.ts
+
+  containers:
+    name: Docker and end-to-end
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, api-contract]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+        working-directory: src/frontend
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: src/frontend
+      - name: Build and start the stack
+        run: docker compose up --build --detach
+      - name: Wait for readiness through Nginx
+        run: curl --fail --retry 40 --retry-delay 2 --retry-all-errors http://localhost:8088/api/health/ready
+      - name: End-to-end tests
+        run: npm run e2e -- --project=chromium
+        working-directory: src/frontend
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

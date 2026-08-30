@@ -1,0 +1,14 @@
+.git
+.github
+.vs
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/playwright-report
+**/test-results
+.env
+.env.*
+!.env.example
+*.user
+*.log
