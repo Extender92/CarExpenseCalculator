@@ -13,6 +13,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .WithPassword("integration_test_password")
         .Build();
 
+    public string ConnectionString => _postgres.GetConnectionString();
+
     public Task InitializeAsync() => _postgres.StartAsync();
 
     public new Task DisposeAsync() => _postgres.DisposeAsync().AsTask();

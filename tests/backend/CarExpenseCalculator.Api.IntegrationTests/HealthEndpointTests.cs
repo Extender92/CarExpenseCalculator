@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Npgsql;
 using Xunit;
 
 namespace CarExpenseCalculator.Api.IntegrationTests;
@@ -44,6 +45,20 @@ public sealed class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiF
         Assert.False(payload.Features.UrlAnalysis);
         Assert.True(payload.Features.ManualCalculator);
         Assert.False(payload.Features.AiReview);
+    }
+
+    [Fact]
+    public async Task Normal_api_startup_does_not_apply_database_migrations()
+    {
+        var response = await _client.GetAsync("/api/health/ready");
+        response.EnsureSuccessStatusCode();
+
+        await using var connection = new NpgsqlConnection(factory.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT to_regclass('public.vehicles') IS NULL";
+
+        Assert.True((bool)(await command.ExecuteScalarAsync())!);
     }
 
     private sealed record SystemStatusContract(

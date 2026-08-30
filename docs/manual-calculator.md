@@ -4,8 +4,8 @@
 
 This document is the decision-complete specification for the deterministic
 manual vehicle cost calculator. The Core calculation, unsaved HTTP preview
-contract, and Swedish unsaved user interface are implemented. Persistence and
-saved-scenario management remain later work.
+contract, Swedish unsaved user interface, and PostgreSQL persistence layer are
+implemented. Saved-scenario HTTP and UI management remain later work.
 
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
@@ -42,8 +42,8 @@ Calculate(CostScenario) -> CostCalculationResult
 ```
 
 `CostScenario` is the Core aggregate containing the calculation assumptions
-defined by `ManualCalculationRequest`. It has no persistence identity. A later
-saved-scenario model may associate identity and storage metadata without adding
+defined by `ManualCalculationRequest`. It has no persistence identity. The
+saved-scenario model associates identity and storage metadata without adding
 them to this pure operation.
 
 The operation has no clock, database, HTTP, or external-service dependency. The
@@ -52,6 +52,29 @@ calculation semantics, and `CostCalculationResult` maps to
 `ManualCalculationResult`. API DTO names are normative for HTTP; Core type and
 member names may follow Core conventions while preserving the same values,
 nullability, units, formulas, and validation.
+
+## Saved-scenario persistence
+
+Saving remains optional and does not change the unsaved preview contract. The
+persistence layer stores one current scenario per vehicle, while HTTP endpoints
+for managing it are introduced separately.
+
+- A saved vehicle uses UUIDv7 as its stable technical identifier and requires a
+  normalized ordinary Swedish registration number as its unique current lookup.
+- Registration numbers are immutable. Vehicle labels remain optional and are
+  stored separately from the registration number.
+- All calculation inputs are stored relationally. Ordered energy and custom-cost
+  collections use child tables; the complete calculated result is retained in a
+  versioned JSONB snapshot.
+- Create and replacement always invoke this document's Core calculator. A caller
+  cannot provide a trusted result snapshot.
+- Replacement is a full atomic overwrite, increments an optimistic-concurrency
+  revision, and physically removes superseded child data.
+- Delete physically removes the vehicle, scenario, and all related children.
+  There are no history, soft-delete, or automatic retention records.
+- Persisted results carry calculation and result-schema versions. Formula changes
+  do not silently rewrite an older result; a later replacement/recalculation
+  writes the current versions.
 
 ## HTTP contract
 

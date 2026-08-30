@@ -1,5 +1,6 @@
 using CarExpenseCalculator.Infrastructure.Health;
 using CarExpenseCalculator.Infrastructure.Persistence;
+using CarExpenseCalculator.Infrastructure.Persistence.SavedCostScenarios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,9 @@ public static class DependencyInjection
             options.UseNpgsql(
                 connectionString,
                 npgsql => npgsql.SetPostgresVersion(18, 0)));
+
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<ISavedCostScenarioStore, SavedCostScenarioStore>();
 
         services.AddSingleton(new PostgresHealthCheck(connectionString));
 

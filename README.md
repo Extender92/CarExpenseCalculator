@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The runnable web foundation and the deterministic manual calculator are implemented, including the Swedish unsaved interface, Core calculations, and preview API. Saved scenarios, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The runnable web foundation and the deterministic manual calculator are implemented, including the Swedish unsaved interface, Core calculations, preview API, and the PostgreSQL persistence layer for one current saved scenario per vehicle. Saved-scenario API/UI management, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -45,6 +45,17 @@ docker compose down
 ```
 
 Add `--volumes` only when the local development database should also be deleted.
+
+Database migrations are explicit and never run during API startup. Build the API image, start PostgreSQL, and apply pending migrations with:
+
+```bash
+docker compose build api
+docker compose up --detach postgres
+docker compose run --rm api migrate
+docker compose up --detach api web
+```
+
+See [Unraid deployment](docs/deployment-unraid.md) before applying or rolling back migrations on persistent data.
 
 ## Local development
 
