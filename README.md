@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The runnable web foundation and the deterministic manual calculator are implemented, including the Swedish unsaved interface, Core calculations, preview API, and the PostgreSQL persistence layer for one current saved scenario per vehicle. Saved-scenario API/UI management, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The runnable web foundation and the deterministic manual calculator are implemented, including the Swedish unsaved interface, Core calculations, preview API, and the PostgreSQL-backed API for one current saved scenario per vehicle. Saved-scenario UI management, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -94,6 +94,12 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 - `GET /api/health/ready` – readiness including PostgreSQL
 - `GET /api/system/status` – version, overall/database state, and feature availability
 - `POST /api/manual-calculations` – deterministic unsaved ownership-cost preview
+- `POST /api/saved-cost-scenarios` – create a saved vehicle and current scenario
+- `GET /api/saved-cost-scenarios` – list saved-vehicle summaries
+- `GET /api/saved-cost-scenarios/{vehicleId}` – read a complete saved scenario
+- `GET /api/saved-cost-scenarios/by-registration/{registrationNumber}` – find a saved vehicle by registration number
+- `PUT /api/saved-cost-scenarios/{vehicleId}` – fully replace a scenario using its expected revision
+- `DELETE /api/saved-cost-scenarios/{vehicleId}?expectedRevision={revision}` – permanently delete an aggregate using its expected revision
 - `GET /api/openapi/v1.json` – OpenAPI document used to generate frontend types
 
 Regenerate the committed TypeScript API contract while the API is running on port 5090:

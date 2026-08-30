@@ -43,6 +43,37 @@ internal static class ManualCalculationMapper
             result.NetOwnershipCost is null ? null : MapNetOwnershipCost(result.NetOwnershipCost));
     }
 
+    public static ApiContracts.ManualCalculationRequest ToApi(CoreContracts.CostScenario scenario)
+    {
+        return new ApiContracts.ManualCalculationRequest
+        {
+            VehicleLabel = scenario.VehicleLabel,
+            CalculationPeriodMonths = scenario.CalculationPeriodMonths,
+            PurchasePriceSek = scenario.PurchasePriceSek,
+            ExpectedResidualValueSek = scenario.ExpectedResidualValueSek,
+            AnnualDistanceKilometres = scenario.AnnualDistanceKilometres,
+            Financing = scenario.Financing is null ? null : MapFinancing(scenario.Financing),
+            EnergySources = scenario.EnergySources.Select(MapEnergySourceInput).ToArray(),
+            VehicleTax = MapRecurringCostInput(scenario.VehicleTax),
+            Insurance = MapRecurringCostInput(scenario.Insurance),
+            MaintenanceAndRepairs = MapRecurringCostInput(scenario.MaintenanceAndRepairs),
+            OtherRecurringCosts = scenario.OtherRecurringCosts
+                .Select(MapNamedRecurringCostInput)
+                .ToArray(),
+            OtherOneTimeCosts = scenario.OtherOneTimeCosts.Select(MapOneTimeCostInput).ToArray(),
+        };
+    }
+
+    public static ApiContracts.CalculationCompleteness ToApi(
+        CoreContracts.CalculationCompleteness completeness)
+    {
+        return new ApiContracts.CalculationCompleteness(
+            completeness.IsComplete,
+            completeness.IsCashFlowComplete,
+            completeness.IsNetOwnershipCostAvailable,
+            completeness.MissingCategories.Select(MapMissingCategory).ToArray());
+    }
+
     private static CoreContracts.FinancingTerms? MapFinancing(ApiContracts.FinancingInput? financing)
     {
         return financing is null
@@ -51,6 +82,16 @@ internal static class ManualCalculationMapper
                 financing.DownPaymentSek,
                 financing.AnnualNominalInterestRatePercent,
                 financing.TermMonths);
+    }
+
+    private static ApiContracts.FinancingInput MapFinancing(CoreContracts.FinancingTerms financing)
+    {
+        return new ApiContracts.FinancingInput
+        {
+            DownPaymentSek = financing.DownPaymentSek,
+            AnnualNominalInterestRatePercent = financing.AnnualNominalInterestRatePercent,
+            TermMonths = financing.TermMonths,
+        };
     }
 
     private static CoreContracts.EnergySource MapEnergySource(ApiContracts.EnergySourceInput source)
@@ -100,6 +141,52 @@ internal static class ManualCalculationMapper
             result.AveragePerMonthSek,
             result.AveragePerYearSek,
             result.IsComplete);
+    }
+
+    private static ApiContracts.EnergySourceInput MapEnergySourceInput(
+        CoreContracts.EnergySource source)
+    {
+        return new ApiContracts.EnergySourceInput
+        {
+            Label = source.Label,
+            Unit = MapEnergyUnit(source.Unit),
+            ConsumptionPer100Kilometres = source.ConsumptionPer100Kilometres,
+            PricePerUnitSek = source.PricePerUnitSek,
+            DistanceSharePercent = source.DistanceSharePercent,
+        };
+    }
+
+    private static ApiContracts.RecurringCostInput? MapRecurringCostInput(
+        CoreContracts.RecurringCost? cost)
+    {
+        return cost is null
+            ? null
+            : new ApiContracts.RecurringCostInput
+            {
+                AmountSek = cost.AmountSek,
+                Cadence = MapCadence(cost.Cadence),
+            };
+    }
+
+    private static ApiContracts.NamedRecurringCostInput MapNamedRecurringCostInput(
+        CoreContracts.NamedRecurringCost cost)
+    {
+        return new ApiContracts.NamedRecurringCostInput
+        {
+            Label = cost.Label,
+            AmountSek = cost.AmountSek,
+            Cadence = MapCadence(cost.Cadence),
+        };
+    }
+
+    private static ApiContracts.OneTimeCostInput MapOneTimeCostInput(
+        CoreContracts.OneTimeCost cost)
+    {
+        return new ApiContracts.OneTimeCostInput
+        {
+            Label = cost.Label,
+            AmountSek = cost.AmountSek,
+        };
     }
 
     private static ApiContracts.FinancingResult MapFinancing(CoreContracts.FinancingResult result)

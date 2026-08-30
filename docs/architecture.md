@@ -63,3 +63,10 @@ Migrations are applied only through the explicit backend `migrate [target]` comm
 - `GET /api/health/live` checks process liveness only.
 - `GET /api/health/ready` checks PostgreSQL readiness.
 - `GET /api/system/status` returns application version, overall state, database state, and feature availability.
+- `POST /api/manual-calculations` returns an unsaved deterministic preview without accessing PostgreSQL.
+- `/api/saved-cost-scenarios` exposes create, summary list, UUID/registration lookup, full replacement, and permanent deletion over the current saved aggregate.
+
+Saved-scenario writes use explicit optimistic-concurrency revisions. Duplicate
+registration numbers and stale writes return typed conflicts instead of
+silently overwriting current data. API DTOs remain separate from Core and
+persistence types, and stored result snapshots are never accepted from clients.
