@@ -13,6 +13,7 @@ const modes = [
     to: "/search",
     icon: Search,
     color: "cyan",
+    feature: "ruleBasedSearch",
   },
   {
     title: "Analysera URL:er",
@@ -20,6 +21,7 @@ const modes = [
     to: "/analyze-urls",
     icon: Link2,
     color: "blue",
+    feature: "urlAnalysis",
   },
   {
     title: "Manuell kalkyl",
@@ -27,6 +29,7 @@ const modes = [
     to: "/manual",
     icon: Calculator,
     color: "violet",
+    feature: "manualCalculator",
   },
 ] as const;
 
@@ -37,7 +40,7 @@ export function DashboardPage() {
     <div className="space-y-10">
       <section className="flex flex-col justify-between gap-6 border-b border-slate-800 pb-9 md:flex-row md:items-end">
         <div className="max-w-3xl">
-          <Badge>Teknisk grund</Badge>
+          <Badge variant="success">Manuell kalkyl tillgänglig</Badge>
           <h1 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Ett bättre beslutsunderlag för nästa bil.
           </h1>
@@ -59,24 +62,30 @@ export function DashboardPage() {
         </div>
 
         <div className="grid gap-5 xl:grid-cols-3">
-          {modes.map(({ title, description, to, icon: Icon, color }) => (
-            <Card key={to} className="group relative overflow-hidden transition hover:-translate-y-1 hover:border-slate-700">
-              <div className={cn("absolute inset-x-0 top-0 h-px opacity-70", color === "cyan" && "bg-cyan-400", color === "blue" && "bg-blue-400", color === "violet" && "bg-violet-400")} />
-              <CardHeader>
-                <span className={cn("grid size-11 place-items-center rounded-xl", color === "cyan" && "bg-cyan-400/10 text-cyan-300", color === "blue" && "bg-blue-400/10 text-blue-300", color === "violet" && "bg-violet-400/10 text-violet-300")}>
-                  <Icon size={22} />
-                </span>
-                <CardTitle className="pt-3">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link to={to} className={cn(buttonVariants({ variant: "secondary" }), "w-full justify-between")}>
-                  Öppna
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+          {modes.map(({ title, description, to, icon: Icon, color, feature }) => {
+            const available = status.phase === "loaded" && status.data.features[feature];
+            return (
+              <Card key={to} className="group relative overflow-hidden transition hover:-translate-y-1 hover:border-slate-700">
+                <div className={cn("absolute inset-x-0 top-0 h-px opacity-70", color === "cyan" && "bg-cyan-400", color === "blue" && "bg-blue-400", color === "violet" && "bg-violet-400")} />
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={cn("grid size-11 place-items-center rounded-xl", color === "cyan" && "bg-cyan-400/10 text-cyan-300", color === "blue" && "bg-blue-400/10 text-blue-300", color === "violet" && "bg-violet-400/10 text-violet-300")}>
+                      <Icon size={22} />
+                    </span>
+                    <Badge variant={available ? "success" : "muted"}>{available ? "Tillgänglig" : "Planerad"}</Badge>
+                  </div>
+                  <CardTitle className="pt-3">{title}</CardTitle>
+                  <CardDescription>{description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link to={to} className={cn(buttonVariants({ variant: "secondary" }), "w-full justify-between")}>
+                    Öppna
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </section>
 

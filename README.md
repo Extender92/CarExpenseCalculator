@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The runnable web foundation, deterministic manual-calculation Core, and unsaved preview API are implemented. The Swedish manual calculator interface, saved scenarios, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The runnable web foundation and the deterministic manual calculator are implemented, including the Swedish unsaved interface, Core calculations, and preview API. Saved scenarios, listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -81,7 +81,7 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 
 - `GET /api/health/live` – process liveness
 - `GET /api/health/ready` – readiness including PostgreSQL
-- `GET /api/system/status` – version, overall/database state, and disabled feature flags
+- `GET /api/system/status` – version, overall/database state, and feature availability
 - `POST /api/manual-calculations` – deterministic unsaved ownership-cost preview
 - `GET /api/openapi/v1.json` – OpenAPI document used to generate frontend types
 

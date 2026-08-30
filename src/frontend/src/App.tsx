@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { ManualCalculatorPage } from "@/pages/ManualCalculatorPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 
 export function App() {
@@ -32,18 +33,7 @@ export function App() {
             />
           }
         />
-        <Route
-          path="manual"
-          element={
-            <PlaceholderPage
-              type="manual"
-              eyebrow="Nästa funktion"
-              title="Manuell kalkyl"
-              description="Här kommer du att kunna mata in bil, finansiering, bränsle, skatt, försäkring och andra kostnader för att jämföra realistiska ägandescenarier."
-              roadmap="Detta är den första riktiga användarfunktionen som byggs ovanpå den tekniska grunden."
-            />
-          }
-        />
+        <Route path="manual" element={<ManualCalculatorPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

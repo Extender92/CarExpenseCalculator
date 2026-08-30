@@ -43,8 +43,8 @@ export function AppLayout() {
         </p>
         <Navigation />
         <div className="absolute inset-x-6 bottom-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Grundfas</p>
-          <p className="mt-2 text-sm text-slate-300">Funktionerna byggs stegvis. Inga AI-anrop görs ännu.</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Lokal version</p>
+          <p className="mt-2 text-sm text-slate-300">Den manuella kalkylen är tillgänglig. Inga AI-anrop görs ännu.</p>
         </div>
       </aside>
 

@@ -3,8 +3,9 @@
 ## Status and purpose
 
 This document is the decision-complete specification for the deterministic
-manual vehicle cost calculator. The Core calculation and unsaved HTTP preview
-contract are implemented. Persistence and the user interface remain later work.
+manual vehicle cost calculator. The Core calculation, unsaved HTTP preview
+contract, and Swedish unsaved user interface are implemented. Persistence and
+saved-scenario management remain later work.
 
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
