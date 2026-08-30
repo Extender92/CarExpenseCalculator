@@ -1,6 +1,8 @@
 # Car Expense Calculator
 
-Car Expense Calculator is a private, local-first web application for comparing used cars before purchase. It will combine deterministic ownership-cost calculations, configurable buying rules, listing and vehicle data, and an optional AI review.
+[![Build, test and verify](https://github.com/Extender92/CarExpenseCalculator/actions/workflows/ci.yml/badge.svg)](https://github.com/Extender92/CarExpenseCalculator/actions/workflows/ci.yml)
+
+Car Expense Calculator is a local-first web application for comparing used cars before purchase. It will combine deterministic ownership-cost calculations, configurable buying rules, listing and vehicle data, and an optional AI review.
 
 The repository is a monorepo modernized from a console prototype. The old implementation is recoverable through the `legacy-console` Git tag.
 
@@ -93,6 +95,13 @@ CI fails if regeneration changes `src/frontend/src/api/schema.d.ts`.
 
 ## Verification
 
+GitHub Actions runs the `Build, test and verify` workflow. Pull requests to `main` must pass these checks:
+
+- `Backend - build and test`
+- `Frontend - lint, test and build`
+- `OpenAPI - verify contract`
+- `Docker - build and end-to-end test`
+
 ```bash
 dotnet test CarExpenseCalculator.sln --configuration Release
 cd src/frontend
@@ -133,4 +142,4 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 
 The application is designed for a trusted local network and has no authentication or HTTPS in this milestone. Do not port-forward or otherwise expose it to the internet. API keys, database passwords, `.env` files, and other secrets must never be committed.
 
-This is a private project. No open-source license has been selected.
+The source repository is public. An open-source license has not yet been selected and will be handled separately.
