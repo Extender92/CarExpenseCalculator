@@ -30,7 +30,7 @@ public sealed class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiF
     }
 
     [Fact]
-    public async Task System_status_exposes_foundation_features_as_disabled()
+    public async Task System_status_exposes_manual_calculator_as_enabled()
     {
         var response = await _client.GetAsync("/api/system/status");
 
@@ -42,7 +42,7 @@ public sealed class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiF
         Assert.Equal("available", payload.Database);
         Assert.False(payload.Features.RuleBasedSearch);
         Assert.False(payload.Features.UrlAnalysis);
-        Assert.False(payload.Features.ManualCalculator);
+        Assert.True(payload.Features.ManualCalculator);
         Assert.False(payload.Features.AiReview);
     }
 

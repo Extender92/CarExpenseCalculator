@@ -28,7 +28,7 @@ public sealed class SystemController(HealthCheckService healthCheckService) : Co
             new FeatureStatusResponse(
                 RuleBasedSearch: false,
                 UrlAnalysis: false,
-                ManualCalculator: false,
+                ManualCalculator: true,
                 AiReview: false)));
     }
 }

@@ -16,7 +16,7 @@ const healthyStatus = {
   features: {
     ruleBasedSearch: false,
     urlAnalysis: false,
-    manualCalculator: false,
+    manualCalculator: true,
     aiReview: false,
   },
 };
@@ -43,6 +43,7 @@ describe("Bilverktyget", () => {
     expect(screen.getAllByText("URL-analys").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Manuell kalkyl").length).toBeGreaterThan(0);
     expect(await screen.findByText("Systemet är friskt")).toBeInTheDocument();
+    expect(screen.getAllByText("Tillgänglig").length).toBeGreaterThan(0);
   });
 
   it("navigates to the URL analysis placeholder", async () => {
