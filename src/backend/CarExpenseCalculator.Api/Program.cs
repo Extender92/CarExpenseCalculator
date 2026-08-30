@@ -3,6 +3,7 @@ using CarExpenseCalculator.Api.Health;
 using CarExpenseCalculator.Core.CostScenarios;
 using CarExpenseCalculator.Infrastructure;
 using CarExpenseCalculator.Infrastructure.Health;
+using CarExpenseCalculator.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -24,6 +25,17 @@ builder.Services
     .AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"]);
 
 var app = builder.Build();
+
+if (args.Length > 0 && string.Equals(args[0], "migrate", StringComparison.OrdinalIgnoreCase))
+{
+    if (args.Length > 2)
+    {
+        throw new ArgumentException("Usage: migrate [target-migration]");
+    }
+
+    await DatabaseMigrationRunner.RunAsync(app.Services, args.ElementAtOrDefault(1));
+    return;
+}
 
 app.UseExceptionHandler();
 

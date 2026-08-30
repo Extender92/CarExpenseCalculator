@@ -62,4 +62,31 @@ Use the configured `WEB_PORT` instead of `8088` when it has been changed.
 
 This release assumes a trusted LAN. It has no HTTPS or authentication and must not be port-forwarded or otherwise exposed to the public internet. Add TLS and authentication before any remote-access deployment.
 
-Database migrations will be run as a deliberate deployment step after real persistence entities exist. The runtime API identity should not receive unnecessary schema-management permissions.
+## Database migrations
+
+Migrations are an explicit one-shot backend mode. API startup never applies or rolls back schema. Build the current image before running a migration:
+
+```bash
+docker compose -f compose.unraid.yaml build api
+docker compose -f compose.unraid.yaml run --rm api migrate
+docker compose -f compose.unraid.yaml up --detach api web
+```
+
+The command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. A failure returns a nonzero exit code; inspect its output before starting the API.
+
+Local development uses the same image and command:
+
+```bash
+docker compose build api
+docker compose up --detach postgres
+docker compose run --rm api migrate
+docker compose up --detach api web
+```
+
+An explicit migration name may be supplied as the final argument. Target `0` rolls back every application migration:
+
+```bash
+docker compose -f compose.unraid.yaml run --rm api migrate 0
+```
+
+**Warning:** rollback can permanently drop tables and saved data. Back up PostgreSQL first, confirm the exact target migration, and use `0` only when intentionally removing the complete application schema. Separate runtime and migration database roles are future hardening; the current dedicated application role owns only `car_expense_calculator` and must never receive access to other application databases.

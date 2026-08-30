@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Api.In
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Core.UnitTests", "tests\backend\CarExpenseCalculator.Core.UnitTests\CarExpenseCalculator.Core.UnitTests.csproj", "{64F1A8E6-7D22-4F9A-9B8F-A2C672A9DD43}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Infrastructure.IntegrationTests", "tests\backend\CarExpenseCalculator.Infrastructure.IntegrationTests\CarExpenseCalculator.Infrastructure.IntegrationTests.csproj", "{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{64F1A8E6-7D22-4F9A-9B8F-A2C672A9DD43}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64F1A8E6-7D22-4F9A-9B8F-A2C672A9DD43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{64F1A8E6-7D22-4F9A-9B8F-A2C672A9DD43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
