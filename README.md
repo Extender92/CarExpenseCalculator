@@ -131,6 +131,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 ## Documentation
 
 - [Product requirements](docs/product-requirements.md)
+- [Manual calculator specification](docs/manual-calculator.md)
 - [Rules](docs/rules.md)
 - [Architecture](docs/architecture.md)
 - [Data sources](docs/data-sources.md)
