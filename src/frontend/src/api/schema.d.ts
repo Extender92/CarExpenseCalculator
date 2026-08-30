@@ -55,6 +55,322 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/saved-cost-scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedCostScenarioSummaryResponse"][];
+                        "application/json": components["schemas"]["SavedCostScenarioSummaryResponse"][];
+                        "text/json": components["schemas"]["SavedCostScenarioSummaryResponse"][];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateSavedCostScenarioRequest"];
+                    "application/*+json": components["schemas"]["CreateSavedCostScenarioRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedCostScenarioResponse"];
+                        "application/json": components["schemas"]["SavedCostScenarioResponse"];
+                        "text/json": components["schemas"]["SavedCostScenarioResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/saved-cost-scenarios/{vehicleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedCostScenarioResponse"];
+                        "application/json": components["schemas"]["SavedCostScenarioResponse"];
+                        "text/json": components["schemas"]["SavedCostScenarioResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReplaceSavedCostScenarioRequest"];
+                    "application/*+json": components["schemas"]["ReplaceSavedCostScenarioRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedCostScenarioResponse"];
+                        "application/json": components["schemas"]["SavedCostScenarioResponse"];
+                        "text/json": components["schemas"]["SavedCostScenarioResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query: {
+                    expectedRevision: number;
+                };
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/saved-cost-scenarios/by-registration/{registrationNumber}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    registrationNumber: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedCostScenarioResponse"];
+                        "application/json": components["schemas"]["SavedCostScenarioResponse"];
+                        "text/json": components["schemas"]["SavedCostScenarioResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedCostScenarioProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/status": {
         parameters: {
             query?: never;
@@ -128,6 +444,10 @@ export interface components {
             /** Format: double */
             averagePerYearSek: number;
             isComplete: boolean;
+        };
+        CreateSavedCostScenarioRequest: {
+            registrationNumber: string;
+            scenario: components["schemas"]["ManualCalculationRequest"];
         };
         EnergyBreakdownResult: {
             sources: components["schemas"]["EnergySourceResult"][];
@@ -281,6 +601,68 @@ export interface components {
             cadence: components["schemas"]["RecurringCostCadence"];
             /** Format: double */
             costDuringPeriodSek: number;
+        };
+        ReplaceSavedCostScenarioRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            scenario: components["schemas"]["ManualCalculationRequest"];
+        };
+        SavedCostScenarioProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+            /** Format: uuid */
+            existingVehicleId?: null | string;
+            /** Format: int64 */
+            expectedRevision?: null | number;
+            /** Format: int64 */
+            actualRevision?: null | number;
+            /** Format: int32 */
+            calculationVersion?: null | number;
+            /** Format: int32 */
+            resultSchemaVersion?: null | number;
+        };
+        SavedCostScenarioResponse: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            /** Format: int64 */
+            revision: number;
+            /** Format: int32 */
+            calculationVersion: number;
+            /** Format: int32 */
+            resultSchemaVersion: number;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            updatedAtUtc: string;
+            /** Format: date-time */
+            calculatedAtUtc: string;
+            scenario: components["schemas"]["ManualCalculationRequest"];
+            result: components["schemas"]["ManualCalculationResult"];
+        };
+        SavedCostScenarioSummaryResponse: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            vehicleLabel: null | string;
+            /** Format: int64 */
+            revision: number;
+            /** Format: double */
+            purchasePriceSek: number;
+            /** Format: int32 */
+            calculationPeriodMonths: number;
+            /** Format: double */
+            cashFlowKnownTotalSek: number;
+            /** Format: double */
+            netOwnershipCostKnownTotalSek: null | number;
+            completeness: components["schemas"]["CalculationCompleteness"];
+            /** Format: date-time */
+            updatedAtUtc: string;
         };
         SystemStatusResponse: {
             status: string;

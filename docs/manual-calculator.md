@@ -4,8 +4,9 @@
 
 This document is the decision-complete specification for the deterministic
 manual vehicle cost calculator. The Core calculation, unsaved HTTP preview
-contract, Swedish unsaved user interface, and PostgreSQL persistence layer are
-implemented. Saved-scenario HTTP and UI management remain later work.
+contract, Swedish unsaved user interface, PostgreSQL persistence layer, and
+saved-scenario HTTP API are implemented. Saved-scenario UI management remains
+later work.
 
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
@@ -56,8 +57,8 @@ nullability, units, formulas, and validation.
 ## Saved-scenario persistence
 
 Saving remains optional and does not change the unsaved preview contract. The
-persistence layer stores one current scenario per vehicle, while HTTP endpoints
-for managing it are introduced separately.
+persistence layer and saved-scenario HTTP API store one current scenario per
+vehicle.
 
 - A saved vehicle uses UUIDv7 as its stable technical identifier and requires a
   normalized ordinary Swedish registration number as its unique current lookup.
@@ -95,6 +96,33 @@ JSON field names and enum values use camel case. Decimal values are JSON
 numbers, not localized strings. The API never accepts `kr`, spaces as grouping
 separators, or comma decimal separators; those are frontend presentation
 concerns.
+
+### Saved-scenario HTTP API
+
+The saved API exposes the current aggregate through these operations:
+
+| Method and route | Result |
+| --- | --- |
+| `POST /api/saved-cost-scenarios` | Creates a vehicle and scenario and returns `201 Created` with its full representation and `Location`. |
+| `GET /api/saved-cost-scenarios` | Returns unpaginated summaries ordered by most recently updated and then UUID. |
+| `GET /api/saved-cost-scenarios/{vehicleId}` | Returns the complete stored scenario and versioned result snapshot. |
+| `GET /api/saved-cost-scenarios/by-registration/{registrationNumber}` | Normalizes and looks up an ordinary Swedish registration number. |
+| `PUT /api/saved-cost-scenarios/{vehicleId}` | Fully replaces the scenario using an expected revision and returns the incremented aggregate. |
+| `DELETE /api/saved-cost-scenarios/{vehicleId}?expectedRevision={revision}` | Permanently removes the complete aggregate and returns `204 No Content`. |
+
+Create accepts a required `registrationNumber` and a required `scenario` using
+the `ManualCalculationRequest` shape below. Replacement accepts a positive
+`expectedRevision` and the complete replacement `scenario`; registration
+numbers cannot be changed. Responses contain the UUID, normalized registration
+number, revision, calculation and result-schema versions, UTC timestamps,
+normalized inputs, and the stored deterministic result.
+
+Invalid registration numbers, revisions, or scenario values return `400` as
+`ValidationProblemDetails`. Missing resources return `404`; duplicate
+registrations, stale revisions, and unsupported stored versions return `409`.
+Conflict responses include a stable `code` and relevant identity, revision, or
+version metadata. Create and replacement always calculate through Core, so a
+client cannot provide or override a trusted result snapshot.
 
 ### `ManualCalculationRequest`
 
