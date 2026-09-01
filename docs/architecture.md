@@ -12,8 +12,9 @@ Browser
                  -> Core domain and rules
                  -> Infrastructure adapters
                       -> PostgreSQL
-                      -> future listing/vehicle providers
-                      -> future OpenAI Responses API
+                      -> future OpenAI listing extraction
+                      -> future registry/listing providers
+                      -> future advisory OpenAI review
 ```
 
 The production browser sees one HTTP origin. Nginx serves the React build and proxies `/api` to the internal API service, avoiding a public API port and cross-origin configuration.
@@ -37,12 +38,29 @@ The production browser sees one HTTP origin. Nginx serves the React build and pr
 The implementation is introduced incrementally as each feature milestone begins:
 
 - `Vehicle`: stable UUIDv7 technical identity with an immutable, normalized ordinary Swedish registration number. The persistence foundation currently stores its optional display label; specifications are added with later vehicle-data milestones.
-- `Listing`: source-specific price, seller, URL, description, and advertised facts.
+- `Listing`: a current bounded structured listing draft with field-level provenance, source URLs, advertised facts, history signals, and explicit missing values. Complete descriptions and seller contact data are excluded.
 - `RegistrySnapshot`: time-stamped verified vehicle and ownership facts.
 - `SearchProfile`: user-defined hard requirements and preferences.
 - `RuleEvaluation`: explainable results tied to a rule version and data sources.
 - `CostScenario`: implemented dependency-free financing, use, energy, tax, maintenance, validation, and calculation assumptions. A vehicle may currently own one persisted current scenario.
 - `AiReview`: structured advisory observations that never override deterministic results.
+
+## Planned URL-analysis flow
+
+The browser will submit one URL per `POST /api/listing-analyses` request and
+limit itself to two concurrent requests. The API will normalize the URL through
+Core and call a typed Infrastructure adapter. That adapter will use hosted
+OpenAI Web Search; neither the browser nor backend will fetch the listing page
+directly.
+
+Provider output is untrusted ingestion input. Core owns normalization,
+validation, provenance, missing-field codes, and analysis status. Extracted
+facts remain unverified until the user changes them, at which point the complete
+edited value becomes manually entered and user-confirmed. Advisory AI review is
+a separate milestone and never shares authority with extraction.
+
+The complete future contract is defined in the
+[URL analysis specification](url-analysis.md).
 
 ## Persistence
 
@@ -58,6 +76,16 @@ There is no append-only history in the current model. Replacement validates and 
 
 Migrations are applied only through the explicit backend `migrate [target]` command. Normal API startup never creates, migrates, or rolls back schema.
 
+URL analysis will extend this aggregate without adding history. A vehicle may
+be listing-only, scenario-only, or contain both current records. One current
+`vehicle_listings` row will own typed listing values plus bounded JSONB, with
+ordered source and equipment children. The aggregate revision changes after
+any write; a separate listing version changes only when listing content changes.
+Saved scenarios sourced from a listing will record that listing version so a
+later listing replacement can mark, but never silently recalculate, the stored
+calculation. Deleting a saved listing permanently deletes the complete vehicle
+aggregate, including any saved scenario.
+
 ## Public foundation API
 
 - `GET /api/health/live` checks process liveness only.
@@ -70,3 +98,9 @@ Saved-scenario writes use explicit optimistic-concurrency revisions. Duplicate
 registration numbers and stale writes return typed conflicts instead of
 silently overwriting current data. API DTOs remain separate from Core and
 persistence types, and stored result snapshots are never accepted from clients.
+
+The planned URL-analysis API adds one unsaved preview endpoint plus a current
+saved-listing lifecycle. Preview analysis never accesses PostgreSQL. System
+status will report whether extraction is configured without making a paid
+provider request; overall health remains database-based and URL analysis stays
+disabled until its complete Swedish interface exists.

@@ -4,7 +4,7 @@
 
 Help a household find and compare suitable used cars by combining explicit requirements, verified vehicle facts, ownership-cost calculations, and explainable review results.
 
-The application must remain useful without external AI. Deterministic rules and calculations are the source of truth; AI is an additional reviewer.
+The application must remain useful without external AI. Deterministic normalization, rules, and calculations are the source of truth. Hosted AI may help extract a user-selected listing or provide a later advisory review, but it never makes a fact authoritative.
 
 ## Audience and environment
 
@@ -21,7 +21,9 @@ The user creates a search profile containing hard requirements and softer prefer
 
 ### URL analysis
 
-The user pastes one or more listing URLs. The application imports whatever data an authorized source exposes, clearly marks missing or unverified values, applies the same rules as automatic search, and stores the result for comparison.
+The user pastes one through ten public listing URLs. The application analyzes each URL independently through a source-aware hosted integration, clearly marks missing and unverified values, permits manual correction, and can store one current reviewed listing per vehicle. Provider failure leaves manual entry available.
+
+Rule evaluation and side-by-side comparison are applied to these saved candidates in milestone 3; they are not part of the URL-ingestion milestone itself.
 
 ### Manual calculation
 
@@ -33,10 +35,10 @@ The user enters vehicle, operating, financing, and usage values directly. Saving
 - Distinguish hard-rule failures, warnings, positive signals, and missing data.
 - Never invent registration numbers, ownership counts, prices, mileage, or vehicle history.
 - Permit side-by-side comparison of saved candidates in a later milestone.
-- Continue showing deterministic results if AI or another external service is unavailable.
+- Keep manual calculation and manually entered listing data available if AI or another external service is unavailable.
 
 ## Current delivery status
 
 The repository foundation and manual-calculator milestone are implemented. The application provides the three-mode navigation, health and status endpoints, deterministic manual calculations, optional PostgreSQL-backed saved scenarios, Docker deployment, tests, CI, and documentation.
 
-Rule-based search, URL analysis, listing ingestion, automatic discovery, comparison, and OpenAI review remain future milestones.
+The URL-analysis contracts are specified but not implemented. Rule-based search, URL-analysis implementation, listing persistence, automatic discovery, comparison, hosted OpenAI extraction, and advisory OpenAI review remain future work.
