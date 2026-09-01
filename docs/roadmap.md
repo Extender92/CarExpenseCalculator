@@ -14,9 +14,13 @@
 
 ## 2. URL analysis
 
-- Add one-or-many URL submission and a provider abstraction.
-- Import only through a permitted source and ask for manual completion when values are unavailable.
-- Apply deterministic rules and store source-aware candidate results.
+- Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
+- Add dependency-free listing concepts and deterministic validation in Core.
+- Add bounded hosted OpenAI Web Search extraction without direct scraping or marketplace-specific parsing.
+- Expose independent unsaved previews and current saved-listing APIs.
+- Persist one current listing per vehicle with optimistic concurrency and no analysis history.
+- Build Swedish analysis, manual-review, saved-listing, and calculator-prefill workflows.
+- Verify the complete flow through fake-provider, PostgreSQL, Compose, and browser tests without paid calls.
 
 ## 3. Rules and comparison
 
@@ -29,7 +33,7 @@
 
 ## 5. AI review
 
-- Add the GPT-5.6 Luna Responses API integration with Structured Outputs and deterministic fallback behavior.
+- Add advisory GPT-5.6 Luna review with Structured Outputs and deterministic fallback behavior, separate from milestone 2 extraction.
 - Review manual/URL candidates and automatic-search finalists.
 - Add separately requested, cited web research.
 

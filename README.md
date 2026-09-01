@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. Listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete specification, but listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Optional OpenAI Responses API integration with `gpt-5.6-luna` in a later phase
+- Planned optional OpenAI Responses API integration with `gpt-5.6-luna` for URL extraction and later advisory review
 
 ## Quick start with Docker
 
@@ -156,6 +156,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 ## Documentation
 
 - [Product requirements](docs/product-requirements.md)
+- [URL analysis specification](docs/url-analysis.md)
 - [Manual calculator specification](docs/manual-calculator.md)
 - [Manual calculator verification](docs/manual-calculator-verification.md)
 - [Rules](docs/rules.md)
