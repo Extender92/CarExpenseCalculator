@@ -99,7 +99,8 @@ public sealed class ListingUrl : IEquatable<ListingUrl>
                 value);
         }
 
-        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+        if (trimmed.IndexOf(':', StringComparison.Ordinal) <= 0
+            || !Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
         {
             throw Invalid(ListingUrlValidationErrorCode.Malformed, "URL must be absolute and well formed.", value);
         }
