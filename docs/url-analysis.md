@@ -49,9 +49,14 @@ Normalization performs these operations in order:
 7. Preserve the parsed escaped path and query contents, order, and casing. Do
    not decode path segments or reorder query parameters.
 
-The normalized URL is the uniqueness key for a submitted batch. Because scheme
-and host are already normalized, comparison is ordinal: path and query casing
-remain significant.
+The normalized URL remains the value shown, sent to the provider, and retained
+with a saved listing. Batch uniqueness uses a separate page identity. Page
+identity ignores query and fragment, treats one trailing slash as equivalent,
+and treats default-port HTTP and HTTPS forms as the same page. Non-default ports
+remain distinct and require the same scheme and port. Host and remaining path
+comparison is ordinal after normalization. For example, `/item/123` and
+`/item/123?ci=2` are duplicate batch entries even though their complete
+normalized URLs differ.
 
 ### Rejected input
 
@@ -65,7 +70,7 @@ Reject the URL before any provider request when it:
   of a `.local` host;
 - uses an IP literal that is not globally routable unicast or falls within the
   conservative special-use deny lists below; or
-- duplicates another normalized URL in the same browser submission.
+- duplicates another page identity in the same browser submission.
 
 For IPv4 literals, the rejected non-global ranges include at least:
 
@@ -110,10 +115,12 @@ resolve publicly when OpenAI later searches it.
 
 ### Returned-source matching
 
-Every returned source URL is normalized using the same rules. A source matches
-the submitted listing when normalized scheme, host, effective port, and path
-are equal. Query and fragment do not participate in source matching. Path
-comparison is exact, so a trailing slash remains significant.
+Every returned source URL is normalized using the same rules. Source matching
+uses page identity, ignores query and fragment, and treats one trailing slash as
+equivalent. A default-port HTTP submission may match its HTTPS upgrade, but an
+HTTPS submission never matches an HTTP downgrade. When either URL has a
+non-default port, scheme and port must both match exactly. Host and remaining
+path comparison stays ordinal.
 
 The response retains the complete ordered source-URL list reported by Web
 Search and marks every entry with `matchesSubmittedUrl`. Source titles are not
@@ -173,6 +180,12 @@ listing URL that the user was reviewing. Untouched values keep their original
 listing provenance. Collection provenance applies to the complete collection,
 which permits a known-empty collection to remain different from an unknown
 `null` collection.
+
+Those are the only active provenance combinations in milestone 2. The reserved
+registry values exist in the closed enums but fail validation until an approved
+registry integration defines how they are created. Every accepted provenance
+source is normalized back to the submitted listing URL; other returned URLs
+remain only in the ordered response source list.
 
 The optional vehicle label is user-owned. The extraction adapter returns it as
 `null`; a user-supplied label receives manual provenance and never contributes a
@@ -276,6 +289,14 @@ historical vehicle has a modern 17-character VIN.
 After trimming and NFC normalization, duplicate entries in any closed or string
 collection are invalid using ordinal case-insensitive comparison. Input order is
 otherwise preserved. Decimal values are never converted through `double`.
+
+For AI extraction, an invalid scalar or structured field is discarded without
+discarding other valid fields. Invalid collection entries and later normalized
+duplicates are discarded individually while the first valid entry and order are
+retained. An originally empty collection remains known-empty; a non-empty
+collection that loses every entry becomes unknown. Reviewed manual input instead
+accumulates every error and rejects the complete draft without returning a
+partial result.
 
 ## Missing fields
 
@@ -604,8 +625,9 @@ Later implementation issues must cover at least:
 - every rejected hostname and IPv4/IPv6 category, including mapped IPv4;
 - unique and duplicate URL batches, one through ten items, and concurrency of
   no more than two;
-- exact source match, query-insensitive match, trailing-slash mismatch, and no
-  requested-page source;
+- page-identity duplicates, query-insensitive matching, one-trailing-slash
+  equivalence, directional HTTP-to-HTTPS matching, strict non-default ports,
+  and no requested-page source;
 - complete, partial, unavailable, structurally invalid, and individually
   discarded values;
 - null, explicit zero/false, known-empty collections, stable missing-code order,
