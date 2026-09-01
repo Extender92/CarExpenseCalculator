@@ -170,4 +170,10 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 
 The application is designed for a trusted local network and has no authentication or HTTPS in this milestone. Do not port-forward or otherwise expose it to the internet. API keys, database passwords, `.env` files, and other secrets must never be committed.
 
-The source repository is public. An open-source license has not yet been selected and will be handled separately.
+## License
+
+Copyright © 2026 Extender92. All rights reserved.
+
+No license is granted for this source code. The repository is public so the work can be viewed and reviewed, but public availability does not grant permission to use, copy, modify, or distribute the code except as permitted by applicable law or GitHub's Terms of Service.
+
+This licensing decision was recorded on 2026-09-01.
