@@ -26,9 +26,11 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=codex-cli /usr/local/bin/node /usr/local/bin/node
-COPY --from=codex-cli /usr/local/bin/codex /usr/local/bin/codex
-COPY --from=codex-cli /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=codex-cli /usr/local/lib/node_modules/@openai/codex/bin /usr/local/lib/node_modules/@openai/codex/bin
+COPY --from=codex-cli /usr/local/lib/node_modules/@openai/codex/package.json /usr/local/lib/node_modules/@openai/codex/package.json
+COPY --from=codex-cli /usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor /usr/local/lib/node_modules/@openai/codex/vendor
 RUN node --version | grep --fixed-strings "v22.22.2" \
+    && ln --symbolic /usr/local/lib/node_modules/@openai/codex/bin/codex.js /usr/local/bin/codex \
     && codex --version | grep --fixed-strings "codex-cli 0.153.0" \
     && mkdir --parents /var/lib/codex /tmp/car-expense-codex-work \
     && chown --recursive $APP_UID:$APP_UID /var/lib/codex /tmp/car-expense-codex-work
