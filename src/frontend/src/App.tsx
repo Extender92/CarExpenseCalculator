@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ManualCalculatorPage } from "@/pages/ManualCalculatorPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
+import { UrlAnalysisPage } from "@/pages/UrlAnalysisPage";
 
 export function App() {
   return (
@@ -21,18 +22,7 @@ export function App() {
             />
           }
         />
-        <Route
-          path="analyze-urls"
-          element={
-            <PlaceholderPage
-              type="urls"
-              eyebrow="Planerad funktion"
-              title="Analysera URL:er"
-              description="Här kommer du att kunna klistra in en eller flera annonslänkar, komplettera saknade uppgifter och granska bilarna mot samma regler."
-              roadmap="URL-analysen är fas två och återanvänder reglerna och kostnadsmodellen från den manuella kalkylen."
-            />
-          }
-        />
+        <Route path="analyze-urls" element={<UrlAnalysisPage />} />
         <Route path="manual" element={<ManualCalculatorPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

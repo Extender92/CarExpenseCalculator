@@ -10,6 +10,20 @@ export type ReplaceSavedCostScenarioRequest = components["schemas"]["ReplaceSave
 export type SavedCostScenarioProblemDetails = components["schemas"]["SavedCostScenarioProblemDetails"];
 export type SavedCostScenarioResponse = components["schemas"]["SavedCostScenarioResponse"];
 export type SavedCostScenarioSummary = components["schemas"]["SavedCostScenarioSummaryResponse"];
+export type ListingAnalysisRequest = components["schemas"]["ListingAnalysisRequest"];
+export type ListingAnalysisResponse = components["schemas"]["ListingAnalysisResponse"];
+export type ListingAnalysisProblemDetails = components["schemas"]["ListingAnalysisProblemDetails"];
+export type ListingDraftResponse = components["schemas"]["ListingDraftResponse"];
+export type ListingAnalysisSource = components["schemas"]["ListingAnalysisSourceResponse"];
+export type FieldProvenance = components["schemas"]["FieldProvenanceResponse"];
+export type ListingFieldCode = components["schemas"]["ListingFieldCode"];
+export type ListingAnalysisStatus = components["schemas"]["ListingAnalysisStatus"];
+export type SellerType = components["schemas"]["SellerType"];
+export type FuelType = components["schemas"]["FuelType"];
+export type Transmission = components["schemas"]["Transmission"];
+export type Drivetrain = components["schemas"]["Drivetrain"];
+export type BodyType = components["schemas"]["BodyType"];
+export type EnergyUnit = components["schemas"]["EnergyUnit"];
 
 export class ManualCalculationApiError extends Error {
   constructor(
@@ -30,6 +44,18 @@ export class SavedCostScenarioApiError extends Error {
   ) {
     super(message);
     this.name = "SavedCostScenarioApiError";
+  }
+}
+
+export class ListingAnalysisApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly code?: string,
+    public readonly validationProblem?: ValidationProblemDetails,
+  ) {
+    super(message);
+    this.name = "ListingAnalysisApiError";
   }
 }
 
@@ -67,6 +93,59 @@ export async function calculateManualScenario(
   }
 
   throw new ManualCalculationApiError("Kalkylen kunde inte beräknas just nu.");
+}
+
+export async function analyzeListing(
+  url: string,
+  signal?: AbortSignal,
+): Promise<ListingAnalysisResponse> {
+  const postListingAnalysis = () => api.POST("/api/listing-analyses", {
+    body: { url },
+    signal,
+  });
+  let result: Awaited<ReturnType<typeof postListingAnalysis>>;
+  try {
+    result = await postListingAnalysis();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (signal?.aborted) throw new DOMException("The operation was aborted.", "AbortError");
+    throw new ListingAnalysisApiError(
+      "URL-analysen kunde inte genomföras. Kontrollera anslutningen och försök igen.",
+      undefined,
+      "listingAnalysisNetworkError",
+    );
+  }
+
+  const { data, error, response } = result;
+
+  if (data !== undefined) {
+    return data;
+  }
+
+  if (response.status === 400) {
+    throw new ListingAnalysisApiError(
+      "URL:en kunde inte godkännas.",
+      response.status,
+      undefined,
+      error as ValidationProblemDetails,
+    );
+  }
+
+  const problem = error as ListingAnalysisProblemDetails | undefined;
+  const messages: Record<string, string> = {
+    listingAnalysisRateLimited: "URL-analysen är tillfälligt begränsad. Försök igen senare eller fyll i uppgifterna manuellt.",
+    listingAnalysisNotConfigured: "Codex-extraktionen är inte konfigurerad. Du kan fortfarande fylla i uppgifterna manuellt.",
+    listingAnalysisTimedOut: "URL-analysen tog för lång tid. Försök igen eller fyll i uppgifterna manuellt.",
+    listingAnalysisProviderUnavailable: "URL-analysen är inte tillgänglig just nu. Du kan fortfarande fylla i uppgifterna manuellt.",
+    listingAnalysisInvalidProviderResponse: "URL-analysen gav inget användbart svar. Du kan fortfarande fylla i uppgifterna manuellt.",
+  };
+
+  throw new ListingAnalysisApiError(
+    (problem?.code && messages[problem.code])
+      || "URL-analysen kunde inte genomföras. Kontrollera anslutningen och försök igen.",
+    response.status,
+    problem?.code,
+  );
 }
 
 export async function listSavedCostScenarios(): Promise<SavedCostScenarioSummary[]> {

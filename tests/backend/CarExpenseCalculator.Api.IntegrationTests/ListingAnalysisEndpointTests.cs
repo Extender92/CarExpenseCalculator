@@ -272,7 +272,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
             .GetProperty("codexListingExtractionConfigured").GetBoolean());
         var features = payload.RootElement.GetProperty("features");
         Assert.False(features.GetProperty("ruleBasedSearch").GetBoolean());
-        Assert.False(features.GetProperty("urlAnalysis").GetBoolean());
+        Assert.True(features.GetProperty("urlAnalysis").GetBoolean());
         Assert.True(features.GetProperty("manualCalculator").GetBoolean());
         Assert.False(features.GetProperty("aiReview").GetBoolean());
         Assert.Equal(1, _extractionService.StatusCallCount);

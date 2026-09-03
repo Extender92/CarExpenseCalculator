@@ -40,7 +40,7 @@ export function DashboardPage() {
     <div className="space-y-10">
       <section className="flex flex-col justify-between gap-6 border-b border-slate-800 pb-9 md:flex-row md:items-end">
         <div className="max-w-3xl">
-          <Badge variant="success">Manuell kalkyl tillgänglig</Badge>
+          <Badge variant="success">Manuell kalkyl och URL-analys tillgängliga</Badge>
           <h1 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Ett bättre beslutsunderlag för nästa bil.
           </h1>

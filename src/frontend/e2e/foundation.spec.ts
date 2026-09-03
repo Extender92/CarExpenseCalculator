@@ -18,7 +18,7 @@ test("serves the dashboard and API through one origin", async ({ page }) => {
     database: "available",
     features: {
       ruleBasedSearch: false,
-      urlAnalysis: false,
+      urlAnalysis: true,
       manualCalculator: true,
       aiReview: false,
     },

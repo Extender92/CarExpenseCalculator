@@ -42,7 +42,7 @@ public sealed class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiF
         Assert.Equal("healthy", payload.Status);
         Assert.Equal("available", payload.Database);
         Assert.False(payload.Features.RuleBasedSearch);
-        Assert.False(payload.Features.UrlAnalysis);
+        Assert.True(payload.Features.UrlAnalysis);
         Assert.True(payload.Features.ManualCalculator);
         Assert.False(payload.Features.AiReview);
         Assert.False(payload.Integrations.CodexListingExtractionConfigured);

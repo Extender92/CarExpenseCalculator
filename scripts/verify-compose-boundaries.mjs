@@ -14,6 +14,7 @@ const verificationEnvironment = {
 
 const local = resolveCompose("compose.yaml");
 const unraid = resolveCompose("compose.unraid.yaml");
+const e2e = resolveCompose("compose.yaml", "compose.e2e.yaml");
 
 verifyPublishedPorts(local, "local Compose");
 verifySharedNetwork(local, ["api", "codex-extractor", "postgres", "web"], "app-network", "local Compose");
@@ -35,12 +36,23 @@ assert(unraidConnection.Username === "car_expense_app", "Unraid API must use the
 assert(local.services.api.environment.CodexExtraction__BaseUrl === "http://codex-extractor:8080", "Local API must use the internal Codex extractor address.");
 assert(unraid.services.api.environment.CodexExtraction__BaseUrl === "http://codex-extractor:8080", "Unraid API must use the internal Codex extractor address.");
 
+const fakeExtractor = e2e.services["fake-codex-extractor"];
+assert(fakeExtractor, "E2E Compose must define the fake Codex extractor.");
+assert(!fakeExtractor.ports || fakeExtractor.ports.length === 0, "The E2E fake extractor must publish no ports.");
+assert(Object.keys(fakeExtractor.networks ?? {}).length === 1 && "extractor-test-network" in fakeExtractor.networks, "The E2E fake extractor must use only its internal test network.");
+assert(e2e.networks["extractor-test-network"]?.internal === true, "The E2E fake extractor network must block external access.");
+assert("app-network" in e2e.services.api.networks && "extractor-test-network" in e2e.services.api.networks, "The E2E API must bridge the app and fake-extractor networks.");
+assert(e2e.services.api.environment.CodexExtraction__BaseUrl === "http://fake-codex-extractor:8080", "The E2E API must target only the fake extractor.");
+const fakeEnvironment = Object.keys(fakeExtractor.environment ?? {});
+assert(!fakeEnvironment.some((name) => name.startsWith("POSTGRES_") || name.startsWith("ConnectionStrings__") || name.includes("CODEX") || name.includes("OPENAI")), "The E2E fake extractor must receive no database, Codex, or OpenAI configuration.");
+
 console.log("Compose port, network, PostgreSQL, and Codex boundaries are valid.");
 
-function resolveCompose(file) {
+function resolveCompose(...files) {
+  const fileArguments = files.flatMap((file) => ["-f", file]);
   const output = execFileSync(
     process.platform === "win32" ? "docker.exe" : "docker",
-    ["compose", "-f", file, "config", "--format", "json"],
+    ["compose", ...fileArguments, "config", "--format", "json"],
     {
       cwd: repositoryRoot,
       encoding: "utf8",
