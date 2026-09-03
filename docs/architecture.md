@@ -50,10 +50,11 @@ The implementation is introduced incrementally as each feature milestone begins:
 
 ## URL-analysis flow
 
-The browser will submit one URL per future `POST /api/listing-analyses` request and
-limit itself to two concurrent requests. The API will normalize the URL through
-Core and call an application-owned Infrastructure adapter. That adapter will
-use a typed internal HTTP client to a private ASP.NET Core `codex-extractor`
+The implemented `POST /api/listing-analyses` endpoint accepts one URL per
+request. A future browser interface will submit separate requests and limit
+itself to two concurrent requests. The API normalizes the URL through Core and
+calls an application-owned Infrastructure adapter. That adapter uses a typed
+internal HTTP client to a private ASP.NET Core `codex-extractor`
 sidecar. The sidecar runs one ChatGPT-authenticated `codex exec` turn with
 host-restricted hosted web search; neither the browser nor application services
 fetch the listing page directly.
@@ -108,8 +109,8 @@ registration numbers and stale writes return typed conflicts instead of
 silently overwriting current data. API DTOs remain separate from Core and
 persistence types, and stored result snapshots are never accepted from clients.
 
-The planned URL-analysis API adds one unsaved preview endpoint plus a current
-saved-listing lifecycle. Preview analysis never accesses PostgreSQL. System
-status will report whether the Codex extractor is configured without starting a
-search turn; overall health remains database-based and URL analysis stays
-disabled until its complete Swedish interface exists.
+The URL-analysis API now exposes its unsaved preview endpoint; the current
+saved-listing lifecycle remains planned. Preview analysis never accesses
+PostgreSQL. System status reports whether the Codex extractor is configured
+without starting a search turn. Overall health remains database-based and URL
+analysis stays disabled until its complete Swedish interface exists.

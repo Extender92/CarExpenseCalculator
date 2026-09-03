@@ -3,9 +3,9 @@
 ## Status and purpose
 
 This document defines the target behavior for milestone 2. The dependency-free
-Core listing domain, private Codex extraction sidecar, and provider-neutral
-Infrastructure adapter are implemented. The public HTTP endpoint, persistence,
-and Swedish frontend are not implemented yet.
+Core listing domain, private Codex extraction sidecar, provider-neutral
+Infrastructure adapter, and unsaved public HTTP endpoint are implemented.
+Persistence and the Swedish frontend are not implemented yet.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -409,19 +409,18 @@ submittedUrl: string
 normalizedUrl: string
 status: complete | partial | unavailable
 analyzedAtUtc: UTC timestamp
-requestedModel: string?
-promptVersion: integer?
-schemaVersion: integer?
+requestedModel: string
+promptVersion: integer
+schemaVersion: integer
 sources: ordered ListingAnalysisSource[]
 listing: ListingDraft
 missingFields: ordered ListingFieldCode[]
 ```
 
 `ListingAnalysisSource` contains only a normalized `url` and
-`matchesSubmittedUrl`. For a Codex-backed successful operation,
-`requestedModel`, `promptVersion`, and `schemaVersion` are required even when the
-analysis result is unavailable. A future manually constructed listing may omit
-extraction metadata.
+`matchesSubmittedUrl`. `requestedModel`, `promptVersion`, and `schemaVersion`
+are required even when the analysis result is unavailable. `requestedModel`
+records configured request intent rather than provider-reported routing.
 
 Semantic URL and manually entered Core validation failures return HTTP 400
 `ValidationProblemDetails` using deterministic camel-case/indexed paths.
@@ -432,7 +431,7 @@ Extraction failures use `application/problem+json` and these stable codes:
 
 | Status | Code | Meaning |
 | --- | --- | --- |
-| 429 | `listingAnalysisRateLimited` | Codex or ChatGPT rate limited the turn; nullable `retryAfterSeconds` may be included when safely available. |
+| 429 | `listingAnalysisRateLimited` | Codex or ChatGPT rate limited the turn. No retry duration is returned because the runtime has no reliable value. |
 | 503 | `listingAnalysisNotConfigured` | The sidecar, ChatGPT authentication, or configured Codex model is unavailable. |
 | 503 | `listingAnalysisTimedOut` | The complete operation exceeded 60 seconds. |
 | 503 | `listingAnalysisProviderUnavailable` | Sidecar connection, process, Codex service, or runtime availability failure. |
@@ -442,16 +441,18 @@ Unexpected failures remain generic HTTP 500 problem responses without internal
 details. Codex failure never changes the behavior of manual calculations or
 manually edited listing drafts.
 
-`GET /api/system/status` will later add:
+`GET /api/system/status` includes:
 
 ```text
 integrations:
   codexListingExtractionConfigured: boolean
 ```
 
-This value verifies internal sidecar reachability, valid owned configuration,
-and a locally recognized saved ChatGPT login without starting a search turn. It
-does not guarantee remote service or model availability. Overall
+The API bounds this non-paid check to two seconds. Timeout, unavailable or
+invalid sidecar status, and incompatible runtime configuration report `false`.
+A `true` value verifies internal sidecar reachability, valid owned
+configuration, and a locally recognized saved ChatGPT login without starting a
+search turn. It does not guarantee remote service or model availability. Overall
 `healthy|degraded` remains based on the existing database readiness behavior.
 `features.urlAnalysis` remains false until the complete unsaved Swedish
 interface is implemented, and `features.aiReview` remains false until milestone

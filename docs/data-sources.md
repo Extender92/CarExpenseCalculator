@@ -13,9 +13,9 @@
 Blocket is the first desired marketplace. Its documented Pro Import API manages a dealer's own advertisements and is not a general marketplace search API. Blocket also restricts automated and systematic use without permission. Direct scraping, marketplace-specific programmatic ingestion, and automatic discovery therefore remain disabled until a permitted API, partnership, or other approved source is available.
 
 Milestone 2 uses one user-triggered, ChatGPT-authenticated Codex turn for each
-URL the user selects. The private runtime and adapter are implemented; the
-public endpoint and user flow remain planned. The internal sidecar gives Codex
-access only to host-restricted hosted web search. The browser, API, and sidecar
+URL the user selects. The private runtime, adapter, and one-URL public preview
+endpoint are implemented; the Swedish user flow remains planned. The internal
+sidecar gives Codex access only to host-restricted hosted web search. The browser, API, and sidecar
 do not directly download or scrape the page, and the application contains no
 Blocket-specific parser. Hosted search is an extraction aid, not proof of permission or
 availability: applicable source terms still govern use, and an inaccessible or

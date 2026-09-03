@@ -78,6 +78,6 @@ The backend may send all meaningful structured vehicle information: listing URL,
 `AiReview` will contain a summary, confirmed facts, contradictions, unverified claims, missing information, risks, positive signals, seller questions, overall advisory conclusion, confidence, model and prompt versions, token usage, and creation time.
 
 Broad cited research remains an explicit later action rather than part of URL
-extraction. Image analysis remains milestone 6. The private Codex runtime is
-implemented, but no public URL-analysis endpoint or advisory AI integration is
-available yet.
+extraction. Image analysis remains milestone 6. The private Codex runtime and
+unsaved public URL-analysis endpoint are implemented, but no Swedish review
+interface or advisory AI integration is available yet.

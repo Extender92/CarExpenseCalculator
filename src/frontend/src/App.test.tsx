@@ -19,6 +19,9 @@ const healthyStatus = {
     manualCalculator: true,
     aiReview: false,
   },
+  integrations: {
+    codexListingExtractionConfigured: true,
+  },
 };
 
 function mockStatus(payload = healthyStatus) {

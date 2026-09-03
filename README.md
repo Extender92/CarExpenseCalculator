@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete Core domain plus an internal Codex extraction sidecar and Infrastructure adapter. Its public API, Swedish review interface, listing persistence, automatic search, and advisory AI review are not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete Core domain, an internal Codex extraction sidecar and Infrastructure adapter, and a public unsaved preview API. Its Swedish review interface, listing persistence, automatic search, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the public URL-analysis flow and advisory AI review remain later work
+- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API is implemented while the Swedish interface and advisory AI review remain later work
 
 ## Quick start with Docker
 
@@ -86,15 +86,16 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 The internal URL-extraction runtime uses `CODEX_MODEL`,
 `CODEX_REASONING_EFFORT`, and a dedicated persistent `CODEX_HOME_PATH` on
 Unraid. It requires a saved ChatGPT Codex login and deliberately has no Platform
-API-key fallback. URL analysis is not exposed through the public API or UI yet;
-see [Codex listing extraction](docs/codex-extraction.md) for the private runtime
-and one-time login procedure.
+API-key fallback. URL analysis is exposed through the public API but has no
+Swedish interface yet; see [Codex listing extraction](docs/codex-extraction.md)
+for the private runtime and one-time login procedure.
 
 ## API endpoints
 
 - `GET /api/health/live` – process liveness
 - `GET /api/health/ready` – readiness including PostgreSQL
-- `GET /api/system/status` – version, overall/database state, and feature availability
+- `GET /api/system/status` – version, overall/database state, feature availability, and non-paid Codex extraction configuration status
+- `POST /api/listing-analyses` – source-aware unsaved listing extraction for one public URL
 - `POST /api/manual-calculations` – deterministic unsaved ownership-cost preview
 - `POST /api/saved-cost-scenarios` – create a saved vehicle and current scenario
 - `GET /api/saved-cost-scenarios` – list saved-vehicle summaries
