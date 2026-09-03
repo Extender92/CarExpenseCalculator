@@ -12,7 +12,8 @@ Browser
                  -> Core domain and rules
                  -> Infrastructure adapters
                       -> PostgreSQL
-                      -> future OpenAI listing extraction
+                      -> future internal Codex extraction sidecar
+                           -> hosted Codex web search
                       -> future registry/listing providers
                       -> future advisory OpenAI review
 ```
@@ -49,18 +50,23 @@ The implementation is introduced incrementally as each feature milestone begins:
 
 The browser will submit one URL per `POST /api/listing-analyses` request and
 limit itself to two concurrent requests. The API will normalize the URL through
-Core and call a typed Infrastructure adapter. That adapter will use hosted
-OpenAI Web Search; neither the browser nor backend will fetch the listing page
-directly.
+Core and call an application-owned Infrastructure adapter. That adapter will
+use a typed internal HTTP client to a private ASP.NET Core `codex-extractor`
+sidecar. The sidecar runs one ChatGPT-authenticated `codex exec` turn with
+host-restricted hosted web search; neither the browser nor application services
+fetch the listing page directly.
 
-Provider output is untrusted ingestion input. Core owns normalization,
-validation, provenance, missing-field codes, and analysis status. Extracted
-facts remain unverified until the user changes them, at which point the complete
-edited value becomes manually entered and user-confirmed. Advisory AI review is
-a separate milestone and never shares authority with extraction.
+The sidecar has no published port, database credentials, repository mount, or
+application-source mount. Codex output is untrusted ingestion input. Actual
+opened-page events provide source evidence, while Core owns source matching,
+normalization, validation, provenance, missing-field codes, and analysis status.
+Extracted facts remain unverified until the user changes them, at which point
+the complete edited value becomes manually entered and user-confirmed. Advisory
+AI review is a separate milestone and never shares authority with extraction.
 
-The complete future contract is defined in the
-[URL analysis specification](url-analysis.md).
+The complete future contracts are defined in the
+[URL analysis specification](url-analysis.md) and
+[Codex listing extraction](codex-extraction.md).
 
 ## Persistence
 
@@ -101,6 +107,6 @@ persistence types, and stored result snapshots are never accepted from clients.
 
 The planned URL-analysis API adds one unsaved preview endpoint plus a current
 saved-listing lifecycle. Preview analysis never accesses PostgreSQL. System
-status will report whether extraction is configured without making a paid
-provider request; overall health remains database-based and URL analysis stays
+status will report whether the Codex extractor is configured without starting a
+search turn; overall health remains database-based and URL analysis stays
 disabled until its complete Swedish interface exists.

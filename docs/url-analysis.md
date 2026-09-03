@@ -3,15 +3,16 @@
 ## Status and purpose
 
 This document defines the target behavior for milestone 2. URL analysis is not
-implemented yet. The specification exists so the Core, OpenAI adapter, HTTP,
+implemented yet. The specification exists so the Core, Codex extraction
+runtime, HTTP,
 persistence, and frontend issues can be implemented without inventing contracts
 or broadening the feature.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
-uses hosted OpenAI Web Search to extract a bounded structured draft, and lets the
-user correct or complete that draft. Deterministic normalization and validation
-remain authoritative. Extraction is separate from the advisory AI review planned
-for milestone 5.
+uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
+extract a bounded structured draft, and lets the user correct or complete that
+draft. Deterministic normalization and validation remain authoritative.
+Extraction is separate from the advisory AI review planned for milestone 5.
 
 The backend and browser never fetch listing pages directly. There is no
 marketplace-specific scraper or parser.
@@ -23,7 +24,7 @@ marketplace-specific scraper or parser.
   `POST /api/listing-analyses` request.
 - The browser allows at most two analysis requests in flight. Remaining items
   stay queued and one failed item does not cancel another.
-- The API and OpenAI adapter also enforce a process-wide provider concurrency
+- The API and Codex sidecar also enforce a process-wide extraction concurrency
   limit of two.
 - Failed, partial, or unavailable extraction leaves the listing editable so the
   user can complete it manually.
@@ -49,7 +50,7 @@ Normalization performs these operations in order:
 7. Preserve the parsed escaped path and query contents, order, and casing. Do
    not decode path segments or reorder query parameters.
 
-The normalized URL remains the value shown, sent to the provider, and retained
+The normalized URL remains the value shown, sent to the extractor, and retained
 with a saved listing. Batch uniqueness uses a separate page identity. Page
 identity ignores query and fragment, treats one trailing slash as equivalent,
 and treats default-port HTTP and HTTPS forms as the same page. Non-default ports
@@ -60,7 +61,7 @@ normalized URLs differ.
 
 ### Rejected input
 
-Reject the URL before any provider request when it:
+Reject the URL before any extraction request when it:
 
 - is relative, malformed, or uses a scheme other than HTTP or HTTPS;
 - contains a username, password, or any other user-information component;
@@ -111,7 +112,7 @@ IPv4-mapped IPv6 cannot bypass the IPv4 rules.
 The backend does not resolve DNS during validation. This avoids introducing a
 direct network fetch and DNS-dependent validation. The accepted design rejects
 private or reserved IP literals; it does not claim that a hostname will always
-resolve publicly when OpenAI later searches it.
+resolve publicly when Codex later searches it.
 
 ### Returned-source matching
 
@@ -137,12 +138,12 @@ analysis is `unavailable`, even when the model returned plausible data.
 | `partial` | A source matches and at least one usable externally sourced fact is populated, but one or more essential fields are missing. |
 | `unavailable` | No source matches or no usable externally sourced fact remains after normalization. |
 
-`unavailable` is a successful HTTP 200 preview result when the provider request
-itself succeeded. Provider or configuration failures use the typed HTTP errors
+`unavailable` is a successful HTTP 200 preview result when the Codex turn itself
+succeeded. Runtime or configuration failures use the typed HTTP errors
 defined below.
 
-Structurally invalid JSON or a response that violates the strict provider schema
-is a provider failure. A structurally valid individual value that fails Core
+Structurally invalid JSON or a response that violates the strict extraction
+schema is a runtime failure. A structurally valid individual value that fails Core
 normalization is discarded, reported as missing, and does not discard other
 valid facts.
 
@@ -337,55 +338,56 @@ the corresponding externally sourced field is null:
 Vehicle label is deliberately absent from this enum. Explicit numeric zero,
 false, and a known-empty `SourcedCollection` do not produce missing codes.
 
-## OpenAI extraction boundary
+## Codex extraction boundary
 
-The Infrastructure adapter uses a typed `HttpClient` against the Responses API
-and does not add an OpenAI SDK dependency.
+The Infrastructure adapter uses a typed internal `HttpClient` to a private
+ASP.NET Core `codex-extractor` sidecar. The sidecar runs one non-interactive
+`codex exec` turn per URL with a saved ChatGPT login. It does not call the
+Platform API with an application API key.
 
 Each request uses this policy:
 
 | Setting | Required value |
 | --- | --- |
-| Model | `gpt-5.6-luna` by default; optional server-only override through `OPENAI_MODEL` |
-| Reasoning | `reasoning.effort: low` |
-| Tool | `web_search` |
-| Tool choice | `required` |
-| Live access | `external_web_access: true` |
-| Search context | `search_context_size: medium` |
-| Domain filter | One `allowed_domains` entry derived from the submitted normalized host, without scheme or path |
-| Source output | `include: ["web_search_call.action.sources"]` |
-| Output | Versioned strict JSON Schema through Structured Outputs |
-| Storage | `store: false` |
-| Tool-call limit | `max_tool_calls: 2` |
-| Timeout | 45 seconds for the complete provider operation |
-| Concurrency | Process-wide maximum of two provider requests |
+| Model | `gpt-5.6-luna` by default; optional server-only override through `CODEX_MODEL` |
+| Reasoning | `medium`, configurable through `CODEX_REASONING_EFFORT` |
+| Search | Live hosted web search |
+| Search context | Medium |
+| Domain filter | One allowed domain derived from the submitted normalized host, without scheme or path |
+| Source evidence | Completed JSONL web-search events that opened a page |
+| Output | JSONL events and a final response constrained by versioned JSON Schema |
+| Session | Ephemeral, with no local rollout persistence |
+| Isolation | Read-only empty working directory, no repository, user instructions, project rules, plugins, apps, MCP servers, agents, or unrelated tools |
+| Timeout | 60 seconds for queueing, process startup, search, and parsing |
+| Concurrency | Process-wide maximum of two Codex turns |
 | Retries | None automatically |
+| Search-event limit | None; the one turn is bounded by timeout and concurrency |
 
-The model's returned `model` value is recorded as `actualModel`; configuration
-does not overwrite it. Prompt and extraction-schema versions begin at `1` and
-are returned with every successful provider response.
+The actual model reported by the completed turn is recorded as `actualModel`;
+configuration does not overwrite it. Prompt and extraction-schema versions
+begin at `1` and are returned with every structurally successful Codex response.
 
-The developer instruction treats all page material as untrusted data and says
-to ignore instructions embedded in the page. It requests only supported listing
-facts and rejects contact details, seller identities, addresses, cookies,
-hidden-page content, recommendations, purchase conclusions, and unsupported
-inference. Missing values must be null.
+The instruction treats all page material as untrusted data and says to ignore
+instructions embedded in the page. It requests only supported listing facts and
+rejects contact details, seller identities, addresses, cookies, hidden-page
+content, recommendations, purchase conclusions, and unsupported inference.
+Missing values must be null.
 
-OpenAI receives the normalized listing URL and the server request. It does not
-receive API keys as prompt data, database credentials, unrelated application
-data, or the browser's direct connection. The request originates from the API
-server, so normal provider network metadata relates to that server connection.
-The API key, URL-bearing prompt, raw provider response, and credentials are
+Codex receives the normalized listing URL and the sidecar request. It does not
+receive authentication data as prompt content, database credentials, unrelated
+application data, or the browser's direct connection. Authentication state,
+URL-bearing prompts, JSONL output, final structured output, and credentials are
 never logged.
 
-OpenAI's current documentation lists Web Search and Structured Outputs as
-supported by [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna).
-The [Web Search guide](https://developers.openai.com/api/docs/guides/tools-web-search)
-documents required tool choice, domain filters, live access, search-context
-size, and complete source lists. The
-[Responses API contract](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
-documents response storage, Structured Outputs, and the total built-in
-`max_tool_calls` limit.
+The [Codex authentication guide](https://learn.chatgpt.com/docs/auth) documents
+ChatGPT sign-in, headless device-code login, and the secret authentication
+cache. [Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)
+documents ephemeral execution, read-only sandboxing, JSONL, isolated
+configuration, and JSON Schema output. The [web-search guide](https://learn.chatgpt.com/docs/web-search)
+and [configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+document live search, domain filters, and context size. The complete sidecar,
+authentication, source-evidence, isolation, and test decisions are in
+[Codex listing extraction](codex-extraction.md).
 
 Hosted search does not guarantee that a page is accessible, that its facts are
 correct, or that a source permits a particular use. The feature must respect
@@ -415,42 +417,44 @@ missingFields: ordered ListingFieldCode[]
 ```
 
 `ListingAnalysisSource` contains only a normalized `url` and
-`matchesSubmittedUrl`. For a provider-backed successful operation,
+`matchesSubmittedUrl`. For a Codex-backed successful operation,
 `actualModel`, `promptVersion`, and `schemaVersion` are required even when the
 analysis result is unavailable. A future manually constructed listing may omit
-provider metadata.
+extraction metadata.
 
 Semantic URL and manually entered Core validation failures return HTTP 400
 `ValidationProblemDetails` using deterministic camel-case/indexed paths.
 Malformed JSON and missing required properties use ASP.NET Core's standard
 validation problem response.
 
-Provider failures use `application/problem+json` and these stable codes:
+Extraction failures use `application/problem+json` and these stable codes:
 
 | Status | Code | Meaning |
 | --- | --- | --- |
-| 429 | `listingAnalysisRateLimited` | OpenAI rate limited the request; nullable `retryAfterSeconds` may be included when supplied by the provider. |
-| 503 | `listingAnalysisNotConfigured` | `OPENAI_API_KEY` is absent or unusable as configuration. |
-| 503 | `listingAnalysisTimedOut` | The bounded operation exceeded 45 seconds. |
-| 503 | `listingAnalysisProviderUnavailable` | Connection, provider, or other availability failure. |
-| 503 | `listingAnalysisInvalidProviderResponse` | The response cannot satisfy the strict structural contract. |
+| 429 | `listingAnalysisRateLimited` | Codex or ChatGPT rate limited the turn; nullable `retryAfterSeconds` may be included when safely available. |
+| 503 | `listingAnalysisNotConfigured` | The sidecar, ChatGPT authentication, or configured Codex model is unavailable. |
+| 503 | `listingAnalysisTimedOut` | The complete operation exceeded 60 seconds. |
+| 503 | `listingAnalysisProviderUnavailable` | Sidecar connection, process, Codex service, or runtime availability failure. |
+| 503 | `listingAnalysisInvalidProviderResponse` | JSONL or the final structured response cannot satisfy the contract. |
 
 Unexpected failures remain generic HTTP 500 problem responses without internal
-details. OpenAI failure never changes the behavior of manual calculations or
+details. Codex failure never changes the behavior of manual calculations or
 manually edited listing drafts.
 
 `GET /api/system/status` will later add:
 
 ```text
 integrations:
-  openAiListingExtractionConfigured: boolean
+  codexListingExtractionConfigured: boolean
 ```
 
-This value checks server configuration only and performs no paid provider health
-request. Overall `healthy|degraded` remains based on the existing database
-readiness behavior. `features.urlAnalysis` remains false until the complete
-unsaved Swedish interface is implemented, and `features.aiReview` remains false
-until milestone 5.
+This value verifies internal sidecar reachability, valid owned configuration,
+and a locally recognized saved ChatGPT login without starting a search turn. It
+does not guarantee remote service or model availability. Overall
+`healthy|degraded` remains based on the existing database readiness behavior.
+`features.urlAnalysis` remains false until the complete unsaved Swedish
+interface is implemented, and `features.aiReview` remains false until milestone
+5.
 
 ## Saved-listing HTTP lifecycle
 
@@ -467,7 +471,7 @@ The future saved-listing API exposes:
 required `listing` of type `ReviewedListingInput`.
 `ReplaceSavedListingRequest` contains a required positive `expectedRevision`
 and the same required `listing`. `ReviewedListingInput` contains the submitted
-URL, analysis timestamp, nullable provider model/prompt/schema metadata, ordered
+URL, analysis timestamp, nullable extraction model/prompt/schema metadata, ordered
 sources, and the reviewed `ListingDraft`. The server recomputes normalized URL,
 source matches, missing codes, and analysis status; callers cannot submit those
 as trusted results.
@@ -509,13 +513,13 @@ through the existing Core value object before querying.
 Create requires a valid normalized ordinary Swedish registration number and a
 reviewed listing draft. If the draft also contains registration-number
 provenance, its normalized value must equal the aggregate registration number.
-Provider metadata may be null for a manually completed listing created while
-extraction was unavailable. AI provenance requires matching source and provider
+Extraction metadata may be null for a manually completed listing created while
+extraction was unavailable. AI provenance requires matching source and extraction
 version metadata.
 
 Requests never accept a vehicle UUID, aggregate revision override, listing
 version, listing schema version, status, missing codes, database timestamps, or
-raw provider content. PUT cannot change registration number.
+raw extractor content. PUT cannot change registration number.
 
 Duplicate registration returns `409 registrationNumberConflict` with the
 existing UUID and current aggregate revision; create never overwrites. PUT uses
@@ -550,8 +554,8 @@ without changing `listingVersion`.
 
 Full replacement is atomic: validate, verify aggregate revision, replace scalar
 and JSONB values, delete/recreate ordered listing children, increment revisions,
-and update timestamps. It never retains superseded values or raw provider
-responses. Permanent vehicle deletion cascades through listing and calculation
+and update timestamps. It never retains superseded values or raw Codex output.
+Permanent vehicle deletion cascades through listing and calculation
 children without orphans.
 
 Existing saved-scenario queries continue to return only vehicles that have a
@@ -597,7 +601,7 @@ calculator prefilling. Do not retain:
 - seller names, phone numbers, email addresses, street addresses, or other
   contact data;
 - hidden or inaccessible page content;
-- raw OpenAI requests or responses; or
+- raw Codex prompts, events, or responses; or
 - analysis history superseded by a current replacement.
 
 The complete returned source-URL list, current structured facts, field
@@ -632,10 +636,11 @@ Later implementation issues must cover at least:
   discarded values;
 - null, explicit zero/false, known-empty collections, stable missing-code order,
   collection bounds, duplicates, and provenance transitions;
-- provider request shape, timeout, no retries, process concurrency, errors,
+- Codex invocation shape, source-event parsing, timeout, no retries, process concurrency, errors,
   configuration reporting, and absence of secrets or raw response logs;
 - preview operation with an unreachable database;
 - listing-only, scenario-only, and combined persistence; atomic replacement;
   aggregate/listing revisions; conflicts; and cascade deletion;
 - safe calculator prefilling and outdated versus manual-only calculations; and
-- fake-provider Compose and browser flows without live or paid OpenAI calls.
+- fake-extractor Compose and browser flows without live Codex calls or ChatGPT
+  usage.

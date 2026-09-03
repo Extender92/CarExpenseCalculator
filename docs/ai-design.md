@@ -10,36 +10,44 @@ sources.
 
 ## Milestone 2: listing extraction
 
-URL analysis uses OpenAI as a hosted extraction adapter, not as an advisory
-reviewer. One user-selected URL is sent per Responses API request. Web Search is
-required and its complete source list is checked before any value is accepted.
-The browser and backend never fetch the listing page directly.
+URL analysis uses a private Codex sidecar as a hosted extraction adapter, not as
+an advisory reviewer. One user-selected URL starts one non-interactive Codex
+turn. Live web search is required, and actual opened-page events are checked
+before any value is accepted. The browser and application services never fetch
+the listing page directly.
 
 Planned extraction settings are:
 
-- Model: `gpt-5.6-luna`, with an optional server-only override.
-- API: Responses API through a typed `HttpClient`; no OpenAI SDK dependency.
-- Reasoning: `low`.
-- Tool: required `web_search` with live access, medium search context, and an
-  allowed-domain filter derived from the submitted host.
-- Output: strict Structured Outputs with a versioned JSON Schema and the
-  complete Web Search source list.
-- Storage: `store: false`.
-- Limits: at most two tool calls, a 45-second timeout, process-wide concurrency
-  of two, and no automatic paid retries.
+- Runtime: an internal ASP.NET Core `codex-extractor` sidecar invoking
+  `codex exec`; the API calls it through a typed `HttpClient`.
+- Authentication: a dedicated persisted ChatGPT Codex login created with
+  device-code authentication; there is no Platform API-key fallback.
+- Model: exactly `gpt-5.6-luna` by default, configurable server-side.
+- Reasoning: `medium`.
+- Tool: live hosted web search with medium context and an allowed-domain filter
+  derived from the submitted host.
+- Output: JSONL runtime events plus a final versioned JSON Schema result. Source
+  evidence comes only from actual opened-page events.
+- Isolation: ephemeral, read-only execution in an empty directory with user and
+  project configuration/rules ignored and unrelated tools disabled.
+- Limits: one turn per URL, a 60-second total timeout, process-wide concurrency
+  of two, no application retries, and no artificial search-event limit.
 
 Page content is hostile input. The prompt rejects embedded instructions,
 contact data, hidden content, recommendations, and unsupported inference.
 Extracted values remain listing-sourced and unverified; missing values stay
-missing. Provider failures leave manual entry and deterministic calculations
+missing. Codex failures leave manual entry and deterministic calculations
 available. The exact contract is in the
-[URL analysis specification](url-analysis.md).
+[URL analysis specification](url-analysis.md), and the runtime boundary is in
+[Codex listing extraction](codex-extraction.md).
 
 Official references:
 
-- [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
-- [Web Search](https://developers.openai.com/api/docs/guides/tools-web-search)
-- [Responses API](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
+- [Codex authentication](https://learn.chatgpt.com/docs/auth)
+- [Codex non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)
+- [Codex web search](https://learn.chatgpt.com/docs/web-search)
+- [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+- [Codex plan usage](https://learn.chatgpt.com/docs/pricing)
 
 ## Milestone 5: advisory review
 
@@ -48,9 +56,10 @@ calculations. It may explain, summarize, find contradictions, identify missing
 information, and suggest seller questions. It never converts listing extraction
 into verified data.
 
-The initial advisory configuration also uses `gpt-5.6-luna`, low reasoning,
-Structured Outputs, and `store: false`. It has a separate versioned prompt and
-schema from listing extraction.
+The initial advisory design also targets `gpt-5.6-luna` and structured output.
+Its exact runtime, reasoning level, retention controls, versioned prompt, and
+schema will be decided independently when milestone 5 is refined; milestone 2
+does not silently establish those choices.
 
 ### Review package
 
@@ -69,5 +78,5 @@ The backend may send all meaningful structured vehicle information: listing URL,
 `AiReview` will contain a summary, confirmed facts, contradictions, unverified claims, missing information, risks, positive signals, seller questions, overall advisory conclusion, confidence, model and prompt versions, token usage, and creation time.
 
 Broad cited research remains an explicit later action rather than part of URL
-extraction. Image analysis remains milestone 6. No live OpenAI integration is
-implemented by the repository foundation or this specification.
+extraction. Image analysis remains milestone 6. No live Codex extraction or
+advisory AI integration is implemented by the current repository.

@@ -5,7 +5,7 @@
 This runbook verifies the completed manual-calculator milestone from the pure
 Core calculation through the single-origin Docker deployment. It covers
 unsaved previews and the PostgreSQL-backed saved-vehicle lifecycle without
-requiring marketplace access, OpenAI, or another optional external service.
+requiring marketplace access, Codex, or another optional external service.
 
 ## Automated coverage
 
@@ -87,7 +87,7 @@ solely for this verification and none of its saved vehicles need to be kept.
   open vehicle is deleted in the interface, its current form and result remain
   as an unsaved draft.
 - Manual calculation is enabled. Rule search, URL analysis, and AI review remain
-  disabled, and no OpenAI key or external listing service is needed.
+  disabled, and no Codex authentication or external listing service is needed.
 
 ## Unraid smoke test
 

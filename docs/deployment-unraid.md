@@ -50,6 +50,32 @@ Validate the repository-owned port, network, and connection boundaries before de
 node scripts/verify-compose-boundaries.mjs
 ```
 
+## Planned Codex extraction service
+
+URL extraction is not implemented in the current Compose files. Issue #32 will
+add a private `codex-extractor` sidecar on `car-expense-network`. It will have no
+published port, PostgreSQL settings, repository mount, or application-source
+mount. Only the API will call it over the internal network.
+
+The future sidecar will authenticate once through the Unraid terminal with:
+
+```bash
+codex login --device-auth
+```
+
+Device-code login must be enabled in the ChatGPT account's security settings.
+The future Compose service will mount its Codex home from
+`${CODEX_HOME_PATH:-/mnt/user/appdata/car-expense-calculator/codex}` so refreshed
+credentials survive container replacement. This directory is a secret: exclude
+it from Git, logs, shares exposed to untrusted users, and mounts into the API,
+web, or PostgreSQL containers. Do not place its contents in `.env`.
+
+The application will not support a Platform API key as a fallback. CI and
+deployment smoke tests will use a fake extractor and never mount the real Codex
+home or consume ChatGPT usage. Exact build, login, upgrade, and verification
+commands will be added together with the sidecar implementation. See
+[Codex listing extraction](codex-extraction.md).
+
 ## Initial deployment
 
 The existing `postgresql18` container must be running and attached to `car-expense-network`. Build the application images, apply the database migration, and only then start API and web:
