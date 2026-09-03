@@ -1,0 +1,32 @@
+services:
+  fake-codex-extractor:
+    build:
+      context: .
+      dockerfile: tests/e2e/fake-extractor/Dockerfile
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://localhost:8080/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    networks:
+      - extractor-test-network
+
+  api:
+    environment:
+      CodexExtraction__BaseUrl: http://fake-codex-extractor:8080
+    depends_on:
+      fake-codex-extractor:
+        condition: service_healthy
+    networks:
+      - app-network
+      - extractor-test-network
+
+networks:
+  extractor-test-network:
+    internal: true

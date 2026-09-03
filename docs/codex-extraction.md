@@ -2,11 +2,12 @@
 
 ## Status and purpose
 
-The milestone 2 extraction runtime and unsaved public API are implemented. The
-runtime consists of a ChatGPT-authenticated Codex sidecar and a provider-neutral
-Infrastructure adapter. Listing persistence and the Swedish review interface
-remain planned. A configured installation can start one-URL extraction through
-`POST /api/listing-analyses`.
+The milestone 2 extraction runtime, unsaved public API, and Swedish in-memory
+review interface are implemented. The runtime consists of a
+ChatGPT-authenticated Codex sidecar and a provider-neutral Infrastructure
+adapter. Listing persistence remains planned. A configured installation can
+start one-URL extraction through `POST /api/listing-analyses`; without a saved
+login, the interface remains usable for manual drafts.
 
 Codex is only an ingestion aid. Core remains authoritative for URL matching,
 normalization, provenance, missing-field codes, validation, and analysis

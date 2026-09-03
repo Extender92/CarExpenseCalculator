@@ -1,16 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  analyzeListing,
   createSavedCostScenario,
   deleteSavedCostScenario,
   getSavedCostScenario,
   getSavedCostScenarioByRegistration,
   listSavedCostScenarios,
+  ListingAnalysisApiError,
   replaceSavedCostScenario,
   SavedCostScenarioApiError,
   type ManualCalculationRequest,
   type SavedCostScenarioResponse,
 } from "./client";
 import { completeManualCalculationResult } from "@/test/manual-calculation-result";
+import { completeListingAnalysisResponse } from "@/test/listing-analysis";
 
 const scenario: ManualCalculationRequest = {
   vehicleLabel: "Volvo V70",
@@ -133,6 +136,65 @@ describe("saved cost scenario API client", () => {
       problem: { code: "savedCostScenarioNotFound" },
     });
     await expect(listSavedCostScenarios()).rejects.toBeInstanceOf(TypeError);
+  });
+});
+
+describe("listing analysis API client", () => {
+  it("posts one URL through the generated same-origin route", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(completeListingAnalysisResponse));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(analyzeListing("https://cars.example/item/1")).resolves.toEqual(completeListingAnalysisResponse);
+    expect(new URL(requestUrl(fetchMock.mock.calls[0][0])).pathname).toBe("/api/listing-analyses");
+    expect(requestMethod(fetchMock.mock.calls[0][0])).toBe("POST");
+    expect(await requestBody(fetchMock.mock.calls[0][0])).toEqual({ url: "https://cars.example/item/1" });
+  });
+
+  it("exposes validation details for HTTP 400", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({
+      title: "Validation failed",
+      status: 400,
+      errors: { url: ["URL must be public."] },
+    }, 400, "application/problem+json")));
+
+    const error = await analyzeListing("http://localhost").catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(ListingAnalysisApiError);
+    expect(error).toMatchObject({ status: 400, validationProblem: { errors: { url: ["URL must be public."] } } });
+  });
+
+  it.each([
+    [429, "listingAnalysisRateLimited", "begränsad"],
+    [503, "listingAnalysisNotConfigured", "inte konfigurerad"],
+    [503, "listingAnalysisTimedOut", "för lång tid"],
+    [503, "listingAnalysisProviderUnavailable", "inte tillgänglig"],
+    [503, "listingAnalysisInvalidProviderResponse", "inget användbart svar"],
+  ])("maps %s %s to a typed safe error", async (status, code, message) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ status, code }, status, "application/problem+json")));
+
+    await expect(analyzeListing("https://cars.example/item/1")).rejects.toMatchObject({
+      status,
+      code,
+      message: expect.stringContaining(message),
+    });
+  });
+
+  it("wraps network errors without exposing their contents", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("secret upstream details")));
+
+    const error = await analyzeListing("https://cars.example/item/1").catch((reason: unknown) => reason);
+    expect(error).toMatchObject({ code: "listingAnalysisNetworkError" });
+    expect((error as Error).message).not.toContain("secret");
+  });
+
+  it("propagates request cancellation", async () => {
+    const controller = new AbortController();
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((request: Request) => new Promise((_resolve, reject) => {
+      request.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    })));
+
+    const request = analyzeListing("https://cars.example/item/1", controller.signal);
+    controller.abort();
+    await expect(request).rejects.toMatchObject({ name: "AbortError" });
   });
 });
 

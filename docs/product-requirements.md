@@ -46,6 +46,6 @@ The user enters vehicle, operating, financing, and usage values directly. Saving
 The repository foundation and manual-calculator milestone are implemented. The application provides the three-mode navigation, health and status endpoints, deterministic manual calculations, optional PostgreSQL-backed saved scenarios, Docker deployment, tests, CI, and documentation.
 
 The URL-analysis Core domain, private ChatGPT-authenticated Codex extraction
-runtime, and unsaved public preview endpoint are implemented. The Swedish
-interface, listing persistence, rule-based search, automatic discovery,
+runtime, unsaved public preview endpoint, and Swedish in-memory review interface
+are implemented. Listing persistence, rule-based search, automatic discovery,
 comparison, and advisory AI review remain future work.

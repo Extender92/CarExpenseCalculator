@@ -15,7 +15,7 @@ const healthyStatus = {
   database: "available",
   features: {
     ruleBasedSearch: false,
-    urlAnalysis: false,
+    urlAnalysis: true,
     manualCalculator: true,
     aiReview: false,
   },
@@ -49,7 +49,7 @@ describe("Bilverktyget", () => {
     expect(screen.getAllByText("Tillgänglig").length).toBeGreaterThan(0);
   });
 
-  it("navigates to the URL analysis placeholder", async () => {
+  it("navigates to the URL analysis workspace", async () => {
     mockStatus();
     const user = userEvent.setup();
     renderApp();

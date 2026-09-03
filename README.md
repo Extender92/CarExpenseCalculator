@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete Core domain, an internal Codex extraction sidecar and Infrastructure adapter, and a public unsaved preview API. Its Swedish review interface, listing persistence, automatic search, and advisory AI review are not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, and Swedish in-memory review interface. Saved listings, automatic search, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API is implemented while the Swedish interface and advisory AI review remain later work
+- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API and Swedish review interface are implemented while saved listings and advisory AI review remain later work
 
 ## Quick start with Docker
 
@@ -43,6 +43,8 @@ docker compose up --detach api web
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
 
 Open **Manuell kalkyl** to calculate without saving. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Unsaved previews remain independent from PostgreSQL persistence.
+
+Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. These listing drafts exist only in browser memory and disappear on reload; listing persistence is a later milestone. A missing Codex login disables automatic extraction without disabling manual drafts or the manual calculator.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 
@@ -86,8 +88,8 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 The internal URL-extraction runtime uses `CODEX_MODEL`,
 `CODEX_REASONING_EFFORT`, and a dedicated persistent `CODEX_HOME_PATH` on
 Unraid. It requires a saved ChatGPT Codex login and deliberately has no Platform
-API-key fallback. URL analysis is exposed through the public API but has no
-Swedish interface yet; see [Codex listing extraction](docs/codex-extraction.md)
+API-key fallback. URL analysis is exposed through both the public API and the
+Swedish in-memory review interface; see [Codex listing extraction](docs/codex-extraction.md)
 for the private runtime and one-time login procedure.
 
 ## API endpoints
@@ -132,17 +134,17 @@ npm --prefix src/frontend run lint
 npm --prefix src/frontend run test
 npm --prefix src/frontend run build
 node scripts/verify-compose-boundaries.mjs
-docker compose build
-docker compose run --rm --no-deps --entrypoint codex codex-extractor --version
-docker compose up --detach postgres
-docker compose run --rm api migrate
-docker compose up --detach api web
+docker compose -f compose.yaml -f compose.e2e.yaml build
+docker compose -f compose.yaml -f compose.e2e.yaml run --rm --no-deps --entrypoint codex codex-extractor --version
+docker compose -f compose.yaml -f compose.e2e.yaml up --detach postgres
+docker compose -f compose.yaml -f compose.e2e.yaml run --rm api migrate
+docker compose -f compose.yaml -f compose.e2e.yaml up --detach api web
 curl --fail http://localhost:8088/api/health/ready
 npm --prefix src/frontend run e2e -- --project=chromium
-docker compose down
+docker compose -f compose.yaml -f compose.e2e.yaml down --volumes
 ```
 
-The Playwright suite expects the Docker stack at `http://localhost:8088`. Add `--volumes` to the final cleanup command only for a disposable database. The complete acceptance procedure and expected failure behavior are documented in [Manual calculator verification](docs/manual-calculator-verification.md).
+The Playwright suite expects the Docker stack at `http://localhost:8088`. The E2E override routes extraction to a private deterministic fake and never authenticates to ChatGPT or consumes Codex allowance. Use `--volumes` only for disposable test data. The manual-calculator acceptance procedure and expected failure behavior are documented in [Manual calculator verification](docs/manual-calculator-verification.md).
 
 ## Repository layout
 

@@ -44,7 +44,7 @@ export function AppLayout() {
         <Navigation />
         <div className="absolute inset-x-6 bottom-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Lokal version</p>
-          <p className="mt-2 text-sm text-slate-300">Den manuella kalkylen är tillgänglig. Inga AI-anrop görs ännu.</p>
+          <p className="mt-2 text-sm text-slate-300">Manuell kalkyl och URL-analys är tillgängliga. Rådgivande AI-granskning är fortfarande planerad.</p>
         </div>
       </aside>
 

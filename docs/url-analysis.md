@@ -4,8 +4,9 @@
 
 This document defines the target behavior for milestone 2. The dependency-free
 Core listing domain, private Codex extraction sidecar, provider-neutral
-Infrastructure adapter, and unsaved public HTTP endpoint are implemented.
-Persistence and the Swedish frontend are not implemented yet.
+Infrastructure adapter, unsaved public HTTP endpoint, and Swedish in-memory
+review interface are implemented. Saved-listing persistence is not implemented
+yet.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -28,6 +29,9 @@ marketplace-specific scraper or parser.
 - Failed, partial, or unavailable extraction leaves the listing editable so the
   user can complete it manually.
 - Preview analysis never reads from or writes to PostgreSQL.
+- Reviewed drafts live only in React memory and disappear on navigation or
+  reload. A separate manual-draft action remains available when extraction is
+  unconfigured or unavailable.
 
 ## URL normalization and validation
 
@@ -454,9 +458,10 @@ A `true` value verifies internal sidecar reachability, valid owned
 configuration, and a locally recognized saved ChatGPT login without starting a
 search turn. It does not guarantee remote service or model availability. Overall
 `healthy|degraded` remains based on the existing database readiness behavior.
-`features.urlAnalysis` remains false until the complete unsaved Swedish
-interface is implemented, and `features.aiReview` remains false until milestone
-5.
+`features.urlAnalysis` is `true` because the complete unsaved Swedish interface
+and manual fallback are implemented. This availability does not imply that the
+optional Codex integration is configured. `features.aiReview` remains false
+until milestone 5.
 
 ## Saved-listing HTTP lifecycle
 

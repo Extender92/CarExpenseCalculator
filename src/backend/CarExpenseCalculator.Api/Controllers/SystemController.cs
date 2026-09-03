@@ -37,7 +37,7 @@ public sealed class SystemController(
             databaseAvailable ? "available" : "unavailable",
             new FeatureStatusResponse(
                 RuleBasedSearch: false,
-                UrlAnalysis: false,
+                UrlAnalysis: true,
                 ManualCalculator: true,
                 AiReview: false),
             new IntegrationStatusResponse(

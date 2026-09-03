@@ -32,7 +32,9 @@ The production browser sees one HTTP origin. Nginx serves the React build and pr
 ## Frontend boundaries
 
 - React Router owns the dashboard and the three usage-mode routes.
-- TanStack-style server-state concerns can be added when feature endpoints exist; the foundation uses a small typed API client.
+- A small OpenAPI-typed client owns same-origin API calls. The URL-analysis
+  workspace keeps independent reviewed drafts in React memory and uses a FIFO
+  browser scheduler capped at two extraction requests.
 - Tailwind CSS defines design tokens and shadcn/ui provides accessible component patterns.
 - User-visible copy is Swedish.
 
@@ -113,4 +115,6 @@ The URL-analysis API now exposes its unsaved preview endpoint; the current
 saved-listing lifecycle remains planned. Preview analysis never accesses
 PostgreSQL. System status reports whether the Codex extractor is configured
 without starting a search turn. Overall health remains database-based and URL
-analysis stays disabled until its complete Swedish interface exists.
+analysis is enabled because its complete unsaved Swedish interface and manual
+fallback exist. Extractor configuration remains an independent integration
+status and does not affect overall database-based health.
