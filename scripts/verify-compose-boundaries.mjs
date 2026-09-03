@@ -9,28 +9,33 @@ const verificationEnvironment = {
   POSTGRES_DB: "car_expense_calculator",
   POSTGRES_USER: "car_expense_app",
   POSTGRES_PASSWORD: "compose-boundary-verification-only",
+  CODEX_HOME_PATH: "/tmp/car-expense-codex-boundary-verification",
 };
 
 const local = resolveCompose("compose.yaml");
 const unraid = resolveCompose("compose.unraid.yaml");
 
 verifyPublishedPorts(local, "local Compose");
-verifySharedNetwork(local, ["api", "postgres", "web"], "app-network", "local Compose");
+verifySharedNetwork(local, ["api", "codex-extractor", "postgres", "web"], "app-network", "local Compose");
 assert(local.networks["app-network"]?.name === "car-expense-local", "Local Compose must use the car-expense-local network.");
 assert(local.services.postgres?.image === "postgres:18", "Local Compose must use PostgreSQL 18.");
+verifyCodexBoundary(local, "volume", "codex-home", "local Compose");
 
 verifyPublishedPorts(unraid, "Unraid Compose");
 assert(!("postgres" in unraid.services), "Unraid Compose must not define a replacement PostgreSQL service.");
-verifySharedNetwork(unraid, ["api", "web"], "car-expense-network", "Unraid Compose");
+verifySharedNetwork(unraid, ["api", "codex-extractor", "web"], "car-expense-network", "Unraid Compose");
 assert(unraid.networks["car-expense-network"]?.external === true, "Unraid must use an external car-expense-network.");
+verifyCodexBoundary(unraid, "bind", "/tmp/car-expense-codex-boundary-verification", "Unraid Compose");
 
 const unraidConnection = parseConnectionString(unraid.services.api.environment.ConnectionStrings__Postgres);
 assert(unraidConnection.Host === "postgresql18", "Unraid API must connect to the postgresql18 container.");
 assert(unraidConnection.Port === "5432", "Unraid API must use PostgreSQL container port 5432.");
 assert(unraidConnection.Database === "car_expense_calculator", "Unraid API must use the dedicated car_expense_calculator database.");
 assert(unraidConnection.Username === "car_expense_app", "Unraid API must use the dedicated car_expense_app role.");
+assert(local.services.api.environment.CodexExtraction__BaseUrl === "http://codex-extractor:8080", "Local API must use the internal Codex extractor address.");
+assert(unraid.services.api.environment.CodexExtraction__BaseUrl === "http://codex-extractor:8080", "Unraid API must use the internal Codex extractor address.");
 
-console.log("Compose port, network, and PostgreSQL boundaries are valid.");
+console.log("Compose port, network, PostgreSQL, and Codex boundaries are valid.");
 
 function resolveCompose(file) {
   const output = execFileSync(
@@ -69,6 +74,42 @@ function verifySharedNetwork(config, serviceNames, networkName, description) {
     assert(
       Object.keys(service.networks ?? {}).length === 1 && networkName in service.networks,
       `${description} ${serviceName} must use only ${networkName}.`,
+    );
+  }
+}
+
+function verifyCodexBoundary(config, expectedMountType, expectedSource, description) {
+  const extractor = config.services["codex-extractor"];
+  assert(extractor, `${description} must define codex-extractor.`);
+  assert(!extractor.ports || extractor.ports.length === 0, `${description} codex-extractor must publish no port.`);
+  assert(extractor.environment.CODEX_HOME === "/var/lib/codex", `${description} must use the dedicated container Codex home.`);
+  assert(extractor.environment.CODEX_MODEL === "gpt-5.6-luna", `${description} must request gpt-5.6-luna.`);
+  assert(extractor.environment.CODEX_REASONING_EFFORT === "medium", `${description} must use medium reasoning.`);
+  const healthCommand = (extractor.healthcheck?.test ?? []).join(" ");
+  assert(healthCommand.includes("/health/live"), `${description} Codex health must use process liveness.`);
+  assert(!healthCommand.includes("/internal/status") && !healthCommand.includes("login"), `${description} Codex health must not require authentication readiness.`);
+  assert(config.services.api.depends_on?.["codex-extractor"]?.condition === "service_healthy", `${description} API must depend on Codex process liveness.`);
+
+  const forbiddenEnvironment = Object.keys(extractor.environment)
+    .filter((name) => name.startsWith("POSTGRES_")
+      || name.startsWith("ConnectionStrings__")
+      || name === "OPENAI_API_KEY"
+      || name === "CODEX_API_KEY");
+  assert(forbiddenEnvironment.length === 0, `${description} codex-extractor must receive no database or API-key configuration.`);
+
+  const mounts = extractor.volumes ?? [];
+  assert(mounts.length === 1, `${description} codex-extractor must have exactly one mount.`);
+  const [mount] = mounts;
+  assert(mount.type === expectedMountType, `${description} Codex home must use a ${expectedMountType} mount.`);
+  assert(mount.source === expectedSource, `${description} Codex home mount source is incorrect.`);
+  assert(mount.target === "/var/lib/codex", `${description} may mount only the dedicated Codex home.`);
+
+  for (const serviceName of ["api", "web", "postgres"]) {
+    const service = config.services[serviceName];
+    if (!service) continue;
+    assert(
+      !(service.volumes ?? []).some((volume) => volume.source === expectedSource || volume.target === "/var/lib/codex"),
+      `${description} ${serviceName} must not mount Codex authentication state.`,
     );
   }
 }

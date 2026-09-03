@@ -2,9 +2,10 @@
 
 ## Status and purpose
 
-This document defines the planned milestone 2 extraction runtime. It is not
-implemented yet. URL analysis will use a private, ChatGPT-authenticated Codex
-sidecar instead of calling the OpenAI Platform API directly.
+The private milestone 2 extraction runtime is implemented. It consists of a
+ChatGPT-authenticated Codex sidecar and a provider-neutral Infrastructure
+adapter. The public URL-analysis endpoint, listing persistence, and Swedish
+review interface remain planned, so users cannot start listing extraction yet.
 
 Codex is only an ingestion aid. Core remains authoritative for URL matching,
 normalization, provenance, missing-field codes, validation, and analysis
@@ -13,7 +14,7 @@ separate advisory review in milestone 5 is not part of this runtime.
 
 ## Runtime boundary
 
-The planned deployment adds an internal `codex-extractor` service:
+The deployment includes an internal `codex-extractor` service:
 
 ```text
 Browser
@@ -31,23 +32,45 @@ only the application network, receives no PostgreSQL connection or credentials,
 and mounts neither the repository nor application source. The API remains the
 only caller.
 
-The API owns the public listing-analysis contract and an application-owned
-listing-extraction abstraction. Its Infrastructure implementation calls the
-sidecar through a typed `HttpClient`. The sidecar protocol is internal and must
-not appear in public OpenAPI.
+The future API endpoint will own the public listing-analysis contract. The
+application-owned `IListingExtractionService` abstraction and its Infrastructure
+implementation already call the sidecar through a typed `HttpClient`. The
+sidecar protocol is internal and does not appear in public OpenAPI.
 
 Each internal request contains one already normalized listing URL plus the
 expected prompt and extraction-schema versions. The response contains the
-actual model, versions, analysis timestamp, ordered source evidence, and the
+requested model, versions, analysis timestamp, ordered source evidence, and the
 structured extraction draft. It never accepts or returns database credentials,
 browser cookies, seller contact data, a trusted Core result, or persistence
 identifiers.
 
+The sidecar listens on container port 8080 and exposes only these internal
+contracts:
+
+- `GET /health/live` checks process liveness without checking login state;
+- `GET /internal/status` checks the pinned CLI and saved ChatGPT login without
+  starting a paid/search turn; and
+- `POST /internal/listing-extractions` accepts `normalizedUrl`,
+  `promptVersion: 1`, and `schemaVersion: 1`.
+
+A successful extraction response contains `requestedModel`, the two versions,
+the UTC analysis time, normalized concrete opened-source URLs, and the raw
+schema-constrained listing fields. The raw schema has no provenance, status,
+missing-field codes, vehicle label, source metadata, or trusted Core result.
+Every field is required but nullable; `null` means unknown and `[]` means a
+known-empty collection. The API-side transport timeout is 65 seconds, five
+seconds beyond the sidecar's complete 60-second operation budget, and no retry
+handler is installed.
+
 ## Codex invocation policy
 
 The sidecar starts exactly one non-interactive Codex turn for each URL. The
-Codex CLI version and container image digest will be pinned when issue #32 is
-implemented.
+Codex CLI and every build/runtime base image are pinned:
+
+- `@openai/codex` `0.153.0`;
+- Node `22.22.2-bookworm-slim` by digest;
+- .NET SDK 10.0 (SDK `10.0.400`) by digest; and
+- ASP.NET Core 10 runtime by digest.
 
 | Setting | Required value |
 | --- | --- |
@@ -89,9 +112,10 @@ Missing values are returned as null rather than guessed.
 ## Source evidence and output validation
 
 The sidecar parses the Codex JSONL stream as untrusted runtime output. It builds
-the source list only from completed web-search events that show an actual page
-open. Model-authored URLs in the final structured response are never accepted as
-proof that a page was opened.
+the source list only from completed `web_search` items whose action is
+`open_page` or `find_in_page` and contains a concrete URL. Search queries,
+search-result snippets, citations, and model-authored URLs in the final
+structured response are never accepted as proof that a page was opened.
 
 Source URLs are retained in first-seen order and deduplicated by their complete
 normalized URL. Core parses and normalizes each source and applies its
@@ -105,8 +129,10 @@ JSON, non-schema output, or output that cannot be safely associated with the
 turn is an invalid-runtime response. Structurally valid individual listing
 values still pass through Core, which discards invalid AI fields independently.
 
-Prompt and schema versions start at 1. The actual model reported by the Codex
-turn is returned; configuration never overwrites runtime evidence.
+Prompt and schema versions start at 1. The response records `requestedModel`,
+which proves the model requested by the pinned invocation but does not claim to
+prove provider-side routing. The current Codex JSONL event contract does not
+report a provider-confirmed model identifier.
 
 ## Authentication and configuration
 
@@ -114,11 +140,12 @@ The sidecar authenticates with the owner's ChatGPT account and consumes the
 account's Codex allowance. It does not support `OPENAI_API_KEY`,
 `CODEX_API_KEY`, Platform API billing, or an automatic API-key fallback.
 
-For a headless Unraid deployment, device-code login is the preferred one-time
-setup:
+For local Compose, perform the one-time device-code login in the dedicated
+service volume and verify it without starting an extraction turn:
 
 ```bash
-codex login --device-auth
+docker compose run --rm --no-deps --entrypoint codex codex-extractor login --device-auth -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
+docker compose run --rm --no-deps --entrypoint codex codex-extractor login status -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
 ```
 
 Device-code login must first be enabled in the ChatGPT account's security
@@ -133,7 +160,7 @@ If device-code authentication is unavailable, the only documented fallback is
 to sign in locally and securely copy the Codex authentication cache into the
 dedicated Unraid location. The application does not provide a browser login UI.
 
-Planned non-secret configuration is:
+Non-secret configuration is:
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
@@ -167,7 +194,7 @@ and every deterministic Core operation remain available when extraction fails.
 Overall system health remains database-based.
 
 Logs may contain only a generated correlation identifier, safe outcome code,
-duration, model identifier when safely available, and aggregate event counts.
+duration, the requested model, and aggregate event counts.
 They must not contain the submitted or source URLs, prompts, extracted values,
 JSONL lines, final JSON, stdout/stderr bodies, filesystem paths to credentials,
 or token contents. Raw Codex output and execution history are never persisted.
@@ -179,8 +206,8 @@ settings.
 ## Testing boundary
 
 Automated tests never authenticate to ChatGPT, mount a real Codex home, start a
-live Codex turn, or consume subscription allowance. Issue #32 will use fake
-processes and deterministic JSONL fixtures to verify:
+live Codex turn, or consume subscription allowance. The sidecar and adapter use
+fake processes, fake HTTP handlers, and deterministic JSONL fixtures to verify:
 
 - exact owned arguments and configuration;
 - schema/prompt versioning and hostile-content instructions;
@@ -201,3 +228,6 @@ never depends on a real ChatGPT session.
 - [Codex web search](https://learn.chatgpt.com/docs/web-search)
 - [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
 - [Codex plan usage](https://learn.chatgpt.com/docs/pricing)
+- [Codex JSONL event contract](https://github.com/openai/codex/blob/main/codex-rs/exec/src/exec_events.rs)
+- [Codex model-metadata limitation](https://github.com/openai/codex/issues/39406)
+- [Codex source-metadata limitation](https://github.com/openai/codex/issues/35415)

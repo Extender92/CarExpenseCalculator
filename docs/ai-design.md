@@ -16,7 +16,7 @@ turn. Live web search is required, and actual opened-page events are checked
 before any value is accepted. The browser and application services never fetch
 the listing page directly.
 
-Planned extraction settings are:
+The implemented private extraction runtime uses:
 
 - Runtime: an internal ASP.NET Core `codex-extractor` sidecar invoking
   `codex exec`; the API calls it through a typed `HttpClient`.
@@ -78,5 +78,6 @@ The backend may send all meaningful structured vehicle information: listing URL,
 `AiReview` will contain a summary, confirmed facts, contradictions, unverified claims, missing information, risks, positive signals, seller questions, overall advisory conclusion, confidence, model and prompt versions, token usage, and creation time.
 
 Broad cited research remains an explicit later action rather than part of URL
-extraction. Image analysis remains milestone 6. No live Codex extraction or
-advisory AI integration is implemented by the current repository.
+extraction. Image analysis remains milestone 6. The private Codex runtime is
+implemented, but no public URL-analysis endpoint or advisory AI integration is
+available yet.

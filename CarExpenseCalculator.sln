@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Core",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Infrastructure", "src\backend\CarExpenseCalculator.Infrastructure\CarExpenseCalculator.Infrastructure.csproj", "{B7084FA4-4746-40A6-8A0D-45647462C184}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Extraction.Contracts", "src\backend\CarExpenseCalculator.Extraction.Contracts\CarExpenseCalculator.Extraction.Contracts.csproj", "{89FF626D-C6BA-4188-ACB6-606A8782FC67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.CodexExtractor", "src\backend\CarExpenseCalculator.CodexExtractor\CarExpenseCalculator.CodexExtractor.csproj", "{4AAD71E0-3301-4621-8263-119DC57B531C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.ArchitectureTests", "tests\backend\CarExpenseCalculator.ArchitectureTests\CarExpenseCalculator.ArchitectureTests.csproj", "{DC65D264-2C49-4FA6-B509-A5C0179DDE8D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Api.IntegrationTests", "tests\backend\CarExpenseCalculator.Api.IntegrationTests\CarExpenseCalculator.Api.IntegrationTests.csproj", "{EB9C2D62-3430-4148-BC69-BB6BBEA0C09A}"
@@ -16,6 +20,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Core.UnitTests", "tests\backend\CarExpenseCalculator.Core.UnitTests\CarExpenseCalculator.Core.UnitTests.csproj", "{64F1A8E6-7D22-4F9A-9B8F-A2C672A9DD43}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Infrastructure.IntegrationTests", "tests\backend\CarExpenseCalculator.Infrastructure.IntegrationTests\CarExpenseCalculator.Infrastructure.IntegrationTests.csproj", "{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.CodexExtractor.UnitTests", "tests\backend\CarExpenseCalculator.CodexExtractor.UnitTests\CarExpenseCalculator.CodexExtractor.UnitTests.csproj", "{A3A010BD-974B-4B80-ABDA-BFE4A1145D00}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarExpenseCalculator.Infrastructure.UnitTests", "tests\backend\CarExpenseCalculator.Infrastructure.UnitTests\CarExpenseCalculator.Infrastructure.UnitTests.csproj", "{2B30839F-AA8E-415E-8189-2593B59A3551}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +59,22 @@ Global
 		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D48670D6-2E93-4F2C-AF63-77AE5B6D4157}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89FF626D-C6BA-4188-ACB6-606A8782FC67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89FF626D-C6BA-4188-ACB6-606A8782FC67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89FF626D-C6BA-4188-ACB6-606A8782FC67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89FF626D-C6BA-4188-ACB6-606A8782FC67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AAD71E0-3301-4621-8263-119DC57B531C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AAD71E0-3301-4621-8263-119DC57B531C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AAD71E0-3301-4621-8263-119DC57B531C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AAD71E0-3301-4621-8263-119DC57B531C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3A010BD-974B-4B80-ABDA-BFE4A1145D00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3A010BD-974B-4B80-ABDA-BFE4A1145D00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3A010BD-974B-4B80-ABDA-BFE4A1145D00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3A010BD-974B-4B80-ABDA-BFE4A1145D00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B30839F-AA8E-415E-8189-2593B59A3551}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B30839F-AA8E-415E-8189-2593B59A3551}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B30839F-AA8E-415E-8189-2593B59A3551}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B30839F-AA8E-415E-8189-2593B59A3551}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

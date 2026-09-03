@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Listing extraction v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registrationNumber",
+    "make",
+    "model",
+    "variant",
+    "modelYear",
+    "vin",
+    "priceSek",
+    "odometerKilometres",
+    "sellerType",
+    "location",
+    "publishedDate",
+    "updatedDate",
+    "imageCount",
+    "fuelTypes",
+    "transmission",
+    "drivetrain",
+    "bodyType",
+    "colour",
+    "horsepower",
+    "engineDisplacementCubicCentimetres",
+    "energyConsumptions",
+    "annualVehicleTaxSek",
+    "ownerCount",
+    "firstRegistrationDate",
+    "lastInspectionDate",
+    "nextInspectionDate",
+    "towBar",
+    "equipment",
+    "sellerClaims",
+    "conditionNotes"
+  ],
+  "properties": {
+    "registrationNumber": { "type": ["string", "null"] },
+    "make": { "type": ["string", "null"] },
+    "model": { "type": ["string", "null"] },
+    "variant": { "type": ["string", "null"] },
+    "modelYear": { "type": ["integer", "null"] },
+    "vin": { "type": ["string", "null"] },
+    "priceSek": { "type": ["number", "null"] },
+    "odometerKilometres": { "type": ["number", "null"] },
+    "sellerType": {
+      "type": ["string", "null"],
+      "enum": ["private", "dealer", null]
+    },
+    "location": { "type": ["string", "null"] },
+    "publishedDate": { "type": ["string", "null"] },
+    "updatedDate": { "type": ["string", "null"] },
+    "imageCount": { "type": ["integer", "null"] },
+    "fuelTypes": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["petrol", "diesel", "electricity", "ethanol", "biogas", "naturalGas", "liquefiedPetroleumGas", "hydrogen", "other"]
+          }
+        }
+      ]
+    },
+    "transmission": {
+      "type": ["string", "null"],
+      "enum": ["manual", "automatic", null]
+    },
+    "drivetrain": {
+      "type": ["string", "null"],
+      "enum": ["frontWheelDrive", "rearWheelDrive", "allWheelDrive", null]
+    },
+    "bodyType": {
+      "type": ["string", "null"],
+      "enum": ["sedan", "hatchback", "wagon", "suv", "coupe", "convertible", "minivan", "pickup", "van", "other", null]
+    },
+    "colour": { "type": ["string", "null"] },
+    "horsepower": { "type": ["integer", "null"] },
+    "engineDisplacementCubicCentimetres": { "type": ["number", "null"] },
+    "energyConsumptions": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "unit", "consumptionPer100Kilometres"],
+            "properties": {
+              "label": { "type": ["string", "null"] },
+              "unit": {
+                "type": ["string", "null"],
+                "enum": ["litre", "kilowattHour", "kilogram", null]
+              },
+              "consumptionPer100Kilometres": { "type": ["number", "null"] }
+            }
+          }
+        }
+      ]
+    },
+    "annualVehicleTaxSek": { "type": ["number", "null"] },
+    "ownerCount": { "type": ["integer", "null"] },
+    "firstRegistrationDate": { "type": ["string", "null"] },
+    "lastInspectionDate": { "type": ["string", "null"] },
+    "nextInspectionDate": { "type": ["string", "null"] },
+    "towBar": { "type": ["boolean", "null"] },
+    "equipment": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "sellerClaims": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "conditionNotes": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    }
+  }
+}
