@@ -4,6 +4,75 @@
  */
 
 export interface paths {
+    "/api/listing-analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ListingAnalysisRequest"];
+                    "application/*+json": components["schemas"]["ListingAnalysisRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ListingAnalysisResponse"];
+                        "application/json": components["schemas"]["ListingAnalysisResponse"];
+                        "text/json": components["schemas"]["ListingAnalysisResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ListingAnalysisProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ListingAnalysisProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/manual-calculations": {
         parameters: {
             query?: never;
@@ -412,6 +481,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {unknown} */
+        BodyType: "sedan" | "hatchback" | "wagon" | "suv" | "coupe" | "convertible" | "minivan" | "pickup" | "van" | "other";
         CalculationCompleteness: {
             isComplete: boolean;
             isCashFlowComplete: boolean;
@@ -449,10 +520,18 @@ export interface components {
             registrationNumber: string;
             scenario: components["schemas"]["ManualCalculationRequest"];
         };
+        /** @enum {unknown} */
+        Drivetrain: "frontWheelDrive" | "rearWheelDrive" | "allWheelDrive";
         EnergyBreakdownResult: {
             sources: components["schemas"]["EnergySourceResult"][];
             /** Format: double */
             totalCostSek: number;
+        };
+        EnergyConsumptionResponse: {
+            label: string;
+            unit: components["schemas"]["EnergyUnit"];
+            /** Format: double */
+            consumptionPer100Kilometres: number;
         };
         EnergySourceInput: {
             label: string;
@@ -482,11 +561,21 @@ export interface components {
         };
         /** @enum {unknown} */
         EnergyUnit: "litre" | "kilowattHour" | "kilogram";
+        /** @enum {unknown} */
+        ExtractionMethod: "ai" | "manual";
         FeatureStatusResponse: {
             ruleBasedSearch: boolean;
             urlAnalysis: boolean;
             manualCalculator: boolean;
             aiReview: boolean;
+        };
+        /** @enum {unknown} */
+        FieldOrigin: "listing" | "user" | "registry";
+        FieldProvenanceResponse: {
+            origin: components["schemas"]["FieldOrigin"];
+            extractionMethod: components["schemas"]["ExtractionMethod"];
+            verification: components["schemas"]["VerificationStatus"];
+            sourceUrl: string;
         };
         FinancingInput: {
             /** Format: double */
@@ -518,6 +607,79 @@ export interface components {
             /** Format: double */
             remainingPrincipalSek: number;
         };
+        /** @enum {unknown} */
+        FuelType: "petrol" | "diesel" | "electricity" | "ethanol" | "biogas" | "naturalGas" | "liquefiedPetroleumGas" | "hydrogen" | "other";
+        IntegrationStatusResponse: {
+            codexListingExtractionConfigured: boolean;
+        };
+        ListingAnalysisProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+        };
+        ListingAnalysisRequest: {
+            url: string;
+        };
+        ListingAnalysisResponse: {
+            submittedUrl: string;
+            normalizedUrl: string;
+            status: components["schemas"]["ListingAnalysisStatus"];
+            /** Format: date-time */
+            analyzedAtUtc: string;
+            requestedModel: string;
+            /** Format: int32 */
+            promptVersion: number;
+            /** Format: int32 */
+            schemaVersion: number;
+            sources: components["schemas"]["ListingAnalysisSourceResponse"][];
+            listing: components["schemas"]["ListingDraftResponse"];
+            missingFields: components["schemas"]["ListingFieldCode"][];
+        };
+        ListingAnalysisSourceResponse: {
+            url: string;
+            matchesSubmittedUrl: boolean;
+        };
+        /** @enum {unknown} */
+        ListingAnalysisStatus: "complete" | "partial" | "unavailable";
+        ListingDraftResponse: {
+            registrationNumber: null | components["schemas"]["SourcedValueResponseOfstring"];
+            make: null | components["schemas"]["SourcedValueResponseOfstring"];
+            model: null | components["schemas"]["SourcedValueResponseOfstring"];
+            variant: null | components["schemas"]["SourcedValueResponseOfstring"];
+            modelYear: null | components["schemas"]["SourcedValueResponseOfint"];
+            vin: null | components["schemas"]["SourcedValueResponseOfstring"];
+            vehicleLabel: null | components["schemas"]["SourcedValueResponseOfstring"];
+            priceSek: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            odometerKilometres: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            sellerType: null | components["schemas"]["SourcedValueResponseOfSellerType"];
+            location: null | components["schemas"]["SourcedValueResponseOfstring"];
+            publishedDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
+            updatedDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
+            imageCount: null | components["schemas"]["SourcedValueResponseOfint"];
+            fuelTypes: null | components["schemas"]["SourcedCollectionResponseOfFuelType"];
+            transmission: null | components["schemas"]["SourcedValueResponseOfTransmission"];
+            drivetrain: null | components["schemas"]["SourcedValueResponseOfDrivetrain"];
+            bodyType: null | components["schemas"]["SourcedValueResponseOfBodyType"];
+            colour: null | components["schemas"]["SourcedValueResponseOfstring"];
+            horsepower: null | components["schemas"]["SourcedValueResponseOfint"];
+            engineDisplacementCubicCentimetres: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            energyConsumptions: null | components["schemas"]["SourcedCollectionResponseOfEnergyConsumptionResponse"];
+            annualVehicleTaxSek: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            ownerCount: null | components["schemas"]["SourcedValueResponseOfint"];
+            firstRegistrationDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
+            lastInspectionDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
+            nextInspectionDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
+            towBar: null | components["schemas"]["SourcedValueResponseOfboolean"];
+            equipment: null | components["schemas"]["SourcedCollectionResponseOfstring"];
+            sellerClaims: null | components["schemas"]["SourcedCollectionResponseOfstring"];
+            conditionNotes: null | components["schemas"]["SourcedCollectionResponseOfstring"];
+        };
+        /** @enum {unknown} */
+        ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "location" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
         ManualCalculationRequest: {
             vehicleLabel?: null | string;
             /** Format: int32 */
@@ -664,12 +826,68 @@ export interface components {
             /** Format: date-time */
             updatedAtUtc: string;
         };
+        /** @enum {unknown} */
+        SellerType: "private" | "dealer";
+        SourcedCollectionResponseOfEnergyConsumptionResponse: {
+            values: components["schemas"]["EnergyConsumptionResponse"][];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedCollectionResponseOfFuelType: {
+            values: components["schemas"]["FuelType"][];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedCollectionResponseOfstring: {
+            values: string[];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfBodyType: {
+            value: components["schemas"]["BodyType"];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfboolean: {
+            value: boolean;
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfDateOnly: {
+            /** Format: date */
+            value: string;
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfdecimal: {
+            /** Format: double */
+            value: number;
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfDrivetrain: {
+            value: components["schemas"]["Drivetrain"];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfint: {
+            /** Format: int32 */
+            value: number;
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfSellerType: {
+            value: components["schemas"]["SellerType"];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfstring: {
+            value: string;
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfTransmission: {
+            value: components["schemas"]["Transmission"];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
         SystemStatusResponse: {
             status: string;
             version: string;
             database: string;
             features: components["schemas"]["FeatureStatusResponse"];
+            integrations: components["schemas"]["IntegrationStatusResponse"];
         };
+        /** @enum {unknown} */
+        Transmission: "manual" | "automatic";
         ValidationProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -681,6 +899,8 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** @enum {unknown} */
+        VerificationStatus: "unverified" | "userConfirmed" | "registryVerified";
     };
     responses: never;
     parameters: never;

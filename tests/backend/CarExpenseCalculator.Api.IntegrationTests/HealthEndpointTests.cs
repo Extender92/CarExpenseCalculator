@@ -45,6 +45,7 @@ public sealed class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiF
         Assert.False(payload.Features.UrlAnalysis);
         Assert.True(payload.Features.ManualCalculator);
         Assert.False(payload.Features.AiReview);
+        Assert.False(payload.Integrations.CodexListingExtractionConfigured);
     }
 
     [Fact]
@@ -65,11 +66,15 @@ public sealed class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiF
         string Status,
         string Version,
         string Database,
-        FeatureStatusContract Features);
+        FeatureStatusContract Features,
+        IntegrationStatusContract Integrations);
 
     private sealed record FeatureStatusContract(
         bool RuleBasedSearch,
         bool UrlAnalysis,
         bool ManualCalculator,
         bool AiReview);
+
+    private sealed record IntegrationStatusContract(
+        bool CodexListingExtractionConfigured);
 }

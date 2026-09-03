@@ -2,10 +2,11 @@
 
 ## Status and purpose
 
-The private milestone 2 extraction runtime is implemented. It consists of a
-ChatGPT-authenticated Codex sidecar and a provider-neutral Infrastructure
-adapter. The public URL-analysis endpoint, listing persistence, and Swedish
-review interface remain planned, so users cannot start listing extraction yet.
+The milestone 2 extraction runtime and unsaved public API are implemented. The
+runtime consists of a ChatGPT-authenticated Codex sidecar and a provider-neutral
+Infrastructure adapter. Listing persistence and the Swedish review interface
+remain planned. A configured installation can start one-URL extraction through
+`POST /api/listing-analyses`.
 
 Codex is only an ingestion aid. Core remains authoritative for URL matching,
 normalization, provenance, missing-field codes, validation, and analysis
@@ -32,10 +33,10 @@ only the application network, receives no PostgreSQL connection or credentials,
 and mounts neither the repository nor application source. The API remains the
 only caller.
 
-The future API endpoint will own the public listing-analysis contract. The
-application-owned `IListingExtractionService` abstraction and its Infrastructure
-implementation already call the sidecar through a typed `HttpClient`. The
-sidecar protocol is internal and does not appear in public OpenAPI.
+The API owns the separate public listing-analysis contract. The application-owned
+`IListingExtractionService` abstraction and its Infrastructure implementation
+call the sidecar through a typed `HttpClient`. The sidecar protocol remains
+internal and does not appear in public OpenAPI.
 
 Each internal request contains one already normalized listing URL plus the
 expected prompt and extraction-schema versions. The response contains the
@@ -173,7 +174,9 @@ The API reports extraction as configured when the sidecar is reachable, its
 owned configuration is valid, and Codex locally recognizes a saved ChatGPT
 login. This check starts no search turn and therefore cannot guarantee remote
 service or model availability; those failures are mapped when a real analysis
-is requested.
+is requested. `GET /api/system/status` exposes the result as
+`integrations.codexListingExtractionConfigured` without changing the
+database-based overall health status.
 
 ## Failure behavior and observability
 
