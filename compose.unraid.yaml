@@ -1,6 +1,30 @@
 name: car-expense-calculator
 
 services:
+  codex-extractor:
+    build:
+      context: .
+      dockerfile: src/backend/CarExpenseCalculator.CodexExtractor/Dockerfile
+    image: car-expense-calculator-codex-extractor:local
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      CODEX_HOME: /var/lib/codex
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-luna}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - type: bind
+        source: ${CODEX_HOME_PATH:-/mnt/user/appdata/car-expense-calculator/codex}
+        target: /var/lib/codex
+    networks:
+      - car-expense-network
+
   api:
     build:
       context: .
@@ -12,6 +36,10 @@ services:
       ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Postgres: >-
         Host=postgresql18;Port=5432;Database=${POSTGRES_DB:-car_expense_calculator};Username=${POSTGRES_USER:-car_expense_app};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      CodexExtraction__BaseUrl: http://codex-extractor:8080
+    depends_on:
+      codex-extractor:
+        condition: service_healthy
     networks:
       - car-expense-network
 

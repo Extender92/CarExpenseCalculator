@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete domain specification, but listing ingestion, the planned Codex extraction sidecar, automatic search, and advisory AI calls are intentionally not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete Core domain plus an internal Codex extraction sidecar and Infrastructure adapter. Its public API, Swedish review interface, listing persistence, automatic search, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Planned internal Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; advisory AI review remains a separate later milestone
+- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the public URL-analysis flow and advisory AI review remain later work
 
 ## Quick start with Docker
 
@@ -83,10 +83,12 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 | `POSTGRES_PASSWORD` | Local/Unraid role password | development fallback locally; required on Unraid |
 | `ConnectionStrings__Postgres` | Direct API connection override | composed internally |
 
-Future URL extraction will use `CODEX_MODEL`, `CODEX_REASONING_EFFORT`, and a
-dedicated persistent `CODEX_HOME_PATH` on Unraid. These settings are not read by
-the current application. The planned extraction runtime uses a saved ChatGPT
-Codex login and deliberately has no Platform API-key fallback.
+The internal URL-extraction runtime uses `CODEX_MODEL`,
+`CODEX_REASONING_EFFORT`, and a dedicated persistent `CODEX_HOME_PATH` on
+Unraid. It requires a saved ChatGPT Codex login and deliberately has no Platform
+API-key fallback. URL analysis is not exposed through the public API or UI yet;
+see [Codex listing extraction](docs/codex-extraction.md) for the private runtime
+and one-time login procedure.
 
 ## API endpoints
 
@@ -130,6 +132,7 @@ npm --prefix src/frontend run test
 npm --prefix src/frontend run build
 node scripts/verify-compose-boundaries.mjs
 docker compose build
+docker compose run --rm --no-deps --entrypoint codex codex-extractor --version
 docker compose up --detach postgres
 docker compose run --rm api migrate
 docker compose up --detach api web
@@ -143,7 +146,7 @@ The Playwright suite expects the Docker stack at `http://localhost:8088`. Add `-
 ## Repository layout
 
 ```text
-src/backend/       API, Core, and Infrastructure projects
+src/backend/       API, Core, Infrastructure, extraction contracts, and private sidecar
 src/frontend/      React application, generated API types, and Nginx config
 tests/backend/     Architecture and PostgreSQL integration tests
 docs/              Product, architecture, integration, AI, and operations notes

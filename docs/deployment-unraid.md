@@ -50,40 +50,55 @@ Validate the repository-owned port, network, and connection boundaries before de
 node scripts/verify-compose-boundaries.mjs
 ```
 
-## Planned Codex extraction service
+## Codex extraction service
 
-URL extraction is not implemented in the current Compose files. Issue #32 will
-add a private `codex-extractor` sidecar on `car-expense-network`. It will have no
-published port, PostgreSQL settings, repository mount, or application-source
-mount. Only the API will call it over the internal network.
+Compose includes a private `codex-extractor` sidecar on
+`car-expense-network`. It has no published port, PostgreSQL settings, repository
+mount, or application-source mount. Only the API calls its internal port 8080.
+Its liveness check does not require authentication, so a missing or expired
+Codex login cannot block the manual calculator.
 
-The future sidecar will authenticate once through the Unraid terminal with:
+The sidecar runs as container user `1654`. Prepare the dedicated appdata path
+before the first login:
 
 ```bash
-codex login --device-auth
+codex_state_path=/mnt/user/appdata/car-expense-calculator/codex
+mkdir -p "$codex_state_path"
+chown 1654:1654 "$codex_state_path"
+chmod 700 "$codex_state_path"
+```
+
+Set `CODEX_HOME_PATH` to that path in `.env`, build the pinned image, perform
+device-code login once, and verify the saved ChatGPT session without starting a
+search:
+
+```bash
+docker compose -f compose.unraid.yaml build codex-extractor
+docker compose -f compose.unraid.yaml run --rm --no-deps --entrypoint codex codex-extractor login --device-auth -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
+docker compose -f compose.unraid.yaml run --rm --no-deps --entrypoint codex codex-extractor login status -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
 ```
 
 Device-code login must be enabled in the ChatGPT account's security settings.
-The future Compose service will mount its Codex home from
-`${CODEX_HOME_PATH:-/mnt/user/appdata/car-expense-calculator/codex}` so refreshed
-credentials survive container replacement. This directory is a secret: exclude
-it from Git, logs, shares exposed to untrusted users, and mounts into the API,
-web, or PostgreSQL containers. Do not place its contents in `.env`.
+The mounted Codex home preserves refreshed credentials across container
+replacement. Treat the directory as a secret: exclude it from Git, logs, shares
+exposed to untrusted users, and mounts into API, web, or PostgreSQL containers.
+Do not copy its contents into `.env` or an ordinary unencrypted backup.
 
-The application will not support a Platform API key as a fallback. CI and
-deployment smoke tests will use a fake extractor and never mount the real Codex
-home or consume ChatGPT usage. Exact build, login, upgrade, and verification
-commands will be added together with the sidecar implementation. See
+Back up this directory only to secret-capable encrypted storage if retaining the
+session is operationally necessary. Restoring it gives access equivalent to the
+saved Codex session. Re-authentication is safer than retaining an unprotected
+copy. The application has no Platform API-key fallback. CI never authenticates,
+starts a live turn, or consumes ChatGPT usage. See
 [Codex listing extraction](codex-extraction.md).
 
 ## Initial deployment
 
-The existing `postgresql18` container must be running and attached to `car-expense-network`. Build the application images, apply the database migration, and only then start API and web:
+The existing `postgresql18` container must be running and attached to `car-expense-network`. Complete the one-time Codex login above, build the application images, apply the database migration, and only then start the services:
 
 ```bash
 docker compose -f compose.unraid.yaml build
 docker compose -f compose.unraid.yaml run --rm api migrate
-docker compose -f compose.unraid.yaml up --detach api web
+docker compose -f compose.unraid.yaml up --detach codex-extractor api web
 ```
 
 The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
@@ -107,11 +122,16 @@ Create and verify a PostgreSQL backup before an upgrade. Build the new images wh
 
 ```bash
 docker compose -f compose.unraid.yaml build
-docker compose -f compose.unraid.yaml stop web api
+docker compose -f compose.unraid.yaml stop web api codex-extractor
 docker compose -f compose.unraid.yaml run --rm api migrate
-docker compose -f compose.unraid.yaml up --detach api web
+docker compose -f compose.unraid.yaml up --detach codex-extractor api web
 curl --fail http://extower.local:8088/api/health/ready
 ```
+
+Image replacement preserves the bound `CODEX_HOME_PATH`. After a Codex CLI
+upgrade, verify `codex --version` and `codex login status` with the commands
+above before testing extraction. Never solve an authentication failure by
+mounting the Codex home into another service.
 
 If migration fails, leave the updated services stopped, preserve the command output, and investigate before restarting. Do not attempt an arbitrary rollback against persistent data.
 
@@ -129,7 +149,7 @@ Local development uses the same image and command:
 docker compose build api
 docker compose up --detach postgres
 docker compose run --rm api migrate
-docker compose up --detach api web
+docker compose up --detach codex-extractor api web
 ```
 
 An explicit migration name may be supplied as the final argument. Target `0` rolls back every application migration:

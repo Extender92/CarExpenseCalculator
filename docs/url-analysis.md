@@ -2,11 +2,10 @@
 
 ## Status and purpose
 
-This document defines the target behavior for milestone 2. URL analysis is not
-implemented yet. The specification exists so the Core, Codex extraction
-runtime, HTTP,
-persistence, and frontend issues can be implemented without inventing contracts
-or broadening the feature.
+This document defines the target behavior for milestone 2. The dependency-free
+Core listing domain, private Codex extraction sidecar, and provider-neutral
+Infrastructure adapter are implemented. The public HTTP endpoint, persistence,
+and Swedish frontend are not implemented yet.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -363,9 +362,11 @@ Each request uses this policy:
 | Retries | None automatically |
 | Search-event limit | None; the one turn is bounded by timeout and concurrency |
 
-The actual model reported by the completed turn is recorded as `actualModel`;
-configuration does not overwrite it. Prompt and extraction-schema versions
-begin at `1` and are returned with every structurally successful Codex response.
+The pinned invocation is recorded as `requestedModel`. This is configuration
+evidence and does not claim to prove provider-side routing because the current
+Codex JSONL event contract contains no provider-reported model identifier.
+Prompt and extraction-schema versions begin at `1` and are returned with every
+structurally successful Codex response.
 
 The instruction treats all page material as untrusted data and says to ignore
 instructions embedded in the page. It requests only supported listing facts and
@@ -408,7 +409,7 @@ submittedUrl: string
 normalizedUrl: string
 status: complete | partial | unavailable
 analyzedAtUtc: UTC timestamp
-actualModel: string?
+requestedModel: string?
 promptVersion: integer?
 schemaVersion: integer?
 sources: ordered ListingAnalysisSource[]
@@ -418,7 +419,7 @@ missingFields: ordered ListingFieldCode[]
 
 `ListingAnalysisSource` contains only a normalized `url` and
 `matchesSubmittedUrl`. For a Codex-backed successful operation,
-`actualModel`, `promptVersion`, and `schemaVersion` are required even when the
+`requestedModel`, `promptVersion`, and `schemaVersion` are required even when the
 analysis result is unavailable. A future manually constructed listing may omit
 extraction metadata.
 
@@ -490,7 +491,7 @@ analyzedAtUtc: UTC timestamp
 submittedUrl: string
 normalizedUrl: string
 status: ListingAnalysisStatus
-actualModel: string?
+requestedModel: string?
 promptVersion: integer?
 schemaVersion: integer?
 sources: ordered ListingAnalysisSource[]
@@ -604,8 +605,8 @@ calculator prefilling. Do not retain:
 - raw Codex prompts, events, or responses; or
 - analysis history superseded by a current replacement.
 
-The complete returned source-URL list, current structured facts, field
-provenance, actual model, prompt/schema versions, and timestamps are retained
+The ordered concrete opened-source URL list, current structured facts, field
+provenance, requested model, prompt/schema versions, and timestamps are retained
 only when the user saves the listing.
 
 ## Explicit exclusions

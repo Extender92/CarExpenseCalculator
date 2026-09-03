@@ -14,6 +14,10 @@
 
 ## 2. URL analysis
 
+The specification, dependency-free listing domain, and private Codex extraction
+runtime are implemented. Public API, persistence, frontend, and complete-flow
+verification remain planned.
+
 - Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
 - Add dependency-free listing concepts and deterministic validation in Core.
 - Add a bounded internal Codex extraction sidecar using ChatGPT authentication,

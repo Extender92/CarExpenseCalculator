@@ -18,6 +18,27 @@ services:
     networks:
       - app-network
 
+  codex-extractor:
+    build:
+      context: .
+      dockerfile: src/backend/CarExpenseCalculator.CodexExtractor/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      CODEX_HOME: /var/lib/codex
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-luna}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - codex-home:/var/lib/codex
+    networks:
+      - app-network
+
   api:
     build:
       context: .
@@ -28,8 +49,11 @@ services:
       ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Postgres: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB:-car_expense_calculator};Username=${POSTGRES_USER:-car_expense_app};Password=${POSTGRES_PASSWORD:-car_expense_dev_only}
+      CodexExtraction__BaseUrl: http://codex-extractor:8080
     depends_on:
       postgres:
+        condition: service_healthy
+      codex-extractor:
         condition: service_healthy
     networks:
       - app-network
@@ -48,6 +72,7 @@ services:
 
 volumes:
   postgres-data:
+  codex-home:
 
 networks:
   app-network:

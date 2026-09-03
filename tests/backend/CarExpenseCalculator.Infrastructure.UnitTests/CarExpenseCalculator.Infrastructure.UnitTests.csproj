@@ -6,15 +6,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\backend\CarExpenseCalculator.Core\CarExpenseCalculator.Core.csproj" />
     <ProjectReference Include="..\..\..\src\backend\CarExpenseCalculator.Infrastructure\CarExpenseCalculator.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\src\backend\CarExpenseCalculator.Extraction.Contracts\CarExpenseCalculator.Extraction.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\src\backend\CarExpenseCalculator.CodexExtractor\CarExpenseCalculator.CodexExtractor.csproj" />
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@ COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/backend/CarExpenseCalculator.Api/CarExpenseCalculator.Api.csproj src/backend/CarExpenseCalculator.Api/
 COPY src/backend/CarExpenseCalculator.Core/CarExpenseCalculator.Core.csproj src/backend/CarExpenseCalculator.Core/
 COPY src/backend/CarExpenseCalculator.Infrastructure/CarExpenseCalculator.Infrastructure.csproj src/backend/CarExpenseCalculator.Infrastructure/
+COPY src/backend/CarExpenseCalculator.Extraction.Contracts/CarExpenseCalculator.Extraction.Contracts.csproj src/backend/CarExpenseCalculator.Extraction.Contracts/
 RUN dotnet restore src/backend/CarExpenseCalculator.Api/CarExpenseCalculator.Api.csproj
 
 COPY src/backend src/backend

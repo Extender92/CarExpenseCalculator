@@ -12,7 +12,7 @@ Browser
                  -> Core domain and rules
                  -> Infrastructure adapters
                       -> PostgreSQL
-                      -> future internal Codex extraction sidecar
+                      -> internal Codex extraction sidecar
                            -> hosted Codex web search
                       -> future registry/listing providers
                       -> future advisory OpenAI review
@@ -24,7 +24,9 @@ The production browser sees one HTTP origin. Nginx serves the React build and pr
 
 - **Api** owns HTTP contracts, OpenAPI, health endpoints, configuration, and dependency injection.
 - **Core** contains domain types, calculations, and deterministic rules without database, HTTP, or AI dependencies.
-- **Infrastructure** implements PostgreSQL persistence and future integrations.
+- **Infrastructure** implements PostgreSQL persistence and external-service adapters, including the private Codex extractor client.
+- **Extraction.Contracts** contains the dependency-free internal sidecar protocol and is shared only by Infrastructure and the sidecar.
+- **CodexExtractor** owns authenticated `codex exec` orchestration, strict extraction-schema validation, source-event parsing, and its private HTTP endpoints.
 - Dependency direction is `Api -> Core`, `Api -> Infrastructure`, and `Infrastructure -> Core`.
 
 ## Frontend boundaries
@@ -46,9 +48,9 @@ The implementation is introduced incrementally as each feature milestone begins:
 - `CostScenario`: implemented dependency-free financing, use, energy, tax, maintenance, validation, and calculation assumptions. A vehicle may currently own one persisted current scenario.
 - `AiReview`: structured advisory observations that never override deterministic results.
 
-## Planned URL-analysis flow
+## URL-analysis flow
 
-The browser will submit one URL per `POST /api/listing-analyses` request and
+The browser will submit one URL per future `POST /api/listing-analyses` request and
 limit itself to two concurrent requests. The API will normalize the URL through
 Core and call an application-owned Infrastructure adapter. That adapter will
 use a typed internal HTTP client to a private ASP.NET Core `codex-extractor`
@@ -56,15 +58,16 @@ sidecar. The sidecar runs one ChatGPT-authenticated `codex exec` turn with
 host-restricted hosted web search; neither the browser nor application services
 fetch the listing page directly.
 
-The sidecar has no published port, database credentials, repository mount, or
-application-source mount. Codex output is untrusted ingestion input. Actual
-opened-page events provide source evidence, while Core owns source matching,
+The implemented sidecar has no published port, database credentials, repository
+mount, or application-source mount. Codex output is untrusted ingestion input.
+Only completed `open_page` and `find_in_page` events with concrete URLs provide
+source evidence, while Core owns source matching,
 normalization, validation, provenance, missing-field codes, and analysis status.
 Extracted facts remain unverified until the user changes them, at which point
 the complete edited value becomes manually entered and user-confirmed. Advisory
 AI review is a separate milestone and never shares authority with extraction.
 
-The complete future contracts are defined in the
+The complete feature contracts and implemented runtime boundary are defined in the
 [URL analysis specification](url-analysis.md) and
 [Codex listing extraction](codex-extraction.md).
 

@@ -113,6 +113,8 @@ jobs:
         run: node scripts/verify-compose-boundaries.mjs
       - name: Build Docker images
         run: docker compose build
+      - name: Verify pinned Codex CLI
+        run: docker compose run --rm --no-deps --entrypoint codex codex-extractor --version | grep --fixed-strings "codex-cli 0.153.0"
       - name: Start PostgreSQL
         run: docker compose up --detach postgres
       - name: Apply database migration for end-to-end tests
