@@ -21,7 +21,11 @@ The user creates a search profile containing hard requirements and softer prefer
 
 ### URL analysis
 
-The user pastes one through ten public listing URLs. The application analyzes each URL independently through a source-aware hosted integration, clearly marks missing and unverified values, permits manual correction, and can store one current reviewed listing per vehicle. Provider failure leaves manual entry available.
+The user pastes one through ten public listing URLs. The application analyzes
+each URL independently through a source-aware, ChatGPT-authenticated Codex
+integration, clearly marks missing and unverified values, permits manual
+correction, and can store one current reviewed listing per vehicle. Extraction
+failure leaves manual entry available.
 
 Rule evaluation and side-by-side comparison are applied to these saved candidates in milestone 3; they are not part of the URL-ingestion milestone itself.
 
@@ -41,4 +45,7 @@ The user enters vehicle, operating, financing, and usage values directly. Saving
 
 The repository foundation and manual-calculator milestone are implemented. The application provides the three-mode navigation, health and status endpoints, deterministic manual calculations, optional PostgreSQL-backed saved scenarios, Docker deployment, tests, CI, and documentation.
 
-The URL-analysis contracts are specified but not implemented. Rule-based search, URL-analysis implementation, listing persistence, automatic discovery, comparison, hosted OpenAI extraction, and advisory OpenAI review remain future work.
+The URL-analysis domain and extraction-runtime contracts are specified but not
+implemented. Rule-based search, URL-analysis implementation, listing
+persistence, automatic discovery, comparison, ChatGPT-authenticated Codex
+extraction, and advisory AI review remain future work.

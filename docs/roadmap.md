@@ -16,11 +16,14 @@
 
 - Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
 - Add dependency-free listing concepts and deterministic validation in Core.
-- Add bounded hosted OpenAI Web Search extraction without direct scraping or marketplace-specific parsing.
+- Add a bounded internal Codex extraction sidecar using ChatGPT authentication,
+  host-restricted hosted web search, and no direct scraping or
+  marketplace-specific parsing.
 - Expose independent unsaved previews and current saved-listing APIs.
 - Persist one current listing per vehicle with optimistic concurrency and no analysis history.
 - Build Swedish analysis, manual-review, saved-listing, and calculator-prefill workflows.
-- Verify the complete flow through fake-provider, PostgreSQL, Compose, and browser tests without paid calls.
+- Verify the complete flow through a fake extractor, PostgreSQL, Compose, and
+  browser tests without live Codex calls or ChatGPT usage.
 
 ## 3. Rules and comparison
 

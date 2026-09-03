@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete specification, but listing ingestion, automatic search, and OpenAI calls are intentionally not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now has a decision-complete domain specification, but listing ingestion, the planned Codex extraction sidecar, automatic search, and advisory AI calls are intentionally not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Planned optional OpenAI Responses API integration with `gpt-5.6-luna` for URL extraction and later advisory review
+- Planned internal Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; advisory AI review remains a separate later milestone
 
 ## Quick start with Docker
 
@@ -83,7 +83,10 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 | `POSTGRES_PASSWORD` | Local/Unraid role password | development fallback locally; required on Unraid |
 | `ConnectionStrings__Postgres` | Direct API connection override | composed internally |
 
-`OPENAI_API_KEY` and `OPENAI_MODEL` are documented as future settings only. The foundation does not read them or call OpenAI.
+Future URL extraction will use `CODEX_MODEL`, `CODEX_REASONING_EFFORT`, and a
+dedicated persistent `CODEX_HOME_PATH` on Unraid. These settings are not read by
+the current application. The planned extraction runtime uses a saved ChatGPT
+Codex login and deliberately has no Platform API-key fallback.
 
 ## API endpoints
 
@@ -157,6 +160,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 
 - [Product requirements](docs/product-requirements.md)
 - [URL analysis specification](docs/url-analysis.md)
+- [Codex listing extraction](docs/codex-extraction.md)
 - [Manual calculator specification](docs/manual-calculator.md)
 - [Manual calculator verification](docs/manual-calculator-verification.md)
 - [Rules](docs/rules.md)
