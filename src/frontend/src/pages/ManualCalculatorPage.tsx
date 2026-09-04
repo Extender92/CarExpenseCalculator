@@ -19,12 +19,14 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   calculateManualScenario,
   createSavedCostScenario,
   deleteSavedCostScenario,
   getSavedCostScenario,
   getSavedCostScenarioByRegistration,
+  getSavedListing,
   listSavedCostScenarios,
   ManualCalculationApiError,
   replaceSavedCostScenario,
@@ -33,6 +35,7 @@ import {
   type ManualCalculationResult,
   type SavedCostScenarioResponse,
   type SavedCostScenarioSummary,
+  type SavedListingResponse,
 } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +49,12 @@ import {
   type OptionalRecurringCostDraft,
 } from "@/features/manual-calculator/form-model";
 import {
+  applyListingEnergyConsumption,
+  applyListingPrice,
+  applyListingTax,
+  listingToManualCalculationForm,
+} from "@/features/manual-calculator/listing-link";
+import {
   ResultDetails,
   ResultSummary,
 } from "@/features/manual-calculator/ManualCalculationResultView";
@@ -58,6 +67,7 @@ import {
   fieldErrorId,
   fieldLabel,
   formatQuantity,
+  formatSek,
   savedValidationProblemToErrors,
   validationProblemToErrors,
 } from "@/features/manual-calculator/presentation";
@@ -78,6 +88,12 @@ import { cn } from "@/lib/utils";
 type RequestState = "idle" | "submitting" | "success" | "error";
 type PersistenceOperation = "idle" | "opening" | "saving" | "deleting";
 type NoticeTone = "success" | "warning" | "error";
+type CalculationMode = "automatic" | "explicit";
+
+interface ListingCalculationContext {
+  listing: SavedListingResponse;
+  reviewCurrent: boolean;
+}
 
 type PendingConfirmation =
   | { kind: "new" }
@@ -91,7 +107,9 @@ type PendingConfirmation =
   | { kind: "reload"; vehicleId: string };
 
 export function ManualCalculatorPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState(createInitialManualCalculationForm);
+  const [formRevision, setFormRevision] = useState(0);
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [hasValidated, setHasValidated] = useState(false);
@@ -105,6 +123,7 @@ export function ManualCalculatorPage() {
   const [savedListState, setSavedListState] = useState<SavedListState>("loading");
   const [savedListError, setSavedListError] = useState<string | null>(null);
   const [currentSaved, setCurrentSaved] = useState<OpenedSavedScenario | null>(null);
+  const [listingContext, setListingContext] = useState<ListingCalculationContext | null>(null);
   const [draftIsDirty, setDraftIsDirty] = useState(false);
   const [persistenceOperation, setPersistenceOperation] = useState<PersistenceOperation>("idle");
   const [persistenceNotice, setPersistenceNotice] = useState<{
@@ -115,6 +134,96 @@ export function ManualCalculatorPage() {
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const resultSummaryRef = useRef<HTMLDivElement>(null);
   const confirmationRef = useRef<HTMLDivElement>(null);
+  const calculationAbortRef = useRef<AbortController | null>(null);
+  const automaticTimerRef = useRef<number | null>(null);
+  const calculationSequenceRef = useRef(0);
+  const [automaticCalculationNotice, setAutomaticCalculationNotice] = useState<string | null>(null);
+
+  const executeCalculation = useCallback(async (
+    request: ManualCalculationRequest,
+    mode: CalculationMode,
+  ) => {
+    calculationAbortRef.current?.abort();
+    const controller = new AbortController();
+    calculationAbortRef.current = controller;
+    const sequence = ++calculationSequenceRef.current;
+    setRequestState("submitting");
+    if (mode === "explicit") setRequestError(null);
+    setAutomaticCalculationNotice(null);
+
+    try {
+      const nextResult = await calculateManualScenario(request, controller.signal);
+      if (sequence !== calculationSequenceRef.current) return;
+      setResult(nextResult);
+      setResultIsStale(false);
+      setResultIsPersisted(false);
+      setRequestState("success");
+      if (mode === "explicit") {
+        setErrors({});
+        focusAfterRender(() => resultSummaryRef.current);
+      }
+    } catch (error) {
+      if (controller.signal.aborted || isAbortError(error) || sequence !== calculationSequenceRef.current) {
+        return;
+      }
+
+      setRequestState("error");
+      if (mode === "automatic") {
+        setAutomaticCalculationNotice(
+          "Den automatiska förhandsvisningen kunde inte uppdateras. Du kan fortsätta redigera eller välja Beräkna nu.",
+        );
+      } else if (error instanceof ManualCalculationApiError && error.problem) {
+        const serverErrors = validationProblemToErrors(error.problem);
+        setErrors(serverErrors);
+        setRequestError(
+          Object.keys(serverErrors).length > 0
+            ? "Servern hittade värden som behöver rättas."
+            : error.message,
+        );
+        focusAfterRender(() => errorSummaryRef.current);
+      } else {
+        setRequestError("Kalkylen kunde inte beräknas just nu. Kontrollera anslutningen och försök igen.");
+        focusAfterRender(() => errorSummaryRef.current);
+      }
+    } finally {
+      if (calculationAbortRef.current === controller) calculationAbortRef.current = null;
+    }
+  }, []);
+
+  const cancelPendingCalculation = useCallback(() => {
+    if (automaticTimerRef.current !== null) {
+      window.clearTimeout(automaticTimerRef.current);
+      automaticTimerRef.current = null;
+    }
+    calculationAbortRef.current?.abort();
+    calculationAbortRef.current = null;
+    calculationSequenceRef.current += 1;
+    setRequestState((current) => current === "submitting" ? "idle" : current);
+  }, []);
+
+  useEffect(() => {
+    if (formRevision === 0) return;
+
+    const validation = validateManualCalculationForm(form);
+    if (!validation.request) return;
+
+    automaticTimerRef.current = window.setTimeout(() => {
+      automaticTimerRef.current = null;
+      void executeCalculation(validation.request!, "automatic");
+    }, 500);
+
+    return () => {
+      if (automaticTimerRef.current !== null) {
+        window.clearTimeout(automaticTimerRef.current);
+        automaticTimerRef.current = null;
+      }
+    };
+  }, [cancelPendingCalculation, executeCalculation, form, formRevision]);
+
+  useEffect(() => () => {
+    calculationAbortRef.current?.abort();
+    if (automaticTimerRef.current !== null) window.clearTimeout(automaticTimerRef.current);
+  }, []);
 
   const refreshSavedScenarios = useCallback(async () => {
     setSavedListState("loading");
@@ -127,6 +236,51 @@ export function ManualCalculatorPage() {
       setSavedListError(savedOperationMessage(error, "Sparade bilar kunde inte hämtas. Kontrollera databasen och försök igen."));
     }
   }, []);
+
+  const linkedVehicleId = searchParams.get("listingVehicleId");
+
+  const loadLinkedListing = useCallback(async (vehicleId: string) => {
+    cancelPendingCalculation();
+    setPersistenceOperation("opening");
+    setPersistenceNotice(null);
+    try {
+      const listing = await getSavedListing(vehicleId);
+      setFormRevision(0);
+      setRegistrationNumber(listing.registrationNumber);
+      setListingContext({ listing, reviewCurrent: true });
+      setErrors({});
+      setHasValidated(false);
+      setHasValidatedForSave(false);
+      setRequestError(null);
+      setAutomaticCalculationNotice(null);
+      setPendingConfirmation(null);
+
+      if (listing.hasSavedCostScenario) {
+        const scenario = await getSavedCostScenario(vehicleId);
+        setForm(savedScenarioToForm(scenario));
+        setCurrentSaved(savedScenarioMetadata(scenario));
+        setResult(scenario.result);
+        setResultIsPersisted(true);
+        setResultIsStale(false);
+        setDraftIsDirty(false);
+      } else {
+        setForm(listingToManualCalculationForm(listing));
+        setCurrentSaved(null);
+        setResult(null);
+        setResultIsPersisted(false);
+        setResultIsStale(false);
+        setDraftIsDirty(true);
+      }
+    } catch {
+      setListingContext(null);
+      setPersistenceNotice({
+        tone: "error",
+        message: "Den sparade annonsen kunde inte öppnas. Kontrollera att bilen finns kvar och försök igen.",
+      });
+    } finally {
+      setPersistenceOperation("idle");
+    }
+  }, [cancelPendingCalculation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,9 +306,23 @@ export function ManualCalculatorPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!linkedVehicleId) return;
+    const timer = window.setTimeout(() => {
+      if (isUuid(linkedVehicleId)) {
+        void loadLinkedListing(linkedVehicleId);
+      } else {
+        setPersistenceNotice({ tone: "error", message: "Länken till den sparade bilen är ogiltig." });
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [linkedVehicleId, loadLinkedListing]);
+
   function updateForm(updater: (current: ManualCalculationForm) => ManualCalculationForm) {
+    cancelPendingCalculation();
     const next = updater(form);
     setForm(next);
+    setFormRevision((current) => current + 1);
     setRequestError(null);
     setPersistenceNotice(null);
     setPendingConfirmation(null);
@@ -179,6 +347,7 @@ export function ManualCalculatorPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    cancelPendingCalculation();
     setHasValidated(true);
     setHasValidatedForSave(false);
     setRequestError(null);
@@ -192,37 +361,21 @@ export function ManualCalculatorPage() {
       return;
     }
 
-    setRequestState("submitting");
-    try {
-      const nextResult = await calculateManualScenario(validation.request);
-      setResult(nextResult);
-      setResultIsStale(false);
-      setResultIsPersisted(false);
-      setErrors({});
-      setRequestState("success");
-      focusAfterRender(() => resultSummaryRef.current);
-    } catch (error) {
-      setRequestState("error");
-      if (error instanceof ManualCalculationApiError && error.problem) {
-        const serverErrors = validationProblemToErrors(error.problem);
-        setErrors(serverErrors);
-        setRequestError(
-          Object.keys(serverErrors).length > 0
-            ? "Servern hittade värden som behöver rättas."
-            : error.message,
-        );
-        focusAfterRender(() => errorSummaryRef.current);
-      } else {
-        setRequestError("Kalkylen kunde inte beräknas just nu. Kontrollera anslutningen och försök igen.");
-        focusAfterRender(() => errorSummaryRef.current);
-      }
-    }
+    await executeCalculation(validation.request, "explicit");
   }
 
-  function applySavedScenario(saved: SavedCostScenarioResponse, message: string) {
+  function applySavedScenario(
+    saved: SavedCostScenarioResponse,
+    message: string,
+    nextListingContext: ListingCalculationContext | null = null,
+  ) {
+    cancelPendingCalculation();
     setForm(savedScenarioToForm(saved));
+    setFormRevision(0);
     setRegistrationNumber(saved.registrationNumber);
     setCurrentSaved(savedScenarioMetadata(saved));
+    setListingContext(nextListingContext);
+    if (!nextListingContext) setSearchParams({}, { replace: true });
     setResult(saved.result);
     setResultIsStale(false);
     setResultIsPersisted(true);
@@ -231,15 +384,20 @@ export function ManualCalculatorPage() {
     setHasValidated(false);
     setHasValidatedForSave(false);
     setRequestError(null);
+    setAutomaticCalculationNotice(null);
     setPendingConfirmation(null);
     setPersistenceNotice({ tone: "success", message });
     focusAfterRender(() => resultSummaryRef.current);
   }
 
   function resetToNewDraft() {
+    cancelPendingCalculation();
     setForm(createInitialManualCalculationForm());
+    setFormRevision(0);
     setRegistrationNumber("");
     setCurrentSaved(null);
+    setListingContext(null);
+    setSearchParams({}, { replace: true });
     setResult(null);
     setResultIsStale(false);
     setResultIsPersisted(false);
@@ -248,12 +406,13 @@ export function ManualCalculatorPage() {
     setHasValidated(false);
     setHasValidatedForSave(false);
     setRequestError(null);
+    setAutomaticCalculationNotice(null);
     setPersistenceNotice(null);
     setPendingConfirmation(null);
   }
 
   function requestNewDraft() {
-    if (currentSaved || draftIsDirty) {
+    if (currentSaved || listingContext || draftIsDirty) {
       showConfirmation({ kind: "new" });
       return;
     }
@@ -264,7 +423,7 @@ export function ManualCalculatorPage() {
     if (scenario.vehicleId === currentSaved?.vehicleId) {
       return;
     }
-    if (currentSaved || draftIsDirty) {
+    if (currentSaved || listingContext || draftIsDirty) {
       showConfirmation({ kind: "open", scenario });
       return;
     }
@@ -300,6 +459,7 @@ export function ManualCalculatorPage() {
   }
 
   async function handleSave() {
+    cancelPendingCalculation();
     setHasValidated(true);
     setHasValidatedForSave(true);
     setRequestError(null);
@@ -315,12 +475,27 @@ export function ManualCalculatorPage() {
 
     setPersistenceOperation("saving");
     try {
-      if (currentSaved) {
-        const saved = await replaceSavedCostScenario(currentSaved.vehicleId, {
-          expectedRevision: currentSaved.revision,
+      const targetVehicleId = currentSaved?.vehicleId ?? listingContext?.listing.vehicleId;
+      const targetRevision = currentSaved?.revision ?? listingContext?.listing.revision;
+      if (targetVehicleId && targetRevision) {
+        const saved = await replaceSavedCostScenario(targetVehicleId, {
+          expectedRevision: targetRevision,
           scenario: validation.request,
+          listingLinkMode: listingContext?.reviewCurrent ? "current" : "preserve",
         });
-        applySavedScenario(saved, "Ändringarna har sparats.");
+        const nextContext = listingContext
+          ? {
+              listing: {
+                ...listingContext.listing,
+                revision: saved.revision,
+                hasSavedCostScenario: true,
+                savedCostScenarioSourceListingVersion: saved.sourceListingVersion,
+                savedCostScenarioOutdated: saved.isListingOutdated,
+              },
+              reviewCurrent: false,
+            }
+          : null;
+        applySavedScenario(saved, "Ändringarna har sparats.", nextContext);
       } else {
         const saved = await createSavedCostScenario({
           registrationNumber: validation.normalizedRegistrationNumber,
@@ -334,7 +509,7 @@ export function ManualCalculatorPage() {
         error,
         validation.request,
         validation.normalizedRegistrationNumber,
-        currentSaved?.vehicleId,
+        currentSaved?.vehicleId ?? listingContext?.listing.vehicleId,
       );
     } finally {
       setPersistenceOperation("idle");
@@ -377,6 +552,16 @@ export function ManualCalculatorPage() {
       return;
     }
 
+    if (isSavedProblem(error, "listingLinkUnavailable")) {
+      setPersistenceNotice({
+        tone: "warning",
+        message: "Annonsen finns inte längre att koppla till. Kalkylens värden är kvar och inget har sparats.",
+      });
+      setListingContext(null);
+      setSearchParams({}, { replace: true });
+      return;
+    }
+
     const affectedVehicleId = currentSaved?.vehicleId ?? conflictVehicleId;
     if (isSavedProblem(error, "revisionConflict") && affectedVehicleId) {
       setPersistenceNotice({
@@ -416,6 +601,7 @@ export function ManualCalculatorPage() {
       const saved = await replaceSavedCostScenario(existing.vehicleId, {
         expectedRevision: existing.revision,
         scenario: request,
+        listingLinkMode: "preserve",
       });
       applySavedScenario(saved, "Den tidigare sparade kalkylen har ersatts.");
       await refreshSavedScenarios();
@@ -480,6 +666,8 @@ export function ManualCalculatorPage() {
 
   function keepCurrentAsUnsavedDraft() {
     setCurrentSaved(null);
+    setListingContext(null);
+    setSearchParams({}, { replace: true });
     setDraftIsDirty(true);
     setResultIsPersisted(false);
     setRegistrationNumber((current) => normalizeRegistrationNumber(current));
@@ -555,8 +743,8 @@ export function ManualCalculatorPage() {
 
   const totalDistanceKilometres = convertMilToKilometres(form.annualDistanceMil);
   const persistenceBusy = persistenceOperation !== "idle";
-  const formBusy = requestState === "submitting"
-    || persistenceOperation === "saving"
+  const calculationBusy = requestState === "submitting";
+  const formBusy = persistenceOperation === "saving"
     || persistenceOperation === "opening";
 
   return (
@@ -590,6 +778,21 @@ export function ManualCalculatorPage() {
 
       {persistenceNotice && (
         <PersistenceNotice tone={persistenceNotice.tone} message={persistenceNotice.message} />
+      )}
+
+      {automaticCalculationNotice && (
+        <PersistenceNotice tone="warning" message={automaticCalculationNotice} />
+      )}
+
+      {listingContext && (
+        <ListingCalculationPanel
+          context={listingContext}
+          form={form}
+          onApplyPrice={(value) => updateForm((current) => applyListingPrice(current, value))}
+          onApplyTax={(value) => updateForm((current) => applyListingTax(current, value))}
+          onApplyEnergy={(source, target) => updateForm((current) =>
+            applyListingEnergyConsumption(current, source, target))}
+        />
       )}
 
       {pendingConfirmation && (
@@ -634,10 +837,10 @@ export function ManualCalculatorPage() {
                     }
                   }}
                   errors={errors}
-                  help={currentSaved
+                  help={currentSaved || listingContext
                     ? "Registreringsnumret kan inte ändras. Ta bort bilen och skapa den igen för att rätta det."
                     : "Krävs endast när bilen sparas, till exempel ABC123 eller ABC12D."}
-                  readOnly={Boolean(currentSaved)}
+                  readOnly={Boolean(currentSaved || listingContext)}
                   maxLength={12}
                 />
                 <TextField
@@ -977,6 +1180,13 @@ export function ManualCalculatorPage() {
                         {draftIsDirty ? "Osparade ändringar" : `Sparad revision ${currentSaved.revision}`}
                       </Badge>
                     )}
+                    {currentSaved?.isListingOutdated && <Badge variant="warning">Annonskopplingen är inaktuell</Badge>}
+                    {currentSaved && currentSaved.sourceListingVersion !== null && !currentSaved.isListingOutdated && (
+                      <Badge variant="success">Kopplad till aktuell annons</Badge>
+                    )}
+                    {currentSaved && currentSaved.sourceListingVersion === null && (
+                      <Badge variant="muted">Manuell kalkyl</Badge>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-slate-400">
                     Förhandsvisning sparar ingenting. Spara bil kräver ett registreringsnummer och
@@ -985,8 +1195,8 @@ export function ManualCalculatorPage() {
                 </div>
                 <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                   <Button type="submit" size="lg" variant="secondary" disabled={formBusy}>
-                    {requestState === "submitting" ? <LoaderCircle className="animate-spin" size={18} /> : <Calculator size={18} />}
-                    {requestState === "submitting" ? "Beräknar…" : result ? "Beräkna igen" : "Beräkna kostnad"}
+                    {calculationBusy ? <LoaderCircle className="animate-spin" size={18} /> : <Calculator size={18} />}
+                    {calculationBusy ? "Beräknar…" : result ? "Beräkna nu" : "Beräkna kostnad"}
                   </Button>
                   <Button type="button" size="lg" disabled={formBusy} onClick={() => void handleSave()}>
                     {persistenceOperation === "saving" ? <LoaderCircle className="animate-spin" size={18} /> : <Save size={18} />}
@@ -994,7 +1204,9 @@ export function ManualCalculatorPage() {
                       ? "Sparar…"
                       : currentSaved
                         ? "Spara ändringar"
-                        : "Spara bil"}
+                        : listingContext
+                          ? "Spara kalkyl"
+                          : "Spara bil"}
                   </Button>
                 </div>
               </CardContent>
@@ -1044,6 +1256,120 @@ export function ManualCalculatorPage() {
       {result && <ResultDetails result={result} isStale={resultIsStale} isPersisted={resultIsPersisted} />}
     </div>
   );
+}
+
+type AdvertisedEnergy = NonNullable<
+  SavedListingResponse["listing"]["energyConsumptions"]
+>["values"][number];
+
+function ListingCalculationPanel({
+  context,
+  form,
+  onApplyPrice,
+  onApplyTax,
+  onApplyEnergy,
+}: {
+  context: ListingCalculationContext;
+  form: ManualCalculationForm;
+  onApplyPrice: (value: number) => void;
+  onApplyTax: (value: number) => void;
+  onApplyEnergy: (source: AdvertisedEnergy, target: number | "new") => void;
+}) {
+  const listing = context.listing;
+  const price = listing.listing.priceSek?.value;
+  const tax = listing.listing.annualVehicleTaxSek?.value;
+  const energy = listing.listing.energyConsumptions?.values ?? [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge>Annonsversion {listing.listingVersion}</Badge>
+          <Badge variant={listing.savedCostScenarioOutdated ? "warning" : "muted"}>
+            {listing.savedCostScenarioOutdated ? "Tidigare kalkyl är inaktuell" : "Granska före sparning"}
+          </Badge>
+        </div>
+        <CardTitle className="pt-2">Annonsuppgifter för kalkylen</CardTitle>
+        <CardDescription>
+          Annonsvärden ändrar aldrig kalkylen automatiskt. Använd de värden du vill och spara sedan
+          uttryckligen för att koppla kalkylen till den här annonsversionen.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ListingSuggestion
+            label="Annonspris"
+            value={price === null || price === undefined ? "Okänt" : formatSek(price)}
+            disabled={price === null || price === undefined}
+            onApply={() => price !== null && price !== undefined && onApplyPrice(price)}
+          />
+          <ListingSuggestion
+            label="Årlig fordonsskatt"
+            value={tax === null || tax === undefined ? "Okänd" : formatSek(tax)}
+            disabled={tax === null || tax === undefined}
+            onApply={() => tax !== null && tax !== undefined && onApplyTax(tax)}
+          />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-slate-200">Annonserad energiförbrukning</h3>
+          {energy.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">Annonsen innehåller ingen känd förbrukning.</p>
+          ) : (
+            <ul className="mt-3 space-y-3">
+              {energy.map((source, sourceIndex) => (
+                <li key={`${source.label}-${sourceIndex}`} className="rounded-xl border border-slate-800 bg-slate-950/30 p-3">
+                  <p className="text-sm font-medium text-slate-200">
+                    {source.label}: {formatQuantity(source.consumptionPer100Kilometres)} {energyUnitLabel(source.unit)}/100 km
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {form.energySources.map((target, targetIndex) => (
+                      <Button key={target.id} type="button" variant="secondary" size="sm" onClick={() => onApplyEnergy(source, targetIndex)}>
+                        Använd i energikälla {targetIndex + 1}
+                      </Button>
+                    ))}
+                    {form.energySources.length < 2 && (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => onApplyEnergy(source, "new")}>
+                        Lägg till energikälla
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ListingSuggestion({
+  label,
+  value,
+  disabled,
+  onApply,
+}: {
+  label: string;
+  value: string;
+  disabled: boolean;
+  onApply: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 font-semibold text-slate-100">{value}</p>
+      <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={disabled} onClick={onApply}>
+        Använd annonsvärdet
+      </Button>
+    </div>
+  );
+}
+
+function energyUnitLabel(unit: AdvertisedEnergy["unit"]) {
+  if (unit === "litre") return "l";
+  if (unit === "kilowattHour") return "kWh";
+  return "kg";
 }
 
 function FormSection({ icon: Icon, title, description, children, action, path, errors }: { icon: typeof CarFront; title: string; description: string; children: ReactNode; action?: ReactNode; path?: string; errors?: ValidationErrors }) {
@@ -1254,7 +1580,9 @@ function confirmationCopy(confirmation: PendingConfirmation) {
       : confirmation.scenario.registrationNumber;
     return {
       title: `Ta bort ${isNamed} permanent?`,
-      description: "Bilen och hela dess sparade kalkyl tas bort från databasen. Åtgärden kan inte ångras.",
+      description: confirmation.scenario.hasSavedListing
+        ? "Bilen, den sparade kalkylen och den kopplade annonsen tas bort från databasen. Åtgärden kan inte ångras."
+        : "Bilen och hela dess sparade kalkyl tas bort från databasen. Åtgärden kan inte ångras.",
       confirmLabel: "Ta bort permanent",
     };
   }
@@ -1276,6 +1604,14 @@ function savedScenarioName(scenario: SavedCostScenarioSummary) {
   return scenario.vehicleLabel
     ? `${scenario.vehicleLabel} (${scenario.registrationNumber})`
     : scenario.registrationNumber;
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function validatePage(

@@ -10,10 +10,30 @@ public sealed record SavedCostScenario(
     CostCalculationResult Result,
     int CalculationVersion,
     int ResultSchemaVersion,
+    long? SourceListingVersion,
+    long? CurrentListingVersion,
+    bool HasSavedListing,
     long Revision,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     DateTimeOffset CalculatedAtUtc);
+
+public enum SavedScenarioListingLinkMode
+{
+    Preserve,
+    Current,
+}
+
+public sealed class SavedScenarioListingLinkUnavailableException : Exception
+{
+    public SavedScenarioListingLinkUnavailableException(Guid vehicleId)
+        : base($"Saved vehicle '{vehicleId}' does not contain a current listing to link.")
+    {
+        VehicleId = vehicleId;
+    }
+
+    public Guid VehicleId { get; }
+}
 
 public sealed class RegistrationNumberConflictException : Exception
 {

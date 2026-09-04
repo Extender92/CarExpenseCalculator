@@ -5,9 +5,10 @@
 This document is the decision-complete specification for the deterministic
 manual vehicle cost calculator. The Core calculation, unsaved HTTP preview
 contract, Swedish user interface, PostgreSQL persistence layer, saved-scenario
-HTTP API, and saved-vehicle UI management are implemented. The interface keeps
-unsaved previews independent from persistence and supports create, list/open,
-full replacement with optimistic concurrency, and permanent deletion.
+HTTP API, saved-vehicle UI management, and saved-listing linkage are implemented.
+The interface keeps automatic unsaved previews independent from persistence and
+supports create, list/open, full replacement with optimistic concurrency, and
+permanent deletion.
 
 The repeatable acceptance procedure is documented in
 [Manual calculator verification](manual-calculator-verification.md).
@@ -80,6 +81,9 @@ vehicle.
 - Persisted results carry calculation and result-schema versions. Formula changes
   do not silently rewrite an older result; a later replacement/recalculation
   writes the current versions.
+- A scenario may store the positive listing version explicitly reviewed when it
+  was saved. A null source version means manual-only. Outdated state is computed
+  against the current listing version and is never stored as a second flag.
 
 ## HTTP contract
 
@@ -111,19 +115,23 @@ The saved API exposes the current aggregate through these operations:
 | `GET /api/saved-cost-scenarios` | Returns unpaginated summaries ordered by most recently updated and then UUID. |
 | `GET /api/saved-cost-scenarios/{vehicleId}` | Returns the complete stored scenario and versioned result snapshot. |
 | `GET /api/saved-cost-scenarios/by-registration/{registrationNumber}` | Normalizes and looks up an ordinary Swedish registration number. |
-| `PUT /api/saved-cost-scenarios/{vehicleId}` | Fully replaces the scenario using an expected revision and returns the incremented aggregate. |
+| `PUT /api/saved-cost-scenarios/{vehicleId}` | Fully replaces the scenario using an expected revision and a required listing-link mode, then returns the incremented aggregate. |
 | `DELETE /api/saved-cost-scenarios/{vehicleId}?expectedRevision={revision}` | Permanently removes the complete aggregate and returns `204 No Content`. |
 
 Create accepts a required `registrationNumber` and a required `scenario` using
 the `ManualCalculationRequest` shape below. Replacement accepts a positive
-`expectedRevision` and the complete replacement `scenario`; registration
-numbers cannot be changed. Responses contain the UUID, normalized registration
-number, revision, calculation and result-schema versions, UTC timestamps,
+`expectedRevision`, the complete replacement `scenario`, and `listingLinkMode`.
+`preserve` retains the existing nullable source-listing version; `current`
+requires a saved listing and records its current version. Registration numbers
+cannot be changed. Responses contain the UUID, normalized registration number,
+revision, calculation/result schema versions, nullable source/current listing
+versions, deterministic outdated state, listing presence, UTC timestamps,
 normalized inputs, and the stored deterministic result.
 
 Invalid registration numbers, revisions, or scenario values return `400` as
 `ValidationProblemDetails`. Missing resources return `404`; duplicate
-registrations, stale revisions, and unsupported stored versions return `409`.
+registrations, stale revisions, unavailable requested listing links, and
+unsupported stored versions return `409`.
 Conflict responses include a stable `code` and relevant identity, revision, or
 version metadata. Create and replacement always calculate through Core, so a
 client cannot provide or override a trusted result snapshot.
@@ -142,6 +150,22 @@ vehicle, and revision conflicts never retry automatically. Deleting the open
 vehicle permanently removes its database aggregate while retaining the current
 form and result in browser memory as an unsaved draft. No calculator state is
 written to local storage or session storage.
+
+A saved listing opens the page through
+`/manual?listingVehicleId=<uuid>`. A listing-only vehicle receives safe prefills
+for its label, immutable registration, price, annual tax, and advertised energy
+label/unit/consumption. Annual distance and cost assumptions remain empty. An
+existing scenario opens its stored assumptions and result unchanged while
+current listing facts are shown as explicit suggestions. Saving from this review
+context acknowledges the current listing version; an ordinary manual save
+preserves its previous linkage.
+
+The page silently validates after every edit. A valid form starts an unsaved
+preview after a 500 ms debounce. New edits, explicit calculation, persistence,
+navigation, and unmount cancel obsolete work, and only the latest response can
+replace the displayed result. The explicit calculation button runs immediately.
+Invalid input or an automatic network failure retains the previous result as
+outdated and never persists anything.
 
 ### `ManualCalculationRequest`
 

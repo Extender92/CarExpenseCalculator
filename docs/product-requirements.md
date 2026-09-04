@@ -47,6 +47,6 @@ The repository foundation and manual-calculator milestone are implemented. The a
 
 The URL-analysis Core domain, private ChatGPT-authenticated Codex extraction
 runtime, unsaved public preview endpoint, current-listing persistence/API, and
-Swedish review and saved-listing interface are implemented. Calculator linkage,
-rule-based search, automatic discovery, comparison, and advisory AI review remain
-future work.
+Swedish review and saved-listing interface, and explicit calculator linkage are
+implemented. Complete URL-flow verification, rule-based search, automatic
+discovery, comparison, and advisory AI review remain future work.

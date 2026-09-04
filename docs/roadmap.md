@@ -18,7 +18,8 @@ The specification, dependency-free listing domain, private Codex extraction
 runtime, unsaved public preview API, and Swedish review interface are
 implemented. Current-listing PostgreSQL persistence and its public saved-listing
 HTTP lifecycle are also implemented, together with the Swedish saved-listing
-workflow. Calculator linkage and complete-flow verification remain planned.
+workflow and calculator linkage are implemented. Complete-flow verification
+remains planned.
 
 - Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
 - Add dependency-free listing concepts and deterministic validation in Core.

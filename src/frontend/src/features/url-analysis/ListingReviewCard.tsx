@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Calculator,
   ChevronDown,
   ExternalLink,
   LoaderCircle,
@@ -48,6 +49,7 @@ interface ListingReviewCardProps {
   onChange: (draft: ListingReviewDraft, errors?: Record<string, string>) => void;
   onRetry: () => void;
   onSave: () => void;
+  onCalculate?: () => void;
   onClose: () => void;
   onDelete?: () => void;
   onCompareLatest?: () => void;
@@ -68,6 +70,7 @@ export function ListingReviewCard({
   onChange,
   onRetry,
   onSave,
+  onCalculate,
   onClose,
   onDelete,
   onCompareLatest,
@@ -157,6 +160,11 @@ export function ListingReviewCard({
               <Badge variant={item.saved && !item.dirty ? "success" : "warning"}>
                 {item.saved ? (item.dirty ? "Ändrad sedan sparning" : "Sparad") : "Osparat utkast"}
               </Badge>
+              {item.saved?.hasSavedCostScenario && (item.saved.savedCostScenarioOutdated
+                ? <Badge variant="warning">Kalkyl inaktuell</Badge>
+                : item.saved.savedCostScenarioSourceListingVersion !== null
+                  ? <Badge variant="success">Kalkyl aktuell</Badge>
+                  : <Badge variant="muted">Manuell kalkyl</Badge>)}
             </div>
             <CardTitle className="mt-3 break-words">{heading}</CardTitle>
             <dl className="mt-2 space-y-1 text-xs text-slate-400">
@@ -191,6 +199,11 @@ export function ListingReviewCard({
                 <Trash2 size={15} /> Radera bilen
               </Button>
             )}
+            {!busy && item.saved && onCalculate && (
+              <Button type="button" variant="secondary" size="sm" onClick={onCalculate}>
+                <Calculator size={15} /> {item.saved.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
+              </Button>
+            )}
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               {item.saved ? <X size={15} /> : <Trash2 size={15} />}
               {item.saved ? "Stäng kort" : "Ta bort utkast"}
@@ -217,6 +230,9 @@ export function ListingReviewCard({
           <Notice tone="warning">
             Den inskickade annonssidan kunde inte bekräftas som källa. AI-värden har därför inte använts.
           </Notice>
+        )}
+        {!item.saved && (
+          <p className="text-xs text-slate-500">Spara bilen innan du skapar en kopplad kalkyl.</p>
         )}
         {item.phase === "unavailable" && !item.context.requestedModel && (
           <Notice tone="warning">

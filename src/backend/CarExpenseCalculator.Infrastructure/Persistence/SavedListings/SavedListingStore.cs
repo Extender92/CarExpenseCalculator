@@ -504,6 +504,9 @@ public sealed class SavedListingStore(
             entity.ExtractionSchemaVersion,
             result,
             vehicle.Scenario is not null,
+            vehicle.Scenario?.SourceListingVersion,
+            vehicle.Scenario?.SourceListingVersion is { } sourceListingVersion
+                && sourceListingVersion != entity.ListingVersion,
             vehicle.CreatedAtUtc,
             vehicle.UpdatedAtUtc);
     }

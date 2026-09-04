@@ -94,6 +94,9 @@ internal sealed class SavedCostScenarioEntityConfiguration
                 table.HasCheckConstraint(
                     "ck_saved_cost_scenarios_versions",
                     "calculation_version >= 1 AND result_schema_version >= 1");
+                table.HasCheckConstraint(
+                    "ck_saved_cost_scenarios_source_listing_version",
+                    "source_listing_version IS NULL OR source_listing_version >= 1");
             });
 
         builder.HasKey(entity => entity.Id).HasName("pk_saved_cost_scenarios");
@@ -127,6 +130,7 @@ internal sealed class SavedCostScenarioEntityConfiguration
             .HasMaxLength(16);
         builder.Property(entity => entity.CalculationVersion).HasColumnName("calculation_version");
         builder.Property(entity => entity.ResultSchemaVersion).HasColumnName("result_schema_version");
+        builder.Property(entity => entity.SourceListingVersion).HasColumnName("source_listing_version");
         builder.Property(entity => entity.ResultSnapshotJson)
             .HasColumnName("result_snapshot")
             .HasColumnType("jsonb")

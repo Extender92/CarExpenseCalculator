@@ -140,6 +140,7 @@ public sealed class SavedCostScenariosController(ISavedCostScenarioStore store) 
                 vehicleId,
                 request.ExpectedRevision,
                 scenario,
+                MapListingLinkMode(request.ListingLinkMode),
                 cancellationToken);
             return Ok(SavedCostScenarioMapper.ToApi(savedScenario));
         }
@@ -154,6 +155,13 @@ public sealed class SavedCostScenariosController(ISavedCostScenarioStore store) 
         catch (SavedCostScenarioConcurrencyException exception)
         {
             return RevisionConflictProblem(exception);
+        }
+        catch (SavedScenarioListingLinkUnavailableException)
+        {
+            return SavedProblem(
+                StatusCodes.Status409Conflict,
+                "The saved vehicle does not contain a current listing to link.",
+                "listingLinkUnavailable");
         }
         catch (UnsupportedSavedCostScenarioVersionException exception)
         {
@@ -269,4 +277,12 @@ public sealed class SavedCostScenariosController(ISavedCostScenarioStore store) 
             ContentTypes = { "application/problem+json" },
         };
     }
+
+    private static SavedScenarioListingLinkMode MapListingLinkMode(ListingLinkMode value) =>
+        value switch
+        {
+            ListingLinkMode.Preserve => SavedScenarioListingLinkMode.Preserve,
+            ListingLinkMode.Current => SavedScenarioListingLinkMode.Current,
+            _ => throw new ArgumentOutOfRangeException(nameof(value)),
+        };
 }

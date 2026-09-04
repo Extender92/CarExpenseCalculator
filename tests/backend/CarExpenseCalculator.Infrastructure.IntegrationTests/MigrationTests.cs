@@ -29,7 +29,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         await using (var dbContext = fixture.CreateDbContext())
         {
             var applied = await dbContext.Database.GetAppliedMigrationsAsync();
-            Assert.Equal(2, applied.Count());
+            Assert.Equal(3, applied.Count());
             var migrator = dbContext.Database.GetService<IMigrator>();
             await migrator.MigrateAsync(Migration.InitialDatabase);
         }
@@ -120,6 +120,46 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Linking_migration_preserves_existing_scenarios_and_rolls_back_only_link_metadata()
+    {
+        await fixture.ResetDatabaseAsync();
+        SavedCostScenario scenario;
+        await using (var context = fixture.CreateDbContext())
+        {
+            scenario = await new SavedCostScenarioStore(
+                context,
+                new CostScenarioCalculator(),
+                TimeProvider.System).CreateAsync(
+                    RegistrationNumber.Parse("ABC123"),
+                    ScenarioFactory.Complete());
+        }
+
+        Assert.Equal(0L, await ScalarAsync<long>(
+            "SELECT count(*) FROM saved_cost_scenarios WHERE source_listing_version IS NOT NULL"));
+        await using (var connection = new NpgsqlConnection(fixture.ConnectionString))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE saved_cost_scenarios SET source_listing_version = 1";
+            await command.ExecuteNonQueryAsync();
+        }
+        Assert.Equal(1L, await ScalarAsync<long>(
+            "SELECT source_listing_version FROM saved_cost_scenarios"));
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            var migrator = context.Database.GetService<IMigrator>();
+            await migrator.MigrateAsync(CurrentListingMigration);
+        }
+
+        Assert.True(await TableExistsAsync("saved_cost_scenarios"));
+        Assert.Equal(
+            scenario.VehicleId,
+            await ScalarAsync<Guid>("SELECT vehicle_id FROM saved_cost_scenarios"));
+        Assert.False(await ColumnExistsAsync("saved_cost_scenarios", "source_listing_version"));
+    }
+
+    [Fact]
     public async Task Current_model_has_no_pending_changes()
     {
         await fixture.ResetDatabaseAsync();
@@ -150,6 +190,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
     }
 
     private const string InitialScenarioMigration = "20260830181537_InitialSavedCostScenarios";
+    private const string CurrentListingMigration = "20260904100409_AddCurrentVehicleListings";
 
     private static readonly string[] ScenarioTables =
     [
@@ -187,6 +228,24 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         await using var command = connection.CreateCommand();
         command.CommandText = "SELECT to_regclass(@table_name) IS NOT NULL";
         command.Parameters.AddWithValue("table_name", $"public.{tableName}");
+        return (bool)(await command.ExecuteScalarAsync())!;
+    }
+
+    private async Task<bool> ColumnExistsAsync(string tableName, string columnName)
+    {
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = @table_name
+                  AND column_name = @column_name)
+            """;
+        command.Parameters.AddWithValue("table_name", tableName);
+        command.Parameters.AddWithValue("column_name", columnName);
         return (bool)(await command.ExecuteScalarAsync())!;
     }
 

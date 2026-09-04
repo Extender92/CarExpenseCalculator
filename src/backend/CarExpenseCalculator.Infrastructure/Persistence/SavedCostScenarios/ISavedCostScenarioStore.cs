@@ -25,6 +25,7 @@ public interface ISavedCostScenarioStore
         Guid vehicleId,
         long expectedRevision,
         CostScenario scenario,
+        SavedScenarioListingLinkMode listingLinkMode,
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(

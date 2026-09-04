@@ -64,7 +64,9 @@ internal static class SavedListingMapper
                 .ToArray(),
             ListingAnalysisMapper.MapListing(result.Listing),
             result.MissingFields.Select(ListingAnalysisMapper.MapFieldCode).ToArray(),
-            savedListing.HasSavedCostScenario);
+            savedListing.HasSavedCostScenario,
+            savedListing.SavedCostScenarioSourceListingVersion,
+            savedListing.SavedCostScenarioOutdated);
     }
 
     public static ApiContracts.SavedListingSummaryResponse ToSummaryApi(SavedListing savedListing)
@@ -87,6 +89,8 @@ internal static class SavedListingMapper
             ListingAnalysisMapper.MapStatus(savedListing.ProcessingResult.Status),
             savedListing.ProcessingResult.MissingFields.Count,
             savedListing.HasSavedCostScenario,
+            savedListing.SavedCostScenarioSourceListingVersion,
+            savedListing.SavedCostScenarioOutdated,
             savedListing.UpdatedAtUtc);
     }
 

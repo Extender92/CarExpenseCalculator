@@ -1,5 +1,6 @@
 import { AlertTriangle, Link2, ListPlus, LoaderCircle, Sparkles } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   analyzeListing,
   createSavedListing,
@@ -92,6 +93,7 @@ interface PageNotice {
 let workspaceId = 0;
 
 export function UrlAnalysisPage() {
+  const navigate = useNavigate();
   const systemStatus = useSystemStatus();
   const [urlInput, setUrlInput] = useState("");
   const [urlErrors, setUrlErrors] = useState<Record<string, string>>({});
@@ -668,6 +670,7 @@ export function UrlAnalysisPage() {
         busyVehicleId={busyVehicleId}
         onRetry={() => void refreshSavedListings()}
         onOpen={(listing) => void openSavedListing(listing)}
+        onCalculate={(listing) => navigate(`/manual?listingVehicleId=${listing.vehicleId}`)}
         onDelete={requestDelete}
       />
 
@@ -826,6 +829,9 @@ export function UrlAnalysisPage() {
                   onChange={(draft, errors) => updateDraft(item.id, draft, errors)}
                   onRetry={() => retryItem(item)}
                   onSave={() => void saveItem(item)}
+                  onCalculate={item.saved
+                    ? () => navigate(`/manual?listingVehicleId=${item.saved!.vehicleId}`)
+                    : undefined}
                   onClose={() => requestClose(item)}
                   onDelete={item.saved ? () => requestDelete(summaryFromItem(item)) : undefined}
                   onCompareLatest={item.saved ? () => void compareWithLatest(item.id, item.saved!.vehicleId) : undefined}
@@ -907,6 +913,8 @@ function summaryFromSaved(saved: SavedListingResponse): SavedListingSummary {
     status: saved.status,
     missingFieldCount: saved.missingFields.length,
     hasSavedCostScenario: saved.hasSavedCostScenario,
+    savedCostScenarioSourceListingVersion: saved.savedCostScenarioSourceListingVersion,
+    savedCostScenarioOutdated: saved.savedCostScenarioOutdated,
     updatedAtUtc: saved.updatedAtUtc,
   };
 }
@@ -932,6 +940,8 @@ function summaryFromItem(item: ListingWorkspaceItem): SavedListingSummary {
       : item.phase,
     missingFieldCount: 0,
     hasSavedCostScenario: saved.hasSavedCostScenario,
+    savedCostScenarioSourceListingVersion: saved.savedCostScenarioSourceListingVersion,
+    savedCostScenarioOutdated: saved.savedCostScenarioOutdated,
     updatedAtUtc: saved.updatedAtUtc,
   };
 }

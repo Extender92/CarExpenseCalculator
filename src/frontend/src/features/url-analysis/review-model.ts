@@ -89,6 +89,8 @@ export interface OpenedSavedListing {
   createdAtUtc: string;
   updatedAtUtc: string;
   hasSavedCostScenario: boolean;
+  savedCostScenarioSourceListingVersion: number | null;
+  savedCostScenarioOutdated: boolean;
 }
 
 export interface PersistenceNotice {
@@ -232,6 +234,8 @@ export function savedListingMetadata(saved: SavedListingResponse): OpenedSavedLi
     createdAtUtc: saved.createdAtUtc,
     updatedAtUtc: saved.updatedAtUtc,
     hasSavedCostScenario: saved.hasSavedCostScenario,
+    savedCostScenarioSourceListingVersion: saved.savedCostScenarioSourceListingVersion,
+    savedCostScenarioOutdated: saved.savedCostScenarioOutdated,
   };
 }
 

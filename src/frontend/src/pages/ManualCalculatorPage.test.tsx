@@ -7,6 +7,7 @@ import {
   createSavedCostScenario,
   deleteSavedCostScenario,
   getSavedCostScenario,
+  getSavedListing,
   listSavedCostScenarios,
   ManualCalculationApiError,
   replaceSavedCostScenario,
@@ -19,6 +20,7 @@ import {
   completeManualCalculationResult,
   incompleteManualCalculationResult,
 } from "@/test/manual-calculation-result";
+import { savedListingResponse } from "@/test/listing-analysis";
 import { ManualCalculatorPage } from "./ManualCalculatorPage";
 
 vi.mock("@/api/client", async () => {
@@ -30,14 +32,15 @@ vi.mock("@/api/client", async () => {
     deleteSavedCostScenario: vi.fn(),
     getSavedCostScenario: vi.fn(),
     getSavedCostScenarioByRegistration: vi.fn(),
+    getSavedListing: vi.fn(),
     listSavedCostScenarios: vi.fn(),
     replaceSavedCostScenario: vi.fn(),
   };
 });
 
-function renderPage() {
+function renderPage(initialEntry = "/manual") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <ManualCalculatorPage />
     </MemoryRouter>,
   );
@@ -54,6 +57,7 @@ describe("ManualCalculatorPage", () => {
     vi.mocked(createSavedCostScenario).mockReset();
     vi.mocked(deleteSavedCostScenario).mockReset();
     vi.mocked(getSavedCostScenario).mockReset();
+    vi.mocked(getSavedListing).mockReset();
     vi.mocked(listSavedCostScenarios).mockReset();
     vi.mocked(replaceSavedCostScenario).mockReset();
     vi.mocked(listSavedCostScenarios).mockResolvedValue([]);
@@ -103,19 +107,22 @@ describe("ManualCalculatorPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Beräkna kostnad" }));
 
-    await waitFor(() => expect(calculateManualScenario).toHaveBeenCalledWith(expect.objectContaining({
-      calculationPeriodMonths: 12,
-      purchasePriceSek: 20_000,
-      annualDistanceKilometres: 0,
-      expectedResidualValueSek: null,
-      financing: null,
-      energySources: [],
-      vehicleTax: null,
-      insurance: null,
-      maintenanceAndRepairs: null,
-      otherRecurringCosts: [],
-      otherOneTimeCosts: [],
-    })));
+    await waitFor(() => expect(calculateManualScenario).toHaveBeenCalledWith(
+      expect.objectContaining({
+        calculationPeriodMonths: 12,
+        purchasePriceSek: 20_000,
+        annualDistanceKilometres: 0,
+        expectedResidualValueSek: null,
+        financing: null,
+        energySources: [],
+        vehicleTax: null,
+        insurance: null,
+        maintenanceAndRepairs: null,
+        otherRecurringCosts: [],
+        otherOneTimeCosts: [],
+      }),
+      expect.any(AbortSignal),
+    ));
     expect((await screen.findAllByText("Känt kassaflöde")).length).toBeGreaterThan(0);
     expect(screen.getByText(/Saknas: fordonsskatt, försäkring, underhåll och reparationer, restvärde/)).toBeVisible();
     expect(screen.getAllByText("Okänd").length).toBeGreaterThanOrEqual(3);
@@ -143,7 +150,7 @@ describe("ManualCalculatorPage", () => {
     expect(screen.getByText(/Resultatet nedan gäller dina tidigare värden/)).toBeVisible();
   });
 
-  it("shows loading while the form is disabled", async () => {
+  it("shows calculation progress without disabling form editing", async () => {
     const user = userEvent.setup();
     let resolveRequest!: (value: typeof completeManualCalculationResult) => void;
     vi.mocked(calculateManualScenario).mockReturnValue(new Promise((resolve) => {
@@ -154,11 +161,67 @@ describe("ManualCalculatorPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Beräkna kostnad" }));
 
-    expect(screen.getByRole("button", { name: "Beräknar…" })).toBeDisabled();
-    expect(screen.getByLabelText(/Inköpspris/)).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Beräknar…" })).toBeEnabled();
+    expect(screen.getByLabelText(/Inköpspris/)).toBeEnabled();
 
     await act(async () => resolveRequest(completeManualCalculationResult));
     expect(await screen.findByText("Aktuellt resultat")).toBeVisible();
+  });
+
+  it("automatically previews the latest valid edit after the debounce and cancels obsolete work", async () => {
+    const user = userEvent.setup();
+    let firstSignal: AbortSignal | undefined;
+    vi.mocked(calculateManualScenario).mockImplementation((request, signal) => {
+      if (request.purchasePriceSek === 20_000) {
+        firstSignal = signal;
+        return new Promise(() => undefined);
+      }
+      return Promise.resolve(incompleteManualCalculationResult);
+    });
+    renderPage();
+    await fillValidZeroDistanceScenario(user);
+
+    await waitFor(() => expect(calculateManualScenario).toHaveBeenCalledTimes(1), {
+      timeout: 1_500,
+    });
+    expect(screen.getByLabelText(/Inköpspris/)).toBeEnabled();
+
+    const price = screen.getByLabelText(/Inköpspris/);
+    await user.clear(price);
+    await user.type(price, "21000");
+    expect(firstSignal?.aborted).toBe(true);
+
+    await waitFor(() => expect(calculateManualScenario).toHaveBeenCalledTimes(2), {
+      timeout: 1_500,
+    });
+    expect(await screen.findByText("Aktuellt resultat")).toBeVisible();
+    expect(calculateManualScenario).toHaveBeenLastCalledWith(
+      expect.objectContaining({ purchasePriceSek: 21_000 }),
+      expect.any(AbortSignal),
+    );
+    expect(createSavedCostScenario).not.toHaveBeenCalled();
+    expect(replaceSavedCostScenario).not.toHaveBeenCalled();
+  });
+
+  it("retains the stale result when an automatic preview fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(calculateManualScenario)
+      .mockResolvedValueOnce(incompleteManualCalculationResult)
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    renderPage();
+    await fillValidZeroDistanceScenario(user);
+    await user.click(screen.getByRole("button", { name: "Beräkna kostnad" }));
+    expect(await screen.findByText("Aktuellt resultat")).toBeVisible();
+
+    const price = screen.getByLabelText(/Inköpspris/);
+    await user.clear(price);
+    await user.type(price, "21000");
+
+    expect(await screen.findByText(/automatiska förhandsvisningen kunde inte uppdateras/, {}, {
+      timeout: 1_500,
+    })).toBeVisible();
+    expect(screen.getByText("Behöver räknas om")).toBeVisible();
+    expect(screen.getAllByText(/20\s000,00\s*kr/).length).toBeGreaterThan(0);
   });
 
   it("maps server validation to Swedish field errors and preserves input", async () => {
@@ -324,6 +387,95 @@ describe("ManualCalculatorPage", () => {
     expect(screen.getAllByText(/64\s000,00\s*kr/).length).toBeGreaterThan(0);
   });
 
+  it("opens a listing-only deep link with safe prefill and saves against its current version", async () => {
+    const user = userEvent.setup();
+    const listing = {
+      ...savedListingResponse,
+      listing: {
+        ...savedListingResponse.listing,
+        energyConsumptions: null,
+      },
+    };
+    const linked = {
+      ...createSavedResponse({
+        ...zeroDistanceScenario(),
+        purchasePriceSek: 20_000,
+        vehicleTax: { amountSek: 2_400, cadence: "annual" as const },
+      }, 4),
+      vehicleId: listing.vehicleId,
+      sourceListingVersion: listing.listingVersion,
+      currentListingVersion: listing.listingVersion,
+      isListingOutdated: false,
+      hasSavedListing: true,
+    };
+    vi.mocked(getSavedListing).mockResolvedValue(listing);
+    vi.mocked(replaceSavedCostScenario).mockResolvedValue(linked);
+
+    renderPage(`/manual?listingVehicleId=${listing.vehicleId}`);
+
+    expect(await screen.findByRole("heading", { name: "Annonsuppgifter för kalkylen" })).toBeVisible();
+    expect(screen.getByLabelText("Registreringsnummer")).toHaveValue("ABC123");
+    expect(screen.getByLabelText("Registreringsnummer")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText(/Inköpspris/)).toHaveValue("20000");
+    expect(screen.getByLabelText(/Årlig körsträcka/)).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Spara kalkyl" })).toBeVisible();
+
+    await user.type(screen.getByLabelText(/Årlig körsträcka/), "0");
+    await user.click(screen.getByRole("button", { name: "Spara kalkyl" }));
+
+    await waitFor(() => expect(replaceSavedCostScenario).toHaveBeenCalledWith(
+      listing.vehicleId,
+      expect.objectContaining({
+        expectedRevision: listing.revision,
+        listingLinkMode: "current",
+        scenario: expect.objectContaining({
+          purchasePriceSek: 20_000,
+          annualDistanceKilometres: 0,
+          vehicleTax: { amountSek: 2_400, cadence: "annual" },
+          insurance: null,
+          maintenanceAndRepairs: null,
+        }),
+      }),
+    ));
+    expect(await screen.findByText("Kopplad till aktuell annons")).toBeVisible();
+  });
+
+  it("keeps stored scenario assumptions and applies listing suggestions only on request", async () => {
+    const user = userEvent.setup();
+    const listing = {
+      ...savedListingResponse,
+      hasSavedCostScenario: true,
+      savedCostScenarioSourceListingVersion: 1,
+      savedCostScenarioOutdated: true,
+      listing: {
+        ...savedListingResponse.listing,
+        priceSek: {
+          ...savedListingResponse.listing.priceSek!,
+          value: 30_000,
+        },
+      },
+    };
+    const saved = {
+      ...createSavedResponse(completeScenario(), 3),
+      vehicleId: listing.vehicleId,
+      sourceListingVersion: 1,
+      currentListingVersion: listing.listingVersion,
+      isListingOutdated: true,
+      hasSavedListing: true,
+    };
+    vi.mocked(getSavedListing).mockResolvedValue(listing);
+    vi.mocked(getSavedCostScenario).mockResolvedValue(saved);
+
+    renderPage(`/manual?listingVehicleId=${listing.vehicleId}`);
+
+    expect(await screen.findByText("Tidigare kalkyl är inaktuell")).toBeVisible();
+    expect(screen.getByLabelText(/Inköpspris/)).toHaveValue("20000");
+    expect(screen.getAllByText(/30\s000,00\s*kr/).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole("button", { name: "Använd annonsvärdet" })[0]);
+    expect(screen.getByLabelText(/Inköpspris/)).toHaveValue("30000");
+    expect(replaceSavedCostScenario).not.toHaveBeenCalled();
+  });
+
   it("asks before discarding a draft and preserves it when cancelled", async () => {
     const user = userEvent.setup();
     const saved = createSavedResponse(completeScenario(), 3);
@@ -406,6 +558,7 @@ describe("ManualCalculatorPage", () => {
     await waitFor(() => expect(replaceSavedCostScenario).toHaveBeenCalledWith(existing.vehicleId, {
       expectedRevision: 2,
       scenario: zeroDistanceScenario(),
+      listingLinkMode: "preserve",
     }));
   });
 
@@ -459,7 +612,12 @@ describe("ManualCalculatorPage", () => {
 
   it("deletes the active vehicle but retains its form and result as an unsaved draft", async () => {
     const user = userEvent.setup();
-    const saved = createSavedResponse(completeScenario(), 3);
+    const saved = {
+      ...createSavedResponse(completeScenario(), 3),
+      sourceListingVersion: 1,
+      currentListingVersion: 1,
+      hasSavedListing: true,
+    };
     vi.mocked(listSavedCostScenarios).mockResolvedValue([savedSummary(saved)]);
     vi.mocked(getSavedCostScenario).mockResolvedValue(saved);
     vi.mocked(deleteSavedCostScenario).mockResolvedValue();
@@ -468,6 +626,7 @@ describe("ManualCalculatorPage", () => {
     await screen.findByText("Sparad revision 3");
 
     await user.click(screen.getByRole("button", { name: /Ta bort Volvo V70/ }));
+    expect(screen.getByText(/sparade kalkylen och den kopplade annonsen tas bort/)).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Ta bort permanent" }));
 
     expect(await screen.findByText(/finns kvar som en osparad kalkyl/)).toBeVisible();
@@ -555,6 +714,10 @@ function createSavedResponse(
     revision,
     calculationVersion: 1,
     resultSchemaVersion: 1,
+    sourceListingVersion: null,
+    currentListingVersion: null,
+    isListingOutdated: false,
+    hasSavedListing: false,
     createdAtUtc: "2026-08-30T08:00:00Z",
     updatedAtUtc: "2026-08-30T09:00:00Z",
     calculatedAtUtc: "2026-08-30T09:00:00Z",
@@ -571,6 +734,10 @@ function savedSummary(saved: SavedCostScenarioResponse): SavedCostScenarioSummar
     registrationNumber: saved.registrationNumber,
     vehicleLabel: saved.scenario.vehicleLabel ?? null,
     revision: saved.revision,
+    sourceListingVersion: saved.sourceListingVersion,
+    currentListingVersion: saved.currentListingVersion,
+    isListingOutdated: saved.isListingOutdated,
+    hasSavedListing: saved.hasSavedListing,
     purchasePriceSek: saved.scenario.purchasePriceSek,
     calculationPeriodMonths: saved.scenario.calculationPeriodMonths,
     cashFlowKnownTotalSek: saved.result.cashFlow.knownTotalSek,

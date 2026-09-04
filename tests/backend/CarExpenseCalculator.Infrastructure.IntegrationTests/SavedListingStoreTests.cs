@@ -251,10 +251,14 @@ public sealed class SavedListingStoreTests(PostgreSqlFixture fixture)
             combinedFromListing = await CreateScenarioStore(context).ReplaceAsync(
                 listingOnly.VehicleId,
                 listingOnly.Revision,
-                ScenarioFactory.Complete("Calculation attached"));
+                ScenarioFactory.Complete("Calculation attached"),
+                SavedScenarioListingLinkMode.Preserve);
         }
 
         Assert.Equal(2, combinedFromListing.Revision);
+        Assert.Null(combinedFromListing.SourceListingVersion);
+        Assert.Equal(1, combinedFromListing.CurrentListingVersion);
+        Assert.True(combinedFromListing.HasSavedListing);
         await using (var context = fixture.CreateDbContext())
         {
             var preservedListing = await CreateListingStore(context).GetAsync(listingOnly.VehicleId);
@@ -285,7 +289,8 @@ public sealed class SavedListingStoreTests(PostgreSqlFixture fixture)
             attachedScenario = await CreateScenarioStore(context, time).ReplaceAsync(
                 created.VehicleId,
                 created.Revision,
-                ScenarioFactory.Complete("Scenario label"));
+                ScenarioFactory.Complete("Scenario label"),
+                SavedScenarioListingLinkMode.Preserve);
         }
 
         time.Advance(TimeSpan.FromMinutes(1));
@@ -331,6 +336,119 @@ public sealed class SavedListingStoreTests(PostgreSqlFixture fixture)
         Assert.Equal(3, preservedScenario.Revision);
         Assert.Null(preservedScenario.Scenario.VehicleLabel);
         Assert.Equal(123_456.123456789012345m, preservedScenario.Scenario.PurchasePriceSek);
+    }
+
+    [Fact]
+    public async Task Listing_link_modes_preserve_assumptions_and_report_current_or_outdated_versions()
+    {
+        await fixture.ResetDatabaseAsync();
+        SavedListing listing;
+        await using (var context = fixture.CreateDbContext())
+        {
+            listing = await CreateListingStore(context).CreateAsync(
+                RegistrationNumber.Parse("ABC123"),
+                ListingFactory.Complete());
+        }
+
+        SavedCostScenario linked;
+        await using (var context = fixture.CreateDbContext())
+        {
+            linked = await CreateScenarioStore(context).ReplaceAsync(
+                listing.VehicleId,
+                listing.Revision,
+                ScenarioFactory.Complete("Linked"),
+                SavedScenarioListingLinkMode.Current);
+        }
+
+        Assert.Equal(1, linked.SourceListingVersion);
+        Assert.Equal(1, linked.CurrentListingVersion);
+        Assert.True(linked.HasSavedListing);
+        await using (var context = fixture.CreateDbContext())
+        {
+            var current = await CreateListingStore(context).GetAsync(listing.VehicleId);
+            Assert.NotNull(current);
+            Assert.Equal(1, current.SavedCostScenarioSourceListingVersion);
+            Assert.False(current.SavedCostScenarioOutdated);
+        }
+
+        SavedListing refreshed;
+        await using (var context = fixture.CreateDbContext())
+        {
+            refreshed = await CreateListingStore(context).ReplaceAsync(
+                listing.VehicleId,
+                linked.Revision,
+                ListingFactory.ManualOnly("Refreshed"));
+        }
+
+        Assert.Equal(2, refreshed.ListingVersion);
+        Assert.Equal(1, refreshed.SavedCostScenarioSourceListingVersion);
+        Assert.True(refreshed.SavedCostScenarioOutdated);
+
+        SavedCostScenario preserved;
+        await using (var context = fixture.CreateDbContext())
+        {
+            preserved = await CreateScenarioStore(context).ReplaceAsync(
+                listing.VehicleId,
+                refreshed.Revision,
+                ScenarioFactory.Replacement(),
+                SavedScenarioListingLinkMode.Preserve);
+        }
+
+        Assert.Equal(1, preserved.SourceListingVersion);
+        Assert.Equal(2, preserved.CurrentListingVersion);
+
+        SavedCostScenario reviewed;
+        await using (var context = fixture.CreateDbContext())
+        {
+            reviewed = await CreateScenarioStore(context).ReplaceAsync(
+                listing.VehicleId,
+                preserved.Revision,
+                ScenarioFactory.Replacement(),
+                SavedScenarioListingLinkMode.Current);
+        }
+
+        Assert.Equal(2, reviewed.SourceListingVersion);
+        Assert.Equal(2, reviewed.CurrentListingVersion);
+        await using (var context = fixture.CreateDbContext())
+        {
+            var current = await CreateListingStore(context).GetAsync(listing.VehicleId);
+            Assert.NotNull(current);
+            Assert.False(current.SavedCostScenarioOutdated);
+        }
+    }
+
+    [Fact]
+    public async Task Current_link_mode_requires_a_listing_and_changes_nothing_when_unavailable()
+    {
+        await fixture.ResetDatabaseAsync();
+        SavedCostScenario scenario;
+        await using (var context = fixture.CreateDbContext())
+        {
+            scenario = await CreateScenarioStore(context).CreateAsync(
+                RegistrationNumber.Parse("ABC123"),
+                ScenarioFactory.Complete());
+        }
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            await Assert.ThrowsAsync<SavedScenarioListingLinkUnavailableException>(() =>
+                CreateScenarioStore(context).ReplaceAsync(
+                    scenario.VehicleId,
+                    scenario.Revision,
+                    ScenarioFactory.Replacement(),
+                    SavedScenarioListingLinkMode.Current));
+        }
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            var unchanged = await CreateScenarioStore(context).GetAsync(scenario.VehicleId);
+            Assert.NotNull(unchanged);
+            Assert.Equal(1, unchanged.Revision);
+            Assert.Null(unchanged.SourceListingVersion);
+            Assert.Null(unchanged.CurrentListingVersion);
+            Assert.False(unchanged.HasSavedListing);
+            Assert.Equal(scenario.Scenario.VehicleLabel, unchanged.Scenario.VehicleLabel);
+        }
     }
 
     [Fact]

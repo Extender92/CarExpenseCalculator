@@ -13,6 +13,10 @@ internal static class SavedCostScenarioMapper
             savedScenario.Revision,
             savedScenario.CalculationVersion,
             savedScenario.ResultSchemaVersion,
+            savedScenario.SourceListingVersion,
+            savedScenario.CurrentListingVersion,
+            IsListingOutdated(savedScenario),
+            savedScenario.HasSavedListing,
             savedScenario.CreatedAtUtc,
             savedScenario.UpdatedAtUtc,
             savedScenario.CalculatedAtUtc,
@@ -28,6 +32,10 @@ internal static class SavedCostScenarioMapper
             savedScenario.RegistrationNumber.Value,
             savedScenario.Scenario.VehicleLabel,
             savedScenario.Revision,
+            savedScenario.SourceListingVersion,
+            savedScenario.CurrentListingVersion,
+            IsListingOutdated(savedScenario),
+            savedScenario.HasSavedListing,
             savedScenario.Scenario.PurchasePriceSek,
             savedScenario.Scenario.CalculationPeriodMonths,
             result.CashFlow.KnownTotalSek,
@@ -35,4 +43,9 @@ internal static class SavedCostScenarioMapper
             ManualCalculationMapper.ToApi(result.Completeness),
             savedScenario.UpdatedAtUtc);
     }
+
+    private static bool IsListingOutdated(SavedCostScenario savedScenario) =>
+        savedScenario.SourceListingVersion is { } sourceListingVersion
+        && savedScenario.CurrentListingVersion is { } currentListingVersion
+        && sourceListingVersion != currentListingVersion;
 }

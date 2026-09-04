@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using CarExpenseCalculator.Api.Contracts.ManualCalculations;
 
 namespace CarExpenseCalculator.Api.Contracts.SavedCostScenarios;
@@ -16,4 +17,13 @@ public sealed record ReplaceSavedCostScenarioRequest
     public required long ExpectedRevision { get; init; }
 
     public required ManualCalculationRequest Scenario { get; init; }
+
+    public required ListingLinkMode ListingLinkMode { get; init; }
+}
+
+[JsonConverter(typeof(StrictStringEnumConverter<ListingLinkMode>))]
+public enum ListingLinkMode
+{
+    Preserve,
+    Current,
 }

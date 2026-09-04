@@ -91,6 +91,8 @@ public sealed class SavedListingMapperTests
             2,
             result,
             true,
+            1,
+            true,
             createdAt,
             createdAt.AddMinutes(1));
 
@@ -111,6 +113,8 @@ public sealed class SavedListingMapperTests
         Assert.Equal(["Dragkrok", "Värmare"], response.Listing.Equipment!.Values);
         Assert.Empty(response.MissingFields);
         Assert.True(response.HasSavedCostScenario);
+        Assert.Equal(1, response.SavedCostScenarioSourceListingVersion);
+        Assert.True(response.SavedCostScenarioOutdated);
 
         Assert.Equal(response.VehicleId, summary.VehicleId);
         Assert.Equal("Volvo V70", summary.VehicleLabel);

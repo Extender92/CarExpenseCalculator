@@ -20,7 +20,9 @@ public sealed record SavedListingResponse(
     IReadOnlyList<ListingAnalysisSourceResponse> Sources,
     ListingDraftResponse Listing,
     IReadOnlyList<ListingFieldCode> MissingFields,
-    bool HasSavedCostScenario);
+    bool HasSavedCostScenario,
+    long? SavedCostScenarioSourceListingVersion,
+    bool SavedCostScenarioOutdated);
 
 public sealed record SavedListingSummaryResponse(
     Guid VehicleId,
@@ -37,4 +39,6 @@ public sealed record SavedListingSummaryResponse(
     ListingAnalysisStatus Status,
     int MissingFieldCount,
     bool HasSavedCostScenario,
+    long? SavedCostScenarioSourceListingVersion,
+    bool SavedCostScenarioOutdated,
     DateTimeOffset UpdatedAtUtc);
