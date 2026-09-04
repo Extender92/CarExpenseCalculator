@@ -440,6 +440,322 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/saved-listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedListingSummaryResponse"][];
+                        "application/json": components["schemas"]["SavedListingSummaryResponse"][];
+                        "text/json": components["schemas"]["SavedListingSummaryResponse"][];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateSavedListingRequest"];
+                    "application/*+json": components["schemas"]["CreateSavedListingRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedListingResponse"];
+                        "application/json": components["schemas"]["SavedListingResponse"];
+                        "text/json": components["schemas"]["SavedListingResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/saved-listings/{vehicleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedListingResponse"];
+                        "application/json": components["schemas"]["SavedListingResponse"];
+                        "text/json": components["schemas"]["SavedListingResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReplaceSavedListingRequest"];
+                    "application/*+json": components["schemas"]["ReplaceSavedListingRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedListingResponse"];
+                        "application/json": components["schemas"]["SavedListingResponse"];
+                        "text/json": components["schemas"]["SavedListingResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query: {
+                    expectedRevision: number;
+                };
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/saved-listings/by-registration/{registrationNumber}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    registrationNumber: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedListingResponse"];
+                        "application/json": components["schemas"]["SavedListingResponse"];
+                        "text/json": components["schemas"]["SavedListingResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["SavedListingProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/status": {
         parameters: {
             query?: never;
@@ -520,12 +836,22 @@ export interface components {
             registrationNumber: string;
             scenario: components["schemas"]["ManualCalculationRequest"];
         };
+        CreateSavedListingRequest: {
+            registrationNumber: string;
+            listing: components["schemas"]["ReviewedListingInput"];
+        };
         /** @enum {unknown} */
         Drivetrain: "frontWheelDrive" | "rearWheelDrive" | "allWheelDrive";
         EnergyBreakdownResult: {
             sources: components["schemas"]["EnergySourceResult"][];
             /** Format: double */
             totalCostSek: number;
+        };
+        EnergyConsumptionInput: {
+            label: string;
+            unit: components["schemas"]["EnergyUnit"];
+            /** Format: double */
+            consumptionPer100Kilometres: number;
         };
         EnergyConsumptionResponse: {
             label: string;
@@ -571,6 +897,12 @@ export interface components {
         };
         /** @enum {unknown} */
         FieldOrigin: "listing" | "user" | "registry";
+        FieldProvenanceInput: {
+            origin: components["schemas"]["FieldOrigin"];
+            extractionMethod: components["schemas"]["ExtractionMethod"];
+            verification: components["schemas"]["VerificationStatus"];
+            sourceUrl: string;
+        };
         FieldProvenanceResponse: {
             origin: components["schemas"]["FieldOrigin"];
             extractionMethod: components["schemas"]["ExtractionMethod"];
@@ -645,6 +977,40 @@ export interface components {
         };
         /** @enum {unknown} */
         ListingAnalysisStatus: "complete" | "partial" | "unavailable";
+        ListingDraftInput: {
+            registrationNumber: null | components["schemas"]["SourcedValueInputOfstring"];
+            make: null | components["schemas"]["SourcedValueInputOfstring"];
+            model: null | components["schemas"]["SourcedValueInputOfstring"];
+            variant: null | components["schemas"]["SourcedValueInputOfstring"];
+            modelYear: null | components["schemas"]["SourcedValueInputOfint"];
+            vin: null | components["schemas"]["SourcedValueInputOfstring"];
+            vehicleLabel: null | components["schemas"]["SourcedValueInputOfstring"];
+            priceSek: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            odometerKilometres: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            sellerType: null | components["schemas"]["SourcedValueInputOfSellerType"];
+            locality: null | components["schemas"]["SourcedValueInputOfstring"];
+            county: null | components["schemas"]["SourcedValueInputOfstring"];
+            publishedDate: null | components["schemas"]["SourcedValueInputOfDateOnly"];
+            updatedDate: null | components["schemas"]["SourcedValueInputOfDateOnly"];
+            imageCount: null | components["schemas"]["SourcedValueInputOfint"];
+            fuelTypes: null | components["schemas"]["SourcedCollectionInputOfFuelType"];
+            transmission: null | components["schemas"]["SourcedValueInputOfTransmission"];
+            drivetrain: null | components["schemas"]["SourcedValueInputOfDrivetrain"];
+            bodyType: null | components["schemas"]["SourcedValueInputOfBodyType"];
+            colour: null | components["schemas"]["SourcedValueInputOfstring"];
+            horsepower: null | components["schemas"]["SourcedValueInputOfint"];
+            engineDisplacementCubicCentimetres: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            energyConsumptions: null | components["schemas"]["SourcedCollectionInputOfEnergyConsumptionInput"];
+            annualVehicleTaxSek: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            ownerCount: null | components["schemas"]["SourcedValueInputOfint"];
+            firstRegistrationDate: null | components["schemas"]["SourcedValueInputOfDateOnly"];
+            lastInspectionDate: null | components["schemas"]["SourcedValueInputOfDateOnly"];
+            nextInspectionDate: null | components["schemas"]["SourcedValueInputOfDateOnly"];
+            towBar: null | components["schemas"]["SourcedValueInputOfboolean"];
+            equipment: null | components["schemas"]["SourcedCollectionInputOfstring"];
+            sellerClaims: null | components["schemas"]["SourcedCollectionInputOfstring"];
+            conditionNotes: null | components["schemas"]["SourcedCollectionInputOfstring"];
+        };
         ListingDraftResponse: {
             registrationNumber: null | components["schemas"]["SourcedValueResponseOfstring"];
             make: null | components["schemas"]["SourcedValueResponseOfstring"];
@@ -770,6 +1136,23 @@ export interface components {
             expectedRevision: number;
             scenario: components["schemas"]["ManualCalculationRequest"];
         };
+        ReplaceSavedListingRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            listing: components["schemas"]["ReviewedListingInput"];
+        };
+        ReviewedListingInput: {
+            submittedUrl: string;
+            /** Format: date-time */
+            analyzedAtUtc: string;
+            requestedModel: null | string;
+            /** Format: int32 */
+            promptVersion: null | number;
+            /** Format: int32 */
+            schemaVersion: null | number;
+            sources: string[];
+            draft: components["schemas"]["ListingDraftInput"];
+        };
         SavedCostScenarioProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -827,8 +1210,96 @@ export interface components {
             /** Format: date-time */
             updatedAtUtc: string;
         };
+        SavedListingProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+            /** Format: uuid */
+            existingVehicleId?: null | string;
+            /** Format: int64 */
+            expectedRevision?: null | number;
+            /** Format: int64 */
+            actualRevision?: null | number;
+            /** Format: int32 */
+            listingSchemaVersion?: null | number;
+            /** Format: int32 */
+            promptVersion?: null | number;
+            /** Format: int32 */
+            schemaVersion?: null | number;
+        };
+        SavedListingResponse: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            /** Format: int64 */
+            revision: number;
+            /** Format: int64 */
+            listingVersion: number;
+            /** Format: int32 */
+            listingSchemaVersion: number;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            updatedAtUtc: string;
+            /** Format: date-time */
+            analyzedAtUtc: string;
+            submittedUrl: string;
+            normalizedUrl: string;
+            status: components["schemas"]["ListingAnalysisStatus"];
+            requestedModel: null | string;
+            /** Format: int32 */
+            promptVersion: null | number;
+            /** Format: int32 */
+            schemaVersion: null | number;
+            sources: components["schemas"]["ListingAnalysisSourceResponse"][];
+            listing: components["schemas"]["ListingDraftResponse"];
+            missingFields: components["schemas"]["ListingFieldCode"][];
+            hasSavedCostScenario: boolean;
+        };
+        SavedListingSummaryResponse: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            vehicleLabel: null | string;
+            /** Format: int64 */
+            revision: number;
+            /** Format: int64 */
+            listingVersion: number;
+            /** Format: int32 */
+            listingSchemaVersion: number;
+            make: null | string;
+            model: null | string;
+            /** Format: int32 */
+            modelYear: null | number;
+            /** Format: double */
+            priceSek: null | number;
+            /** Format: double */
+            odometerKilometres: null | number;
+            status: components["schemas"]["ListingAnalysisStatus"];
+            /** Format: int32 */
+            missingFieldCount: number;
+            hasSavedCostScenario: boolean;
+            /** Format: date-time */
+            updatedAtUtc: string;
+        };
         /** @enum {unknown} */
         SellerType: "private" | "dealer";
+        SourcedCollectionInputOfEnergyConsumptionInput: {
+            values: components["schemas"]["EnergyConsumptionInput"][];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedCollectionInputOfFuelType: {
+            values: components["schemas"]["FuelType"][];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedCollectionInputOfstring: {
+            values: string[];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
         SourcedCollectionResponseOfEnergyConsumptionResponse: {
             values: components["schemas"]["EnergyConsumptionResponse"][];
             provenance: components["schemas"]["FieldProvenanceResponse"];
@@ -840,6 +1311,45 @@ export interface components {
         SourcedCollectionResponseOfstring: {
             values: string[];
             provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueInputOfBodyType: {
+            value: components["schemas"]["BodyType"];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfboolean: {
+            value: boolean;
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfDateOnly: {
+            /** Format: date */
+            value: string;
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfdecimal: {
+            /** Format: double */
+            value: number;
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfDrivetrain: {
+            value: components["schemas"]["Drivetrain"];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfint: {
+            /** Format: int32 */
+            value: number;
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfSellerType: {
+            value: components["schemas"]["SellerType"];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfstring: {
+            value: string;
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfTransmission: {
+            value: components["schemas"]["Transmission"];
+            provenance: components["schemas"]["FieldProvenanceInput"];
         };
         SourcedValueResponseOfBodyType: {
             value: components["schemas"]["BodyType"];

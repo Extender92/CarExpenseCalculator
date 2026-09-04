@@ -112,6 +112,7 @@ public sealed class SavedListingStore(
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedListingNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
+        EnsureSupportedVersions(vehicle);
         var registrationNumber = RegistrationNumber.Parse(vehicle.RegistrationNumber);
         var prepared = Prepare(registrationNumber, input);
 
@@ -393,22 +394,7 @@ public sealed class SavedListingStore(
     {
         var entity = vehicle.Listing
             ?? throw new InvalidOperationException("The loaded vehicle does not contain a listing.");
-        var extractionMetadataIsSupported =
-            entity.RequestedModel is null
-                && entity.PromptVersion is null
-                && entity.ExtractionSchemaVersion is null
-            || entity.RequestedModel is not null
-                && entity.PromptVersion == ListingExtractionContractVersions.Prompt
-                && entity.ExtractionSchemaVersion == ListingExtractionContractVersions.Schema;
-        if (entity.ListingSchemaVersion != CurrentListingSchemaVersion
-            || !extractionMetadataIsSupported)
-        {
-            throw new UnsupportedSavedListingVersionException(
-                vehicle.Id,
-                entity.ListingSchemaVersion,
-                entity.PromptVersion,
-                entity.ExtractionSchemaVersion);
-        }
+        EnsureSupportedVersions(vehicle);
 
         var normalizedUrl = ListingUrl.Parse(entity.NormalizedUrl);
         var provenance = SavedListingJson.DeserializeProvenance(
@@ -562,6 +548,31 @@ public sealed class SavedListingStore(
             listing.SellerClaims?.Provenance, listing.ConditionNotes?.Provenance,
         };
         return values.OfType<FieldProvenance>();
+    }
+
+    private static void EnsureSupportedVersions(VehicleEntity vehicle)
+    {
+        if (vehicle.Listing is not { } listing)
+        {
+            return;
+        }
+
+        var extractionMetadataIsSupported =
+            listing.RequestedModel is null
+                && listing.PromptVersion is null
+                && listing.ExtractionSchemaVersion is null
+            || listing.RequestedModel is not null
+                && listing.PromptVersion == ListingExtractionContractVersions.Prompt
+                && listing.ExtractionSchemaVersion == ListingExtractionContractVersions.Schema;
+        if (listing.ListingSchemaVersion != CurrentListingSchemaVersion
+            || !extractionMetadataIsSupported)
+        {
+            throw new UnsupportedSavedListingVersionException(
+                vehicle.Id,
+                listing.ListingSchemaVersion,
+                listing.PromptVersion,
+                listing.ExtractionSchemaVersion);
+        }
     }
 
     private static void EnsureExpectedRevision(VehicleEntity vehicle, long expectedRevision)
