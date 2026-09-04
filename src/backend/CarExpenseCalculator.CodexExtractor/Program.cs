@@ -13,7 +13,7 @@ public sealed class Program
         var schemaPath = Path.Combine(
             builder.Environment.ContentRootPath,
             "Schemas",
-            "listing-extraction-v1.schema.json");
+            "listing-extraction-v2.schema.json");
         var options = new CodexExtractorOptions
         {
             Model = builder.Configuration["CODEX_MODEL"] ?? CodexExtractorOptions.RequiredModel,

@@ -24,7 +24,9 @@ public sealed record ListingDraft
 
     public SourcedValue<SellerType>? SellerType { get; init; }
 
-    public SourcedValue<string>? Location { get; init; }
+    public SourcedValue<string>? Locality { get; init; }
+
+    public SourcedValue<string>? County { get; init; }
 
     public SourcedValue<DateOnly>? PublishedDate { get; init; }
 

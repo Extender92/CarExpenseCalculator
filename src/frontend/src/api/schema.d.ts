@@ -656,7 +656,8 @@ export interface components {
             priceSek: null | components["schemas"]["SourcedValueResponseOfdecimal"];
             odometerKilometres: null | components["schemas"]["SourcedValueResponseOfdecimal"];
             sellerType: null | components["schemas"]["SourcedValueResponseOfSellerType"];
-            location: null | components["schemas"]["SourcedValueResponseOfstring"];
+            locality: null | components["schemas"]["SourcedValueResponseOfstring"];
+            county: null | components["schemas"]["SourcedValueResponseOfstring"];
             publishedDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
             updatedDate: null | components["schemas"]["SourcedValueResponseOfDateOnly"];
             imageCount: null | components["schemas"]["SourcedValueResponseOfint"];
@@ -679,7 +680,7 @@ export interface components {
             conditionNotes: null | components["schemas"]["SourcedCollectionResponseOfstring"];
         };
         /** @enum {unknown} */
-        ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "location" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
+        ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "locality" | "county" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
         ManualCalculationRequest: {
             vehicleLabel?: null | string;
             /** Format: int32 */

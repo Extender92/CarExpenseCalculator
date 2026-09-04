@@ -21,13 +21,20 @@ public sealed class CodexExtractorEndpointTests
         var status = await client.GetFromJsonAsync<ListingExtractorStatusResponse>("/internal/status");
         using var extraction = await client.PostAsJsonAsync(
             "/internal/listing-extractions",
-            new ListingExtractionRequest("https://example.com/item/1", 1, 1));
+            new ListingExtractionRequest(
+                "https://example.com/item/1",
+                ListingExtractionContractVersions.Prompt,
+                ListingExtractionContractVersions.Schema));
         var result = await extraction.Content.ReadFromJsonAsync<ListingExtractionResponse>();
 
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         Assert.True(status!.Configured);
+        Assert.Equal(2, status.PromptVersion);
+        Assert.Equal(2, status.SchemaVersion);
         Assert.Equal(HttpStatusCode.OK, extraction.StatusCode);
         Assert.Equal("gpt-5.6-luna", result!.RequestedModel);
+        Assert.Equal(2, result.PromptVersion);
+        Assert.Equal(2, result.SchemaVersion);
         Assert.Equal(["https://example.com/item/1"], result.Sources);
     }
 
@@ -39,7 +46,7 @@ public sealed class CodexExtractorEndpointTests
 
         using var response = await client.PostAsJsonAsync(
             "/internal/listing-extractions",
-            new ListingExtractionRequest("https://example.com/item/1", 2, 1));
+            new ListingExtractionRequest("https://example.com/item/1", 1, 1));
         var problem = await response.Content.ReadFromJsonAsync<ListingExtractorProblem>();
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);

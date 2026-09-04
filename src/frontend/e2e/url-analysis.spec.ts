@@ -33,6 +33,10 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await expect(completeCard.getByText("16710 mil")).toBeVisible();
   await expect(completeCard.getByText("Nej", { exact: true }).first()).toBeVisible();
   await completeCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await expect(completeCard.getByLabel("Ort eller stad")).toHaveValue("Tenhult");
+  await expect(completeCard.getByLabel("Län")).toHaveValue("Jönköpings län");
+  await completeCard.getByLabel("Län").fill("Östergötlands län");
+  await expect(completeCard.getByLabel("Ort eller stad")).toHaveValue("Tenhult");
   await expect(completeCard.getByText("Matchar annonsen")).toBeVisible();
   await expect(completeCard.getByLabel("Utrustning")).toHaveValue("empty");
   await completeCard.getByLabel("Märke").fill("Saab");

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Listing extraction v1",
+  "title": "Listing extraction v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -13,7 +13,8 @@
     "priceSek",
     "odometerKilometres",
     "sellerType",
-    "location",
+    "locality",
+    "county",
     "publishedDate",
     "updatedDate",
     "imageCount",
@@ -48,7 +49,8 @@
       "type": ["string", "null"],
       "enum": ["private", "dealer", null]
     },
-    "location": { "type": ["string", "null"] },
+    "locality": { "type": ["string", "null"] },
+    "county": { "type": ["string", "null"] },
     "publishedDate": { "type": ["string", "null"] },
     "updatedDate": { "type": ["string", "null"] },
     "imageCount": { "type": ["integer", "null"] },

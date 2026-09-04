@@ -77,6 +77,61 @@ public sealed class ListingDraftProcessorTests
     }
 
     [Fact]
+    public void Process_extraction_normalizes_locality_and_discards_invalid_county_independently()
+    {
+        var provenance = AiProvenance();
+        var draft = new ListingDraft
+        {
+            Locality = Value("  Te\u006Ehult  ", provenance),
+            County = Value(new string('x', 101), provenance),
+        };
+
+        var result = _processor.ProcessExtraction(_submittedUrl, [_submittedUrl], draft);
+
+        Assert.Equal(ListingAnalysisStatus.Partial, result.Status);
+        Assert.Equal("Tenhult", result.Listing.Locality!.Value);
+        Assert.Equal(_submittedUrl, result.Listing.Locality.Provenance.SourceUrl);
+        Assert.Null(result.Listing.County);
+        Assert.DoesNotContain(ListingFieldCode.Locality, result.MissingFields);
+        Assert.Contains(ListingFieldCode.County, result.MissingFields);
+    }
+
+    [Fact]
+    public void Process_reviewed_validates_locality_and_county_independently()
+    {
+        var provenance = ManualProvenance();
+        var draft = new ListingDraft
+        {
+            Locality = Value(" ", provenance),
+            County = Value(new string('x', 101), provenance),
+        };
+
+        var exception = Assert.Throws<ListingValidationException>(
+            () => _processor.ProcessReviewed(_submittedUrl, [], draft));
+
+        Assert.Equal(
+            ["locality.value", "county.value"],
+            exception.Errors.Select(error => error.Path));
+    }
+
+    [Fact]
+    public void Process_extraction_treats_county_without_locality_as_a_usable_fact()
+    {
+        var provenance = AiProvenance();
+
+        var result = _processor.ProcessExtraction(
+            _submittedUrl,
+            [_submittedUrl],
+            new ListingDraft { County = Value("Jönköpings län", provenance) });
+
+        Assert.Equal(ListingAnalysisStatus.Partial, result.Status);
+        Assert.Null(result.Listing.Locality);
+        Assert.Equal("Jönköpings län", result.Listing.County!.Value);
+        Assert.Contains(ListingFieldCode.Locality, result.MissingFields);
+        Assert.DoesNotContain(ListingFieldCode.County, result.MissingFields);
+    }
+
+    [Fact]
     public void Process_extraction_preserves_originally_known_empty_collection()
     {
         var provenance = AiProvenance();
@@ -137,7 +192,7 @@ public sealed class ListingDraftProcessorTests
             CompleteDraft(AiProvenance()));
 
         Assert.Equal(ListingAnalysisStatus.Unavailable, result.Status);
-        Assert.Equal(30, result.MissingFields.Count);
+        Assert.Equal(31, result.MissingFields.Count);
         Assert.Null(result.Listing.Make);
         Assert.Null(result.Listing.Equipment);
     }
@@ -500,7 +555,7 @@ public sealed class ListingDraftProcessorTests
             new ListingDraft { VehicleLabel = Value("Only label", ManualProvenance()) });
 
         Assert.Equal(Enum.GetValues<ListingFieldCode>(), result.MissingFields);
-        Assert.Equal(30, result.MissingFields.Count);
+        Assert.Equal(31, result.MissingFields.Count);
     }
 
     [Fact]
@@ -518,7 +573,7 @@ public sealed class ListingDraftProcessorTests
         Assert.Equal([Transmission.Manual, Transmission.Automatic], Enum.GetValues<Transmission>());
         Assert.Equal(3, Enum.GetValues<Drivetrain>().Length);
         Assert.Equal(10, Enum.GetValues<BodyType>().Length);
-        Assert.Equal(30, Enum.GetValues<ListingFieldCode>().Length);
+        Assert.Equal(31, Enum.GetValues<ListingFieldCode>().Length);
     }
 
     [Fact]
@@ -549,7 +604,8 @@ public sealed class ListingDraftProcessorTests
             PriceSek = Value(20_000m, provenance),
             OdometerKilometres = Value(200_000m, provenance),
             SellerType = Value(SellerType.Private, provenance),
-            Location = Value("Tenhult", provenance),
+            Locality = Value("Tenhult", provenance),
+            County = Value("Jönköpings län", provenance),
             PublishedDate = Value(new DateOnly(2026, 8, 1), provenance),
             UpdatedDate = Value(new DateOnly(2026, 8, 2), provenance),
             ImageCount = Value(8, provenance),

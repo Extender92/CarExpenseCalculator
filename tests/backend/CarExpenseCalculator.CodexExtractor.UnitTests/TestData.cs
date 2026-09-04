@@ -15,7 +15,7 @@ internal static class TestData
             CodexHome = codexHome,
             CodexExecutable = "codex",
             WorkRoot = Path.Combine(Path.GetTempPath(), "car-expense-codex-tests"),
-            SchemaPath = Path.Combine(AppContext.BaseDirectory, "Schemas", "listing-extraction-v1.schema.json"),
+            SchemaPath = Path.Combine(AppContext.BaseDirectory, "Schemas", "listing-extraction-v2.schema.json"),
         };
 
     public static IReadOnlyList<string> SuccessfulJsonl(

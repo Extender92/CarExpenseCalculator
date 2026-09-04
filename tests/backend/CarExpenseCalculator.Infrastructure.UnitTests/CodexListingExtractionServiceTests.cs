@@ -18,8 +18,8 @@ public sealed class CodexListingExtractionServiceTests
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
-            1,
-            1,
+            ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema,
             new DateTimeOffset(2026, 9, 3, 12, 0, 0, TimeSpan.Zero),
             ["https://example.com/item/1"],
             new ExtractedListingDraft
@@ -33,7 +33,8 @@ public sealed class CodexListingExtractionServiceTests
                 PriceSek = 100_000m,
                 OdometerKilometres = 200_000m,
                 SellerType = "dealer",
-                Location = " Göteborg ",
+                Locality = " Göteborg ",
+                County = " Västra Götalands län ",
                 PublishedDate = "2026-09-01",
                 UpdatedDate = "2026-09-02",
                 ImageCount = 10,
@@ -73,7 +74,8 @@ public sealed class CodexListingExtractionServiceTests
         Assert.Equal(100_000m, listing.PriceSek!.Value);
         Assert.Equal(200_000m, listing.OdometerKilometres!.Value);
         Assert.Equal(SellerType.Dealer, listing.SellerType!.Value);
-        Assert.Equal("Göteborg", listing.Location!.Value);
+        Assert.Equal("Göteborg", listing.Locality!.Value);
+        Assert.Equal("Västra Götalands län", listing.County!.Value);
         Assert.Equal(new DateOnly(2026, 9, 1), listing.PublishedDate!.Value);
         Assert.Equal(new DateOnly(2026, 9, 2), listing.UpdatedDate!.Value);
         Assert.Equal(10, listing.ImageCount!.Value);
@@ -101,8 +103,8 @@ public sealed class CodexListingExtractionServiceTests
         Assert.Equal(VerificationStatus.Unverified, listing.Make.Provenance.Verification);
         Assert.Equal(ListingUrlValue.Value, listing.Make.Provenance.SourceUrl.Value);
         Assert.Equal(ListingUrlValue.Value, handler.Request!.NormalizedUrl);
-        Assert.Equal(1, handler.Request.PromptVersion);
-        Assert.Equal(1, handler.Request.SchemaVersion);
+        Assert.Equal(ListingExtractionContractVersions.Prompt, handler.Request.PromptVersion);
+        Assert.Equal(ListingExtractionContractVersions.Schema, handler.Request.SchemaVersion);
     }
 
     [Fact]
@@ -110,8 +112,8 @@ public sealed class CodexListingExtractionServiceTests
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
-            1,
-            1,
+            ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema,
             DateTimeOffset.UtcNow,
             ["https://example.com/another-item"],
             new ExtractedListingDraft { Make = "Volvo", Equipment = [] });
@@ -135,8 +137,8 @@ public sealed class CodexListingExtractionServiceTests
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
-            1,
-            1,
+            ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema,
             DateTimeOffset.UtcNow,
             [opened],
             new ExtractedListingDraft { Make = "Volvo" });
@@ -156,8 +158,8 @@ public sealed class CodexListingExtractionServiceTests
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
-            1,
-            1,
+            ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema,
             DateTimeOffset.UtcNow,
             ["https://example.com/item/1"],
             new ExtractedListingDraft { Equipment = [], SellerClaims = null });
@@ -197,8 +199,8 @@ public sealed class CodexListingExtractionServiceTests
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
-            1,
-            1,
+            ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema,
             DateTimeOffset.UtcNow,
             ["https://example.com/item/1", "https://example.com/item/1"],
             new ExtractedListingDraft());
@@ -235,7 +237,13 @@ public sealed class CodexListingExtractionServiceTests
     {
         var handler = StubHandler.Json(
             HttpStatusCode.OK,
-            new ListingExtractorStatusResponse(true, "gpt-5.6-luna", "medium", "0.153.0", 1, 1));
+            new ListingExtractorStatusResponse(
+                true,
+                "gpt-5.6-luna",
+                "medium",
+                "0.153.0",
+                ListingExtractionContractVersions.Prompt,
+                ListingExtractionContractVersions.Schema));
 
         var status = await CreateService(handler).GetStatusAsync();
 

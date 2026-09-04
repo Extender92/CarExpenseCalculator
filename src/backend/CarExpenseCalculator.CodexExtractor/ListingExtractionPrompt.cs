@@ -22,10 +22,13 @@ internal static class ListingExtractionPrompt
             Return an empty array only when the listing explicitly establishes that a collection is empty.
 
             Exclude complete descriptions, HTML, images, cookies, hidden content, seller names, phone
-            numbers, email addresses, street addresses, contact details, and source URLs. Short seller
+            numbers, email addresses, street or seller addresses, contact details, and source URLs. Short seller
             claims and condition notes must be paraphrased and contain no identity or contact data.
             Odometer must be kilometres; convert Swedish mil exactly using 1 mil = 10 kilometres.
             Dates must use YYYY-MM-DD only when the full date is explicitly present.
+            Extract locality and county as separate facts. Locality means the advertised city, town,
+            or locality. Return county only when the listing explicitly supports it; never infer a
+            county from a locality or perform a geographic lookup.
 
             Produce only the JSON object required by the supplied output schema.
             """;
