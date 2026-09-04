@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, automatic unsaved previews, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish review interface, PostgreSQL-backed current-listing management, and explicit listing-to-calculator linkage with outdated-version detection. Complete URL-flow verification, automatic search, and advisory AI review are not implemented yet.
+The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Rule-based comparison, automatic discovery, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -145,17 +145,18 @@ npm --prefix src/frontend run lint
 npm --prefix src/frontend run test
 npm --prefix src/frontend run build
 node scripts/verify-compose-boundaries.mjs
-docker compose -f compose.yaml -f compose.e2e.yaml build
-docker compose -f compose.yaml -f compose.e2e.yaml run --rm --no-deps --entrypoint codex codex-extractor --version
-docker compose -f compose.yaml -f compose.e2e.yaml up --detach postgres
-docker compose -f compose.yaml -f compose.e2e.yaml run --rm api migrate
-docker compose -f compose.yaml -f compose.e2e.yaml up --detach api web
+docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml build
+docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml run --rm --no-deps --entrypoint codex codex-extractor --version
+docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml up --detach postgres
+docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml run --rm api migrate
+docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml up --detach api web
 curl --fail http://localhost:8088/api/health/ready
 npm --prefix src/frontend run e2e -- --project=chromium
-docker compose -f compose.yaml -f compose.e2e.yaml down --volumes
+node scripts/verify-url-analysis-acceptance.mjs
+docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml down --volumes
 ```
 
-The Playwright suite expects the Docker stack at `http://localhost:8088`. The E2E override routes extraction to a private deterministic fake and never authenticates to ChatGPT or consumes Codex allowance. Use `--volumes` only for disposable test data. The manual-calculator acceptance procedure and expected failure behavior are documented in [Manual calculator verification](docs/manual-calculator-verification.md).
+The Playwright suite expects the Docker stack at `http://localhost:8088`. The E2E override routes extraction to a private deterministic fake, does not start the real sidecar, and never authenticates to ChatGPT or consumes Codex allowance. The distinct project name keeps its disposable database and empty Codex volume separate from ordinary local data. See [URL analysis verification](docs/url-analysis-verification.md) and [Manual calculator verification](docs/manual-calculator-verification.md) for the complete acceptance procedures.
 
 ## Repository layout
 
@@ -177,6 +178,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 
 - [Product requirements](docs/product-requirements.md)
 - [URL analysis specification](docs/url-analysis.md)
+- [URL analysis verification](docs/url-analysis-verification.md)
 - [Codex listing extraction](docs/codex-extraction.md)
 - [Manual calculator specification](docs/manual-calculator.md)
 - [Manual calculator verification](docs/manual-calculator-verification.md)

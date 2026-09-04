@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test("serves the dashboard and API through one origin", async ({ page }) => {
+  let extractionRequests = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/listing-analyses") extractionRequests += 1;
+  });
   const responsePromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname === "/api/system/status"
       && response.request().method() === "GET",
@@ -22,7 +26,14 @@ test("serves the dashboard and API through one origin", async ({ page }) => {
       manualCalculator: true,
       aiReview: false,
     },
+    integrations: {
+      codexListingExtractionConfigured: true,
+    },
   });
+  expect(extractionRequests).toBe(0);
+
+  const privateTestState = await page.request.get("/api/internal/test-state");
+  expect(privateTestState.status()).toBe(404);
 });
 
 test("navigates to all three foundation routes", async ({ page }) => {

@@ -8,6 +8,9 @@ automatic unsaved previews, the PostgreSQL-backed saved-vehicle lifecycle, and
 saved-listing version linkage without requiring live marketplace access or a
 ChatGPT-authenticated Codex turn.
 
+The complete saved-listing extraction and calculator-linkage acceptance flow is
+documented separately in [URL analysis verification](url-analysis-verification.md).
+
 ## Automated coverage
 
 | Layer | Verified behavior |

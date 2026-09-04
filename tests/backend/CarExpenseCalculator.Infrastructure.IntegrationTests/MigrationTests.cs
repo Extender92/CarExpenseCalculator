@@ -168,6 +168,42 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Listing_schema_contains_no_raw_extraction_contact_or_history_storage()
+    {
+        await fixture.ResetDatabaseAsync();
+
+        var tables = await StringsAsync(
+            """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_name <> '__EFMigrationsHistory'
+            """);
+        Assert.DoesNotContain(tables, name =>
+            name.Contains("history", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("codex", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("raw", StringComparison.OrdinalIgnoreCase));
+
+        var columns = await StringsAsync(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public'");
+        var forbiddenColumns = new[]
+        {
+            "raw_response",
+            "raw_output",
+            "jsonl",
+            "html",
+            "description",
+            "seller_name",
+            "phone",
+            "email",
+            "address",
+            "street_address",
+            "contact_data",
+        };
+        Assert.Empty(columns.Intersect(forbiddenColumns, StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Explicit_migration_runner_applies_a_target_and_reports_invalid_targets()
     {
         await fixture.ResetDatabaseAsync();
@@ -256,5 +292,17 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
         return (T)(await command.ExecuteScalarAsync())!;
+    }
+
+    private async Task<IReadOnlyList<string>> StringsAsync(string sql)
+    {
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await using var reader = await command.ExecuteReaderAsync();
+        var values = new List<string>();
+        while (await reader.ReadAsync()) values.Add(reader.GetString(0));
+        return values;
     }
 }

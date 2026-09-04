@@ -39,12 +39,18 @@ assert(unraid.services.api.environment.CodexExtraction__BaseUrl === "http://code
 const fakeExtractor = e2e.services["fake-codex-extractor"];
 assert(fakeExtractor, "E2E Compose must define the fake Codex extractor.");
 assert(!fakeExtractor.ports || fakeExtractor.ports.length === 0, "The E2E fake extractor must publish no ports.");
+assert(!fakeExtractor.volumes || fakeExtractor.volumes.length === 0, "The E2E fake extractor must mount no volumes.");
 assert(Object.keys(fakeExtractor.networks ?? {}).length === 1 && "extractor-test-network" in fakeExtractor.networks, "The E2E fake extractor must use only its internal test network.");
 assert(e2e.networks["extractor-test-network"]?.internal === true, "The E2E fake extractor network must block external access.");
 assert("app-network" in e2e.services.api.networks && "extractor-test-network" in e2e.services.api.networks, "The E2E API must bridge the app and fake-extractor networks.");
 assert(e2e.services.api.environment.CodexExtraction__BaseUrl === "http://fake-codex-extractor:8080", "The E2E API must target only the fake extractor.");
+assert(Object.keys(e2e.services.api.depends_on ?? {}).length === 1 && "fake-codex-extractor" in e2e.services.api.depends_on, "The E2E API must not start or depend on the real Codex extractor.");
 const fakeEnvironment = Object.keys(fakeExtractor.environment ?? {});
 assert(!fakeEnvironment.some((name) => name.startsWith("POSTGRES_") || name.startsWith("ConnectionStrings__") || name.includes("CODEX") || name.includes("OPENAI")), "The E2E fake extractor must receive no database, Codex, or OpenAI configuration.");
+assert(!("fake-codex-extractor" in local.services), "Local Compose must not include the E2E fake extractor.");
+assert(!("fake-codex-extractor" in unraid.services), "Unraid Compose must not include the E2E fake extractor.");
+assert(!("extractor-test-network" in local.networks), "Local Compose must not include the E2E extractor network.");
+assert(!("extractor-test-network" in unraid.networks), "Unraid Compose must not include the E2E extractor network.");
 
 console.log("Compose port, network, PostgreSQL, and Codex boundaries are valid.");
 

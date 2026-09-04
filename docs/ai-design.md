@@ -39,7 +39,9 @@ Extracted values remain listing-sourced and unverified; missing values stay
 missing. Codex failures leave manual entry and deterministic calculations
 available. The exact contract is in the
 [URL analysis specification](url-analysis.md), and the runtime boundary is in
-[Codex listing extraction](codex-extraction.md).
+[Codex listing extraction](codex-extraction.md). Fake-only end-to-end acceptance
+and deployment checks are documented in
+[URL analysis verification](url-analysis-verification.md).
 
 Official references:
 
@@ -78,6 +80,7 @@ The backend may send all meaningful structured vehicle information: listing URL,
 `AiReview` will contain a summary, confirmed facts, contradictions, unverified claims, missing information, risks, positive signals, seller questions, overall advisory conclusion, confidence, model and prompt versions, token usage, and creation time.
 
 Broad cited research remains an explicit later action rather than part of URL
-extraction. Image analysis remains milestone 6. The private Codex runtime and
-unsaved public URL-analysis endpoint are implemented, but no Swedish review
-interface or advisory AI integration is available yet.
+extraction. Image analysis remains milestone 6. The milestone 2 private Codex
+runtime, URL-analysis API, Swedish review and saved-listing interface, and
+calculator linkage are implemented and verified. No advisory AI integration is
+available yet.

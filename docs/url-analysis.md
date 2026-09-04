@@ -7,7 +7,9 @@ Core listing domain, private Codex extraction sidecar, provider-neutral
 Infrastructure adapter, unsaved public HTTP endpoint, and Swedish in-memory
 review interface are implemented. PostgreSQL persistence and the public HTTP
 lifecycle for one current listing per vehicle are also implemented, together
-with the Swedish saved-listing workflow and explicit calculator linkage.
+with the Swedish saved-listing workflow and explicit calculator linkage. The
+complete fake-only acceptance procedure is documented in
+[URL analysis verification](url-analysis-verification.md).
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -682,9 +684,9 @@ belongs to milestone 4 and still requires approved marketplace access. Advisory
 AI review and separately requested cited research belong to milestone 5. Image
 review belongs to milestone 6.
 
-## Required verification scenarios
+## Verified acceptance scenarios
 
-Later implementation issues must cover at least:
+The automated suites and acceptance runbook cover:
 
 - normalization of casing, IDNA hosts, default/non-default ports, empty paths,
   fragments, escaped paths, and preserved queries;
