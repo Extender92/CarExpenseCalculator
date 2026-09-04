@@ -24,6 +24,13 @@ export type Transmission = components["schemas"]["Transmission"];
 export type Drivetrain = components["schemas"]["Drivetrain"];
 export type BodyType = components["schemas"]["BodyType"];
 export type EnergyUnit = components["schemas"]["EnergyUnit"];
+export type CreateSavedListingRequest = components["schemas"]["CreateSavedListingRequest"];
+export type ReplaceSavedListingRequest = components["schemas"]["ReplaceSavedListingRequest"];
+export type ReviewedListingInput = components["schemas"]["ReviewedListingInput"];
+export type ListingDraftInput = components["schemas"]["ListingDraftInput"];
+export type SavedListingProblemDetails = components["schemas"]["SavedListingProblemDetails"];
+export type SavedListingResponse = components["schemas"]["SavedListingResponse"];
+export type SavedListingSummary = components["schemas"]["SavedListingSummaryResponse"];
 
 export class ManualCalculationApiError extends Error {
   constructor(
@@ -56,6 +63,18 @@ export class ListingAnalysisApiError extends Error {
   ) {
     super(message);
     this.name = "ListingAnalysisApiError";
+  }
+}
+
+export class SavedListingApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly validationProblem?: ValidationProblemDetails,
+    public readonly problem?: SavedListingProblemDetails,
+  ) {
+    super(message);
+    this.name = "SavedListingApiError";
   }
 }
 
@@ -146,6 +165,74 @@ export async function analyzeListing(
     response.status,
     problem?.code,
   );
+}
+
+export async function listSavedListings(): Promise<SavedListingSummary[]> {
+  return runSavedListingRequest(async () => {
+    const { data, error, response } = await api.GET("/api/saved-listings");
+    if (data !== undefined) return data;
+    throw createSavedListingError(response.status, error);
+  });
+}
+
+export async function getSavedListing(vehicleId: string): Promise<SavedListingResponse> {
+  return runSavedListingRequest(async () => {
+    const { data, error, response } = await api.GET("/api/saved-listings/{vehicleId}", {
+      params: { path: { vehicleId } },
+    });
+    if (data !== undefined) return data;
+    throw createSavedListingError(response.status, error);
+  });
+}
+
+export async function getSavedListingByRegistration(
+  registrationNumber: string,
+): Promise<SavedListingResponse> {
+  return runSavedListingRequest(async () => {
+    const { data, error, response } = await api.GET(
+      "/api/saved-listings/by-registration/{registrationNumber}",
+      { params: { path: { registrationNumber } } },
+    );
+    if (data !== undefined) return data;
+    throw createSavedListingError(response.status, error);
+  });
+}
+
+export async function createSavedListing(
+  request: CreateSavedListingRequest,
+): Promise<SavedListingResponse> {
+  return runSavedListingRequest(async () => {
+    const { data, error, response } = await api.POST("/api/saved-listings", { body: request });
+    if (data !== undefined) return data;
+    throw createSavedListingError(response.status, error);
+  });
+}
+
+export async function replaceSavedListing(
+  vehicleId: string,
+  request: ReplaceSavedListingRequest,
+): Promise<SavedListingResponse> {
+  return runSavedListingRequest(async () => {
+    const { data, error, response } = await api.PUT("/api/saved-listings/{vehicleId}", {
+      params: { path: { vehicleId } },
+      body: request,
+    });
+    if (data !== undefined) return data;
+    throw createSavedListingError(response.status, error);
+  });
+}
+
+export async function deleteSavedListing(
+  vehicleId: string,
+  expectedRevision: number,
+): Promise<void> {
+  return runSavedListingRequest(async () => {
+    const { error, response } = await api.DELETE("/api/saved-listings/{vehicleId}", {
+      params: { path: { vehicleId }, query: { expectedRevision } },
+    });
+    if (response.status === 204) return;
+    throw createSavedListingError(response.status, error);
+  });
 }
 
 export async function listSavedCostScenarios(): Promise<SavedCostScenarioSummary[]> {
@@ -252,6 +339,42 @@ function createSavedScenarioError(status: number, error: unknown) {
 
   return new SavedCostScenarioApiError(
     (problem?.code && messages[problem.code]) || "Sparade bilar kunde inte hanteras just nu.",
+    status,
+    undefined,
+    problem,
+  );
+}
+
+async function runSavedListingRequest<T>(request: () => Promise<T>): Promise<T> {
+  try {
+    return await request();
+  } catch (error) {
+    if (error instanceof SavedListingApiError) throw error;
+    throw new SavedListingApiError(
+      "Sparade annonser kunde inte hanteras just nu. Kontrollera anslutningen och försök igen.",
+    );
+  }
+}
+
+function createSavedListingError(status: number, error: unknown) {
+  if (status === 400) {
+    return new SavedListingApiError(
+      "Annonsuppgifterna innehåller värden som inte kunde godkännas.",
+      status,
+      error as ValidationProblemDetails,
+    );
+  }
+
+  const problem = error as SavedListingProblemDetails | undefined;
+  const messages: Record<string, string> = {
+    savedListingNotFound: "Den sparade annonsen finns inte längre.",
+    registrationNumberConflict: "Det finns redan en sparad bil med registreringsnumret.",
+    revisionConflict: "Den sparade bilen har ändrats sedan den öppnades.",
+    unsupportedSavedListingVersion: "Den sparade annonsen har en version som inte kan visas.",
+  };
+
+  return new SavedListingApiError(
+    (problem?.code && messages[problem.code]) || "Sparade annonser kunde inte hanteras just nu.",
     status,
     undefined,
     problem,

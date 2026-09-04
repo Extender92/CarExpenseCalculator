@@ -2,11 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { getSystemStatus } from "@/api/client";
+import { getSystemStatus, listSavedListings } from "@/api/client";
 import { App } from "./App";
 
 vi.mock("@/api/client", () => ({
   getSystemStatus: vi.fn(),
+  listSavedListings: vi.fn(),
 }));
 
 const healthyStatus = {
@@ -26,6 +27,7 @@ const healthyStatus = {
 
 function mockStatus(payload = healthyStatus) {
   vi.mocked(getSystemStatus).mockResolvedValue(payload);
+  vi.mocked(listSavedListings).mockResolvedValue([]);
 }
 
 function renderApp(initialEntry = "/") {

@@ -6,8 +6,8 @@ This document defines the target behavior for milestone 2. The dependency-free
 Core listing domain, private Codex extraction sidecar, provider-neutral
 Infrastructure adapter, unsaved public HTTP endpoint, and Swedish in-memory
 review interface are implemented. PostgreSQL persistence and the public HTTP
-lifecycle for one current listing per vehicle are also implemented. The Swedish
-saved-listing UI and calculator linkage remain planned.
+lifecycle for one current listing per vehicle are also implemented, together
+with the Swedish saved-listing workflow. Calculator linkage remains planned.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -30,9 +30,10 @@ marketplace-specific scraper or parser.
 - Failed, partial, or unavailable extraction leaves the listing editable so the
   user can complete it manually.
 - Preview analysis never reads from or writes to PostgreSQL.
-- Reviewed drafts live only in React memory and disappear on navigation or
-  reload. A separate manual-draft action remains available when extraction is
-  unconfigured or unavailable.
+- Unsaved reviewed drafts live only in React memory and disappear on navigation
+  or reload. A saved draft persists as the vehicle's one current listing and can
+  be reopened from the same page. A separate manual-draft action remains
+  available when extraction is unconfigured or unavailable.
 
 ## URL normalization and validation
 
@@ -559,6 +560,22 @@ listing and any saved calculation. The Swedish UI must warn about both before
 issuing the request. There is no soft delete, restore, patch, upsert, batch,
 append-only history, or automatic refresh in milestone 2.
 
+The Swedish interface loads saved summaries independently from extractor
+availability and permits multiple saved and unsaved cards in one in-memory
+workspace. Saving a new registration creates the current listing. Opening a
+saved vehicle restores its normalized draft, provenance, source order, versions,
+and aggregate revision. A saved registration number is read-only.
+
+A duplicate registration never overwrites silently. The interface retrieves the
+current saved listing and shows only user-visible differences. Each scalar is a
+separate choice and each ordered collection is one complete choice; no option is
+preselected. Retaining an old value records it as a user-confirmed manual value
+against the new listing URL. A scenario-only aggregate can receive its first
+listing through an explicitly confirmed replacement that preserves the scenario.
+Revision conflicts retain the complete edited draft and require comparison with
+the latest resource. Deleting an open vehicle clears its persisted identity but
+retains the card as an unsaved draft with an editable registration number.
+
 ## Persistence model
 
 PostgreSQL continues to use `vehicles` as the aggregate root. A vehicle may be
@@ -591,20 +608,20 @@ children without orphans.
 Existing saved-scenario queries return only vehicles that have a scenario, and
 scenario replacement can attach a first scenario to a listing-only vehicle.
 The listing store can likewise attach a first listing to an existing
-scenario-only vehicle using its UUID and current aggregate revision. The future
-HTTP layer will expose this behavior. Neither operation creates a second vehicle
-for the same registration number.
+scenario-only vehicle using its UUID and current aggregate revision. The
+saved-listing workflow exposes this behavior. Neither operation creates a
+second vehicle for the same registration number.
 
 ## Manual-calculator relationship
 
-A saved scenario created from a listing stores nullable
+A future linked saved scenario created from a listing will store nullable
 `sourceListingVersion`. When it differs from the vehicle's current
 `listingVersion`, the calculation and stored result remain unchanged but are
 reported as outdated. No automatic recalculation occurs. The user clears the
 outdated state only by reviewing and explicitly saving the scenario against the
 current listing version.
 
-Manual-only scenarios store no source listing version and are unaffected by
+Manual-only scenarios will store no source listing version and are unaffected by
 listing replacement.
 
 `Skapa kalkyl från bilen` may prefill only:

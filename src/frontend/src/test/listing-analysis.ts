@@ -2,6 +2,8 @@ import type {
   FieldProvenance,
   ListingAnalysisResponse,
   ListingDraftResponse,
+  SavedListingResponse,
+  SavedListingSummary,
 } from "@/api/client";
 
 const sourceUrl = "https://cars.example/item/1";
@@ -66,4 +68,43 @@ export const completeListingAnalysisResponse: ListingAnalysisResponse = {
   ],
   listing: completeListingDraft,
   missingFields: [],
+};
+
+export const savedListingResponse: SavedListingResponse = {
+  vehicleId: "01990f55-cfd0-7f06-a751-b436d851a931",
+  registrationNumber: "ABC123",
+  revision: 3,
+  listingVersion: 2,
+  listingSchemaVersion: 1,
+  createdAtUtc: "2026-09-03T08:00:00Z",
+  updatedAtUtc: "2026-09-04T08:00:00Z",
+  analyzedAtUtc: completeListingAnalysisResponse.analyzedAtUtc,
+  submittedUrl: completeListingAnalysisResponse.submittedUrl,
+  normalizedUrl: completeListingAnalysisResponse.normalizedUrl,
+  status: completeListingAnalysisResponse.status,
+  requestedModel: completeListingAnalysisResponse.requestedModel,
+  promptVersion: completeListingAnalysisResponse.promptVersion,
+  schemaVersion: completeListingAnalysisResponse.schemaVersion,
+  sources: completeListingAnalysisResponse.sources,
+  listing: completeListingDraft,
+  missingFields: [],
+  hasSavedCostScenario: false,
+};
+
+export const savedListingSummary: SavedListingSummary = {
+  vehicleId: savedListingResponse.vehicleId,
+  registrationNumber: savedListingResponse.registrationNumber,
+  vehicleLabel: null,
+  revision: savedListingResponse.revision,
+  listingVersion: savedListingResponse.listingVersion,
+  listingSchemaVersion: savedListingResponse.listingSchemaVersion,
+  make: "Volvo",
+  model: "V70",
+  modelYear: 2008,
+  priceSek: 20_000,
+  odometerKilometres: 167_100,
+  status: "complete",
+  missingFieldCount: 0,
+  hasSavedCostScenario: false,
+  updatedAtUtc: savedListingResponse.updatedAtUtc,
 };

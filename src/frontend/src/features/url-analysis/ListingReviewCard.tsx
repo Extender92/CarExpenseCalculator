@@ -5,9 +5,11 @@ import {
   LoaderCircle,
   Plus,
   RefreshCw,
+  Save,
   Trash2,
+  X,
 } from "lucide-react";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +47,10 @@ interface ListingReviewCardProps {
   item: ListingWorkspaceItem;
   onChange: (draft: ListingReviewDraft, errors?: Record<string, string>) => void;
   onRetry: () => void;
-  onRemove: () => void;
+  onSave: () => void;
+  onClose: () => void;
+  onDelete?: () => void;
+  onCompareLatest?: () => void;
 }
 
 const phaseLabels: Record<ListingWorkspaceItem["phase"], string> = {
@@ -58,17 +63,37 @@ const phaseLabels: Record<ListingWorkspaceItem["phase"], string> = {
   failed: "Analysen misslyckades",
 };
 
-export function ListingReviewCard({ item, onChange, onRetry, onRemove }: ListingReviewCardProps) {
+export function ListingReviewCard({
+  item,
+  onChange,
+  onRetry,
+  onSave,
+  onClose,
+  onDelete,
+  onCompareLatest,
+}: ListingReviewCardProps) {
   const [reviewOpen, setReviewOpen] = useState(item.phase === "unavailable" || item.phase === "failed");
   const [retryConfirmation, setRetryConfirmation] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
-  const busy = item.phase === "queued" || item.phase === "analyzing" || item.phase === "retrying";
+  const busy = item.phase === "queued" || item.phase === "analyzing" || item.phase === "retrying" || item.saving;
   const missing = deriveMissingFields(item.draft);
   const fields = item.draft.fields;
   const heading = fields.vehicleLabel.input
     || [fields.make.input, fields.model.input, fields.variant.input].filter(Boolean).join(" ")
     || "Tillfälligt annonsutkast";
+  const hasServerValidation = item.persistenceNotice?.tone === "error"
+    && Object.keys(item.validationErrors).length > 0;
+  const isReviewOpen = reviewOpen || hasServerValidation;
+  const displayedValidationMessage = validationMessage
+    ?? (hasServerValidation
+      ? "Servern kunde inte godkänna alla uppgifter. Rätta fälten nedan och försök igen."
+      : null);
+
+  useEffect(() => {
+    if (!hasServerValidation) return;
+    queueMicrotask(() => errorSummaryRef.current?.focus());
+  }, [hasServerValidation]);
 
   function updateDraft(draft: ListingReviewDraft) {
     setValidationMessage(null);
@@ -92,8 +117,24 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
       setValidationMessage("Rätta fälten nedan innan underlaget används vidare.");
       queueMicrotask(() => errorSummaryRef.current?.focus());
     } else {
-      setValidationMessage("Alla ifyllda uppgifter har giltigt format. Utkastet är fortfarande inte sparat.");
+      setValidationMessage(item.saved && !item.dirty
+        ? "Alla ifyllda uppgifter har giltigt format och annonsen är sparad."
+        : "Alla ifyllda uppgifter har giltigt format.");
     }
+  }
+
+  function requestSave() {
+    const errors = validateReviewDraft(item.draft);
+    if (!item.draft.fields.registrationNumber.input) {
+      errors.registrationNumber = "Ange registreringsnummer för att spara bilen.";
+    }
+    onChange(item.draft, errors);
+    if (Object.keys(errors).length > 0) {
+      setValidationMessage("Rätta fälten nedan innan bilen sparas.");
+      queueMicrotask(() => errorSummaryRef.current?.focus());
+      return;
+    }
+    onSave();
   }
 
   function requestRetry() {
@@ -113,7 +154,9 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={phaseBadge(item.phase)}>{phaseLabels[item.phase]}</Badge>
               <Badge variant="muted">{missing.length} okända fält</Badge>
-              <Badge variant="warning">Osparat utkast</Badge>
+              <Badge variant={item.saved && !item.dirty ? "success" : "warning"}>
+                {item.saved ? (item.dirty ? "Ändrad sedan sparning" : "Sparad") : "Osparat utkast"}
+              </Badge>
             </div>
             <CardTitle className="mt-3 break-words">{heading}</CardTitle>
             <dl className="mt-2 space-y-1 text-xs text-slate-400">
@@ -128,13 +171,29 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
             </dl>
           </div>
           <div className="flex flex-wrap gap-2">
+            {!busy && (!item.saved || item.dirty) && (
+              <Button type="button" size="sm" onClick={requestSave}>
+                <Save size={15} /> {item.saved ? "Spara ändringar" : "Spara bil"}
+              </Button>
+            )}
             {!busy && (
               <Button type="button" variant="secondary" size="sm" onClick={requestRetry}>
                 <RefreshCw size={15} /> Analysera igen
               </Button>
             )}
-            <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
-              <Trash2 size={15} /> Ta bort
+            {!busy && item.saved && onCompareLatest && item.persistenceNotice?.action === "compareLatest" && (
+              <Button type="button" variant="secondary" size="sm" onClick={onCompareLatest}>
+                <RefreshCw size={15} /> Jämför med senaste
+              </Button>
+            )}
+            {!busy && item.saved && onDelete && (
+              <Button type="button" variant="ghost" size="sm" className="text-rose-200" onClick={onDelete}>
+                <Trash2 size={15} /> Radera bilen
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+              {item.saved ? <X size={15} /> : <Trash2 size={15} />}
+              {item.saved ? "Stäng kort" : "Ta bort utkast"}
             </Button>
           </div>
         </div>
@@ -149,20 +208,30 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
             <strong>{item.error}</strong> Dina befintliga uppgifter finns kvar och kan kompletteras manuellt.
           </Notice>
         )}
-        {item.phase === "unavailable" && !item.error && item.analysis && (
+        {item.persistenceNotice && (
+          <Notice tone={item.persistenceNotice.tone}>
+            {item.persistenceNotice.message}
+          </Notice>
+        )}
+        {item.phase === "unavailable" && !item.error && item.context.requestedModel && (
           <Notice tone="warning">
             Den inskickade annonssidan kunde inte bekräftas som källa. AI-värden har därför inte använts.
           </Notice>
         )}
-        {item.phase === "unavailable" && !item.analysis && (
+        {item.phase === "unavailable" && !item.context.requestedModel && (
           <Notice tone="warning">
             Utkastet skapades utan automatisk extraktion och kan fyllas i helt manuellt.
           </Notice>
         )}
-        {item.analysis && (
+        {item.context.requestedModel && (
           <p className="text-xs leading-5 text-slate-500">
-            Analyserad {formatDateTime(item.analysis.analyzedAtUtc)} med begärd modell {item.analysis.requestedModel}.
+            Analyserad {formatDateTime(item.context.analyzedAtUtc)} med begärd modell {item.context.requestedModel}.
             Modellnamnet visar konfigurationen och bevisar inte leverantörens faktiska routning.
+          </p>
+        )}
+        {item.saving && (
+          <p role="status" className="flex items-center gap-2 text-sm text-cyan-300">
+            <LoaderCircle className="animate-spin" size={17} /> Sparar bilen…
           </p>
         )}
       </CardHeader>
@@ -184,18 +253,18 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
         <button
           type="button"
           className="flex w-full items-center justify-between rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-left text-sm font-semibold text-slate-200 hover:border-slate-600"
-          aria-expanded={reviewOpen}
+          aria-expanded={isReviewOpen}
           onClick={() => setReviewOpen((open) => !open)}
         >
           Granska och komplettera alla uppgifter
-          <ChevronDown size={18} className={reviewOpen ? "rotate-180 transition" : "transition"} />
+          <ChevronDown size={18} className={isReviewOpen ? "rotate-180 transition" : "transition"} />
         </button>
 
-        {reviewOpen && (
+        {isReviewOpen && (
           <div className="space-y-6">
             <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm leading-6 text-slate-300">
-              Fälten finns bara i minnet tills du lämnar eller laddar om sidan. Ett ändrat värde markeras som
-              manuellt och användarbekräftat. Det går ännu inte att spara annonsunderlag.
+              Ett ändrat värde markeras som manuellt och användarbekräftat. Osparade ändringar finns bara
+              i minnet tills du lämnar eller laddar om sidan.
             </p>
 
             {Object.keys(item.validationErrors).length > 0 && (
@@ -246,9 +315,9 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
             </FieldSection>
 
             <FieldSection title="Källor och proveniens">
-              {item.analysis?.sources.length
+              {item.context.sources.length
                 ? <ul className="space-y-2">
-                    {item.analysis.sources.map((source) => (
+                    {item.context.sources.map((source) => (
                       <li key={source.url} className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-3 sm:flex-row sm:items-center sm:justify-between">
                         <a href={source.url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-cyan-300 hover:underline">
                           {source.url} <ExternalLink className="inline" size={13} />
@@ -264,7 +333,7 @@ export function ListingReviewCard({ item, onChange, onRetry, onRemove }: Listing
 
             <div className="flex flex-wrap items-center gap-3">
               <Button type="button" variant="secondary" onClick={validateAndFocus}>Kontrollera uppgifter</Button>
-              {validationMessage && <p role="status" className="text-sm text-slate-300">{validationMessage}</p>}
+              {displayedValidationMessage && <p role="status" className="text-sm text-slate-300">{displayedValidationMessage}</p>}
             </div>
           </div>
         )}
@@ -308,6 +377,7 @@ function ScalarFields({ definitions, item, disabled, onInput, onBlur }: {
         const field = item.draft.fields[definition.name];
         const error = item.validationErrors[definition.name];
         const id = `${item.id}-${definition.name}`;
+        const readOnly = definition.name === "registrationNumber" && item.saved !== null;
         return (
           <label key={definition.name} htmlFor={id} className="block text-sm font-medium text-slate-300">
             {definition.label}{definition.suffix ? ` (${definition.suffix})` : ""}
@@ -326,6 +396,7 @@ function ScalarFields({ definitions, item, disabled, onInput, onBlur }: {
                 inputMode={definition.kind === "decimal" ? "decimal" : definition.kind === "integer" ? "numeric" : undefined}
                 value={field.input}
                 disabled={disabled}
+                readOnly={readOnly}
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? `${id}-error` : `${id}-source`}
                 className={inputClassName}
@@ -333,6 +404,7 @@ function ScalarFields({ definitions, item, disabled, onInput, onBlur }: {
                 onBlur={() => onBlur(definition.name)}
               />
             )}
+            {readOnly && <span className="mt-1 block text-xs text-cyan-300">Registreringsnumret kan inte ändras för en sparad bil.</span>}
             {error
               ? <span id={`${id}-error`} className="mt-1 block text-xs text-rose-300">{error}</span>
               : <span id={`${id}-source`} className="mt-1 block break-all text-xs font-normal text-slate-500">
@@ -521,9 +593,14 @@ function SmallInput({ id, label, value, disabled, error, inputMode, onChange, on
   );
 }
 
-function Notice({ tone, children }: { tone: "warning" | "error"; children: ReactNode }) {
+function Notice({ tone, children }: { tone: "success" | "warning" | "error"; children: ReactNode }) {
+  const classes = tone === "error"
+    ? "border-rose-400/30 bg-rose-400/10 text-rose-100"
+    : tone === "success"
+      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
+      : "border-amber-400/30 bg-amber-400/10 text-amber-100";
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={`flex gap-3 rounded-xl border p-4 text-sm leading-6 ${tone === "error" ? "border-rose-400/30 bg-rose-400/10 text-rose-100" : "border-amber-400/30 bg-amber-400/10 text-amber-100"}`}>
+    <div role={tone === "error" ? "alert" : "status"} className={`flex gap-3 rounded-xl border p-4 text-sm leading-6 ${classes}`}>
       <AlertTriangle size={18} className="mt-0.5 shrink-0" /> <span>{children}</span>
     </div>
   );
