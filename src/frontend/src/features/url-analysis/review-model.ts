@@ -1,8 +1,10 @@
 import type {
   FieldProvenance,
   ListingAnalysisResponse,
+  ListingAnalysisSource,
   ListingDraftResponse,
   ListingFieldCode,
+  SavedListingResponse,
 } from "@/api/client";
 
 export const scalarFieldNames = [
@@ -70,15 +72,43 @@ export interface ListingReviewDraft {
   conditionNotes: CollectionDraft<StringCollectionEntry>;
 }
 
+export interface ListingReviewContext {
+  analyzedAtUtc: string;
+  requestedModel: string | null;
+  promptVersion: number | null;
+  schemaVersion: number | null;
+  sources: ListingAnalysisSource[];
+}
+
+export interface OpenedSavedListing {
+  vehicleId: string;
+  registrationNumber: string;
+  revision: number;
+  listingVersion: number;
+  listingSchemaVersion: number;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  hasSavedCostScenario: boolean;
+}
+
+export interface PersistenceNotice {
+  tone: "success" | "warning" | "error";
+  message: string;
+  action?: "compareLatest";
+}
+
 export interface ListingWorkspaceItem {
   id: string;
   submittedUrl: string;
   normalizedUrl: string;
   phase: "queued" | "analyzing" | "retrying" | "complete" | "partial" | "unavailable" | "failed";
-  analysis: ListingAnalysisResponse | null;
+  context: ListingReviewContext;
   draft: ListingReviewDraft;
+  saved: OpenedSavedListing | null;
   dirty: boolean;
   error: string | null;
+  persistenceNotice: PersistenceNotice | null;
+  saving: boolean;
   validationErrors: Record<string, string>;
   controller: AbortController | null;
 }
@@ -130,7 +160,10 @@ export function createEmptyReviewDraft(): ListingReviewDraft {
 }
 
 export function analysisResponseToDraft(response: ListingAnalysisResponse): ListingReviewDraft {
-  const listing = response.listing;
+  return listingResponseToDraft(response.listing);
+}
+
+export function listingResponseToDraft(listing: ListingDraftResponse): ListingReviewDraft {
   return {
     fields: {
       registrationNumber: valueField(listing.registrationNumber),
@@ -166,6 +199,39 @@ export function analysisResponseToDraft(response: ListingAnalysisResponse): List
     equipment: stringCollection(listing.equipment),
     sellerClaims: stringCollection(listing.sellerClaims),
     conditionNotes: stringCollection(listing.conditionNotes),
+  };
+}
+
+export function analysisResponseToContext(response: ListingAnalysisResponse): ListingReviewContext {
+  return {
+    analyzedAtUtc: response.analyzedAtUtc,
+    requestedModel: response.requestedModel,
+    promptVersion: response.promptVersion,
+    schemaVersion: response.schemaVersion,
+    sources: response.sources.map((source) => ({ ...source })),
+  };
+}
+
+export function savedListingToContext(saved: SavedListingResponse): ListingReviewContext {
+  return {
+    analyzedAtUtc: saved.analyzedAtUtc,
+    requestedModel: saved.requestedModel,
+    promptVersion: saved.promptVersion,
+    schemaVersion: saved.schemaVersion,
+    sources: saved.sources.map((source) => ({ ...source })),
+  };
+}
+
+export function savedListingMetadata(saved: SavedListingResponse): OpenedSavedListing {
+  return {
+    vehicleId: saved.vehicleId,
+    registrationNumber: saved.registrationNumber,
+    revision: saved.revision,
+    listingVersion: saved.listingVersion,
+    listingSchemaVersion: saved.listingSchemaVersion,
+    createdAtUtc: saved.createdAtUtc,
+    updatedAtUtc: saved.updatedAtUtc,
+    hasSavedCostScenario: saved.hasSavedCostScenario,
   };
 }
 

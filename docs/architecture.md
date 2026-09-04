@@ -126,6 +126,7 @@ store. Preview analysis never accesses PostgreSQL, and saved reads/writes never
 invoke Codex or the extractor. System status reports whether the Codex extractor is configured
 without starting a search turn. Overall health remains database-based and URL
 analysis is enabled because its complete unsaved Swedish interface and manual
-fallback exist. The saved-listing UI and calculator-version linkage remain
-planned. Extractor configuration remains an independent integration status and
+fallback exist. The Swedish interface also exposes current-listing management,
+including explicit field-by-field duplicate comparison and optimistic-concurrency
+recovery. Calculator-version linkage remains planned. Extractor configuration remains an independent integration status and
 does not affect overall database-based health.

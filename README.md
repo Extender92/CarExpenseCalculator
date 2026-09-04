@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish in-memory review interface, and PostgreSQL-backed HTTP lifecycle for one current listing per vehicle. The saved-listing UI, automatic search, and advisory AI review are not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish review interface, and PostgreSQL-backed save, open, compare, replace, and permanent-delete management for one current listing per vehicle. Calculator linkage, automatic search, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API, Swedish review interface, and current saved-listing API are implemented while saved-listing UI and advisory AI review remain later work
+- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API and complete Swedish current-listing workflow are implemented while calculator linkage and advisory AI review remain later work
 
 ## Quick start with Docker
 
@@ -44,7 +44,7 @@ Open [http://localhost:8088](http://localhost:8088). The dashboard should report
 
 Open **Manuell kalkyl** to calculate without saving. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Unsaved previews remain independent from PostgreSQL persistence.
 
-Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. These reviewed drafts still disappear on reload because the Swedish interface does not use the implemented saved-listing API yet. API clients can create, list, read, fully replace, and permanently delete one current listing per vehicle. A missing Codex login disables automatic extraction without disabling manual drafts, saved reads, or the manual calculator.
+Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing. The same page can reopen saved vehicles, compare every changed value before replacing a duplicate registration, handle concurrent revisions, and permanently delete the complete vehicle aggregate after an explicit warning. Unsaved drafts still disappear on reload. A missing Codex login disables automatic extraction without disabling manual drafts, saved-listing management, or the manual calculator.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 
@@ -89,7 +89,7 @@ The internal URL-extraction runtime uses `CODEX_MODEL`,
 `CODEX_REASONING_EFFORT`, and a dedicated persistent `CODEX_HOME_PATH` on
 Unraid. It requires a saved ChatGPT Codex login and deliberately has no Platform
 API-key fallback. URL analysis is exposed through both the public API and the
-Swedish in-memory review interface; see [Codex listing extraction](docs/codex-extraction.md)
+Swedish review and saved-listing interface; see [Codex listing extraction](docs/codex-extraction.md)
 for the private runtime and one-time login procedure.
 
 ## API endpoints
