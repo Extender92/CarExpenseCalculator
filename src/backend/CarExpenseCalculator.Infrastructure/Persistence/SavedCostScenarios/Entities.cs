@@ -1,23 +1,7 @@
 using CarExpenseCalculator.Core.CostScenarios;
+using CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
 
 namespace CarExpenseCalculator.Infrastructure.Persistence.SavedCostScenarios;
-
-internal sealed class VehicleEntity
-{
-    public Guid Id { get; set; }
-
-    public required string RegistrationNumber { get; set; }
-
-    public string? VehicleLabel { get; set; }
-
-    public long Revision { get; set; }
-
-    public DateTimeOffset CreatedAtUtc { get; set; }
-
-    public DateTimeOffset UpdatedAtUtc { get; set; }
-
-    public required SavedCostScenarioEntity Scenario { get; set; }
-}
 
 internal sealed class SavedCostScenarioEntity
 {

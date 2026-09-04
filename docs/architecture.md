@@ -76,24 +76,26 @@ The complete feature contracts and implemented runtime boundary are defined in t
 
 ## Persistence
 
-PostgreSQL 18 is the permanent database. The first migration stores the accepted vehicle and saved manual-scenario aggregate:
+PostgreSQL 18 is the permanent database. The migrations store one current vehicle aggregate with optional scenario and listing records:
 
 - `vehicles` owns the UUIDv7 identity, unique normalized registration number, optional label, timestamps, and optimistic-concurrency revision.
 - `saved_cost_scenarios` has a unique vehicle relationship and stores scalar inputs, calculation/result schema versions, the calculation timestamp, and a persistence-owned JSONB result snapshot.
 - Energy sources, custom recurring costs, and custom one-time costs use ordered child tables with foreign keys and cascade deletion.
+- `vehicle_listings` has a unique optional vehicle relationship and stores current typed listing scalars, listing/extraction versions, normalized status and missing codes, timestamps, and bounded JSONB values.
+- `listing_sources` and `listing_equipment` preserve normalized order in child rows. Fuel types use a nullable string array. Energy consumption, seller claims, condition notes, and field provenance use bounded persistence-owned JSONB. Raw Codex output is never stored.
 
 The user-facing registration number is a current natural key, not the database primary key. Transportstyrelsen stopped future number reuse in 2024 because historical reuse could associate the same registration number with different vehicle individuals. Personal plate text is not accepted as vehicle identity. See [registration-number reuse](https://www.transportstyrelsen.se/sv/vagtrafik/fordon/intressenter/ateranvandning-av-registreringsnummer-upphor/) and [ordinary formats](https://www.transportstyrelsen.se/sv/vagtrafik/fordon/intressenter/nu-har-de-nya-registreringsnumrena-lanserats/).
 
-There is no append-only history in the current model. Replacement validates and recalculates through Core, removes old child rows, writes the new versioned result, and increments the revision in one transaction. A stale revision is rejected. Deleting a saved vehicle physically cascade-deletes the complete aggregate.
+There is no append-only history in the current model. Scenario replacement validates and recalculates through Core. Listing replacement normalizes through `ListingUrl` and `ListingDraftProcessor`, then replaces every scalar, JSONB value, source row, and equipment row. Each operation is atomic, rejects a stale aggregate revision, and retains no superseded values. Deleting either saved resource physically cascade-deletes the complete aggregate.
 
 Migrations are applied only through the explicit backend `migrate [target]` command. Normal API startup never creates, migrates, or rolls back schema.
 
-URL analysis will extend this aggregate without adding history. A vehicle may
+URL-analysis persistence extends this aggregate without adding history. A vehicle may
 be listing-only, scenario-only, or contain both current records. One current
-`vehicle_listings` row will own typed listing values plus bounded JSONB, with
+`vehicle_listings` row owns typed listing values plus bounded JSONB, with
 ordered source and equipment children. The aggregate revision changes after
 any write; a separate listing version changes only when listing content changes.
-Saved scenarios sourced from a listing will record that listing version so a
+Saved scenarios sourced from a listing will later record that listing version so a
 later listing replacement can mark, but never silently recalculate, the stored
 calculation. Deleting a saved listing permanently deletes the complete vehicle
 aggregate, including any saved scenario.
@@ -101,8 +103,8 @@ aggregate, including any saved scenario.
 Advertised geography is represented by separate nullable `locality` and
 `county` sourced values. Each has independent provenance. The domain does not
 retain a general location value or street address and does not infer counties
-or resolve geographic data. Future listing persistence uses separate typed
-nullable columns for these current facts.
+or resolve geographic data. Listing persistence uses separate typed nullable
+columns for these current facts.
 
 ## Public foundation API
 
@@ -117,9 +119,9 @@ registration numbers and stale writes return typed conflicts instead of
 silently overwriting current data. API DTOs remain separate from Core and
 persistence types, and stored result snapshots are never accepted from clients.
 
-The URL-analysis API now exposes its unsaved preview endpoint; the current
-saved-listing lifecycle remains planned. Preview analysis never accesses
-PostgreSQL. System status reports whether the Codex extractor is configured
+The URL-analysis API exposes its unsaved preview endpoint, and the internal
+current-listing store is implemented; the public saved-listing lifecycle remains
+planned. Preview analysis never accesses PostgreSQL. System status reports whether the Codex extractor is configured
 without starting a search turn. Overall health remains database-based and URL
 analysis is enabled because its complete unsaved Swedish interface and manual
 fallback exist. Extractor configuration remains an independent integration

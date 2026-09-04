@@ -1,5 +1,6 @@
 using CarExpenseCalculator.Core.CostScenarios;
 using CarExpenseCalculator.Core.Vehicles;
+using CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -53,6 +54,7 @@ public sealed class SavedCostScenarioStore(
         CancellationToken cancellationToken = default)
     {
         var vehicle = await CompleteQuery(tracking: false)
+            .Where(entity => entity.Scenario != null)
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken);
         return vehicle is null ? null : ToSavedScenario(vehicle);
     }
@@ -64,6 +66,7 @@ public sealed class SavedCostScenarioStore(
         ArgumentNullException.ThrowIfNull(registrationNumber);
 
         var vehicle = await CompleteQuery(tracking: false)
+            .Where(entity => entity.Scenario != null)
             .SingleOrDefaultAsync(
                 entity => entity.RegistrationNumber == registrationNumber.Value,
                 cancellationToken);
@@ -74,6 +77,7 @@ public sealed class SavedCostScenarioStore(
         CancellationToken cancellationToken = default)
     {
         var vehicles = await CompleteQuery(tracking: false)
+            .Where(entity => entity.Scenario != null)
             .OrderByDescending(entity => entity.UpdatedAtUtc)
             .ThenBy(entity => entity.Id)
             .ToArrayAsync(cancellationToken);
@@ -97,16 +101,30 @@ public sealed class SavedCostScenarioStore(
 
         try
         {
-            var savedScenario = vehicle.Scenario;
-            dbContext.RemoveRange(savedScenario.EnergySources);
-            dbContext.RemoveRange(savedScenario.OtherRecurringCosts);
-            dbContext.RemoveRange(savedScenario.OtherOneTimeCosts);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            savedScenario.EnergySources.Clear();
-            savedScenario.OtherRecurringCosts.Clear();
-            savedScenario.OtherOneTimeCosts.Clear();
-
             var now = timeProvider.GetUtcNow();
+            var savedScenario = vehicle.Scenario;
+            if (savedScenario is null)
+            {
+                savedScenario = new SavedCostScenarioEntity
+                {
+                    Id = Guid.CreateVersion7(now),
+                    VehicleId = vehicle.Id,
+                    Vehicle = vehicle,
+                    ResultSnapshotJson = string.Empty,
+                };
+                vehicle.Scenario = savedScenario;
+            }
+            else
+            {
+                dbContext.RemoveRange(savedScenario.EnergySources);
+                dbContext.RemoveRange(savedScenario.OtherRecurringCosts);
+                dbContext.RemoveRange(savedScenario.OtherOneTimeCosts);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                savedScenario.EnergySources.Clear();
+                savedScenario.OtherRecurringCosts.Clear();
+                savedScenario.OtherOneTimeCosts.Clear();
+            }
+
             vehicle.VehicleLabel = NormalizeOptionalLabel(scenario.VehicleLabel);
             vehicle.Revision++;
             vehicle.UpdatedAtUtc = now;
@@ -135,6 +153,7 @@ public sealed class SavedCostScenarioStore(
         CancellationToken cancellationToken = default)
     {
         var vehicle = await dbContext.Vehicles
+            .Where(entity => entity.Scenario != null)
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedCostScenarioNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
@@ -159,11 +178,11 @@ public sealed class SavedCostScenarioStore(
     {
         var query = dbContext.Vehicles
             .Include(entity => entity.Scenario)
-                .ThenInclude(entity => entity.EnergySources)
+                .ThenInclude(entity => entity!.EnergySources)
             .Include(entity => entity.Scenario)
-                .ThenInclude(entity => entity.OtherRecurringCosts)
+                .ThenInclude(entity => entity!.OtherRecurringCosts)
             .Include(entity => entity.Scenario)
-                .ThenInclude(entity => entity.OtherOneTimeCosts)
+                .ThenInclude(entity => entity!.OtherOneTimeCosts)
             .AsSplitQuery();
         return tracking ? query : query.AsNoTrackingWithIdentityResolution();
     }
@@ -182,7 +201,6 @@ public sealed class SavedCostScenarioStore(
             Revision = 1,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
-            Scenario = null!,
         };
         var savedScenario = new SavedCostScenarioEntity
         {
@@ -292,7 +310,8 @@ public sealed class SavedCostScenarioStore(
 
     private static SavedCostScenario ToSavedScenario(VehicleEntity vehicle)
     {
-        var entity = vehicle.Scenario;
+        var entity = vehicle.Scenario
+            ?? throw new InvalidOperationException("The loaded vehicle does not contain a saved cost scenario.");
         if (entity.CalculationVersion != CurrentCalculationVersion
             || entity.ResultSchemaVersion != CurrentResultSchemaVersion)
         {
