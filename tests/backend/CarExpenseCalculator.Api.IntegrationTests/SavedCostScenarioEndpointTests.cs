@@ -30,6 +30,10 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         Assert.Equal(1, saved.Revision);
         Assert.Equal(1, saved.CalculationVersion);
         Assert.Equal(1, saved.ResultSchemaVersion);
+        Assert.Null(saved.SourceListingVersion);
+        Assert.Null(saved.CurrentListingVersion);
+        Assert.False(saved.IsListingOutdated);
+        Assert.False(saved.HasSavedListing);
         Assert.Equal("Example car", saved.Scenario.VehicleLabel);
         Assert.Equal("Petrol", saved.Scenario.EnergySources[0].Label);
         Assert.Equal("Parking", saved.Scenario.OtherRecurringCosts[0].Label);
@@ -127,6 +131,9 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
                 Assert.Equal(10_000m, summary.CashFlowKnownTotalSek);
                 Assert.Null(summary.NetOwnershipCostKnownTotalSek);
                 Assert.False(summary.Completeness.IsComplete);
+                Assert.Null(summary.SourceListingVersion);
+                Assert.False(summary.IsListingOutdated);
+                Assert.False(summary.HasSavedListing);
             },
             summary =>
             {
@@ -200,6 +207,7 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         {
             ExpectedRevision = created.Revision,
             Scenario = SavedCostScenarioTestData.Replacement(),
+            ListingLinkMode = ListingLinkMode.Preserve,
         };
 
         using var replaceResponse = await _client.PutAsJsonAsync(
@@ -225,6 +233,33 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
     }
 
     [Fact]
+    public async Task Current_listing_link_requires_a_saved_listing()
+    {
+        using var createdResponse = await CreateAsync(
+            "ABC123",
+            SavedCostScenarioTestData.Complete());
+        var created = await ReadSavedScenarioAsync(createdResponse);
+
+        using var response = await _client.PutAsJsonAsync(
+            $"/api/saved-cost-scenarios/{created.VehicleId}",
+            new ReplaceSavedCostScenarioRequest
+            {
+                ExpectedRevision = created.Revision,
+                Scenario = SavedCostScenarioTestData.Replacement(),
+                ListingLinkMode = ListingLinkMode.Current,
+            });
+
+        var problem = await ReadSavedProblemAsync(response, HttpStatusCode.Conflict);
+        Assert.Equal("listingLinkUnavailable", problem.Code);
+        using var unchangedResponse = await _client.GetAsync(
+            $"/api/saved-cost-scenarios/{created.VehicleId}");
+        var unchanged = await ReadSavedScenarioAsync(unchangedResponse);
+        Assert.Equal(created.Revision, unchanged.Revision);
+        Assert.Null(unchanged.SourceListingVersion);
+        Assert.False(unchanged.HasSavedListing);
+    }
+
+    [Fact]
     public async Task Stale_replace_returns_revision_conflict_without_changing_data()
     {
         using var createdResponse = await CreateAsync(
@@ -235,6 +270,7 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         {
             ExpectedRevision = created.Revision,
             Scenario = SavedCostScenarioTestData.Replacement(),
+            ListingLinkMode = ListingLinkMode.Preserve,
         };
         using var replacedResponse = await _client.PutAsJsonAsync(
             $"/api/saved-cost-scenarios/{created.VehicleId}",
@@ -245,6 +281,7 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         {
             ExpectedRevision = created.Revision,
             Scenario = SavedCostScenarioTestData.Complete("Must not be saved"),
+            ListingLinkMode = ListingLinkMode.Preserve,
         };
         using var staleResponse = await _client.PutAsJsonAsync(
             $"/api/saved-cost-scenarios/{created.VehicleId}",
@@ -295,6 +332,7 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         {
             ExpectedRevision = 1,
             Scenario = SavedCostScenarioTestData.Incomplete(),
+            ListingLinkMode = ListingLinkMode.Preserve,
         };
 
         using var replaceResponse = await _client.PutAsJsonAsync(
@@ -414,6 +452,30 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
     }
 
     [Theory]
+    [InlineData("1")]
+    [InlineData("\"unsupported\"")]
+    public async Task Replacement_rejects_numeric_and_unsupported_listing_link_modes(string mode)
+    {
+        var scenario = System.Text.Json.JsonSerializer.Serialize(
+            SavedCostScenarioTestData.Incomplete(),
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        var json = $$"""
+            {
+              "expectedRevision": 1,
+              "scenario": {{scenario}},
+              "listingLinkMode": {{mode}}
+            }
+            """;
+
+        using var response = await SendJsonAsync(
+            HttpMethod.Put,
+            $"/api/saved-cost-scenarios/{Guid.CreateVersion7()}",
+            json);
+
+        _ = await ReadValidationProblemAsync(response);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("?expectedRevision=0")]
     public async Task Delete_requires_a_positive_revision(string query)
@@ -440,6 +502,22 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         Assert.True(paths
             .GetProperty("/api/saved-cost-scenarios/by-registration/{registrationNumber}")
             .TryGetProperty("get", out _));
+
+        var schemas = document.GetProperty("components").GetProperty("schemas");
+        Assert.Equal(
+            ["expectedRevision", "scenario", "listingLinkMode"],
+            schemas.GetProperty("ReplaceSavedCostScenarioRequest")
+                .GetProperty("required")
+                .EnumerateArray()
+                .Select(property => property.GetString()!)
+                .ToArray());
+        Assert.Equal(
+            ["preserve", "current"],
+            schemas.GetProperty("ListingLinkMode")
+                .GetProperty("enum")
+                .EnumerateArray()
+                .Select(value => value.GetString()!)
+                .ToArray());
     }
 
     private Task<HttpResponseMessage> CreateAsync(
@@ -510,6 +588,10 @@ public sealed class SavedCostScenarioEndpointTests(SavedCostScenarioApiFactory f
         Assert.Equal(expected.Revision, actual.Revision);
         Assert.Equal(expected.CalculationVersion, actual.CalculationVersion);
         Assert.Equal(expected.ResultSchemaVersion, actual.ResultSchemaVersion);
+        Assert.Equal(expected.SourceListingVersion, actual.SourceListingVersion);
+        Assert.Equal(expected.CurrentListingVersion, actual.CurrentListingVersion);
+        Assert.Equal(expected.IsListingOutdated, actual.IsListingOutdated);
+        Assert.Equal(expected.HasSavedListing, actual.HasSavedListing);
         AssertTimestampEquivalent(expected.CreatedAtUtc, actual.CreatedAtUtc);
         AssertTimestampEquivalent(expected.UpdatedAtUtc, actual.UpdatedAtUtc);
         AssertTimestampEquivalent(expected.CalculatedAtUtc, actual.CalculatedAtUtc);

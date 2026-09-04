@@ -41,6 +41,8 @@ internal sealed class SavedCostScenarioEntity
 
     public int ResultSchemaVersion { get; set; }
 
+    public long? SourceListingVersion { get; set; }
+
     public required string ResultSnapshotJson { get; set; }
 
     public DateTimeOffset CalculatedAtUtc { get; set; }

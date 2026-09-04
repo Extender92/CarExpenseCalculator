@@ -97,6 +97,11 @@ export function SavedScenariosPanel({
                         <Badge variant={scenario.completeness.isComplete ? "success" : "warning"}>
                           {scenario.completeness.isComplete ? "Komplett" : "Ofullständig"}
                         </Badge>
+                        {scenario.isListingOutdated
+                          ? <Badge variant="warning">Annonskoppling inaktuell</Badge>
+                          : scenario.sourceListingVersion !== null
+                            ? <Badge variant="success">Aktuell annons</Badge>
+                            : <Badge variant="muted">Manuell kalkyl</Badge>}
                       </div>
                       <p className="mt-1 text-xs text-slate-500">
                         Uppdaterad {formatDateTime(scenario.updatedAtUtc)} · revision {scenario.revision}

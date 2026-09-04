@@ -1,4 +1,4 @@
-import { Database, FolderOpen, LoaderCircle, RefreshCw, Trash2 } from "lucide-react";
+import { Calculator, Database, FolderOpen, LoaderCircle, RefreshCw, Trash2 } from "lucide-react";
 import type { SavedListingSummary } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ interface SavedListingsPanelProps {
   busyVehicleId: string | null;
   onRetry: () => void;
   onOpen: (listing: SavedListingSummary) => void;
+  onCalculate: (listing: SavedListingSummary) => void;
   onDelete: (listing: SavedListingSummary) => void;
 }
 
@@ -27,6 +28,7 @@ export function SavedListingsPanel({
   busyVehicleId,
   onRetry,
   onOpen,
+  onCalculate,
   onDelete,
 }: SavedListingsPanelProps) {
   return (
@@ -97,7 +99,11 @@ export function SavedListingsPanel({
                         <Badge variant={listing.status === "complete" ? "success" : "warning"}>
                           {statusLabel(listing.status)}
                         </Badge>
-                        {listing.hasSavedCostScenario && <Badge variant="muted">Har kalkyl</Badge>}
+                        {listing.hasSavedCostScenario && (listing.savedCostScenarioOutdated
+                          ? <Badge variant="warning">Kalkyl inaktuell</Badge>
+                          : listing.savedCostScenarioSourceListingVersion !== null
+                            ? <Badge variant="success">Kalkyl aktuell</Badge>
+                            : <Badge variant="muted">Manuell kalkyl</Badge>)}
                       </div>
                       <p className="mt-1 text-sm text-slate-300">{model || "Modelluppgifter saknas"}</p>
                       <p className="mt-1 text-xs text-slate-500">
@@ -116,6 +122,9 @@ export function SavedListingsPanel({
                     <Button type="button" size="sm" disabled={busy} onClick={() => onOpen(listing)}>
                       {busy ? <LoaderCircle className="animate-spin" size={16} /> : <FolderOpen size={16} />}
                       {isOpen ? "Visa öppet kort" : "Öppna"}
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => onCalculate(listing)}>
+                      <Calculator size={16} /> {listing.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
                     </Button>
                     <Button
                       type="button"

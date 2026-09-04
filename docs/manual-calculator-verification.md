@@ -4,8 +4,9 @@
 
 This runbook verifies the completed manual-calculator milestone from the pure
 Core calculation through the single-origin Docker deployment. It covers
-unsaved previews and the PostgreSQL-backed saved-vehicle lifecycle without
-requiring marketplace access, Codex, or another optional external service.
+automatic unsaved previews, the PostgreSQL-backed saved-vehicle lifecycle, and
+saved-listing version linkage without requiring live marketplace access or a
+ChatGPT-authenticated Codex turn.
 
 ## Automated coverage
 
@@ -13,12 +14,12 @@ requiring marketplace access, Codex, or another optional external service.
 | --- | --- |
 | Core unit tests | Decimal formulas, validation, completeness, financing, energy, recurring costs, rounding, and the documented example. |
 | Architecture tests | Core remains independent from API and Infrastructure. |
-| API integration tests | Unsaved previews work with unreachable PostgreSQL; saved endpoints validate contracts, conflicts, revisions, stored versions, and deletion. |
-| Infrastructure integration tests | PostgreSQL 18 migrations, constraints, ordered round trips, atomic replacement, optimistic concurrency, and cascade deletion. |
-| Frontend tests | Swedish form behavior, request mapping, result presentation, saved-list states, persistence failures, conflicts, accessibility, and draft preservation. |
+| API integration tests | Unsaved previews work with unreachable PostgreSQL; saved endpoints validate contracts, listing-link modes, outdated metadata, conflicts, revisions, stored versions, and deletion. |
+| Infrastructure integration tests | PostgreSQL 18 migrations, constraints, listing source versions, current/outdated transitions, atomic replacement, optimistic concurrency, and cascade deletion. |
+| Frontend tests | Swedish form behavior, automatic-preview debounce/cancellation, safe listing prefills, explicit suggestions, result presentation, persistence failures, conflicts, accessibility, and draft preservation. |
 | OpenAPI verification | Generated TypeScript contracts match the backend document without drift. |
 | Compose boundary verification | Only Nginx publishes a port, services use the intended networks, and Unraid targets the dedicated PostgreSQL database and role. |
-| Playwright | The documented unsaved result and complete create/open/replace/reload/delete lifecycle work through one browser origin. |
+| Playwright | The documented result, saved lifecycle, and listing-create/link/refresh/review lifecycle work through one browser origin with the private fake extractor. |
 
 The saved-lifecycle Playwright test uses PostgreSQL. Its successful create after
 an explicit migration also proves that the deployed schema is available.
@@ -77,6 +78,8 @@ solely for this verification and none of its saved vehicles need to be kept.
 
 - The unsaved calculation endpoint is deterministic and does not access
   PostgreSQL. It remains usable when saved-scenario persistence is unavailable.
+- Valid form edits start a preview after 500 ms. Obsolete requests are canceled,
+  only the latest response is displayed, and no preview writes to PostgreSQL.
 - A persistence failure is shown separately in the Swedish interface and does
   not disable unsaved previews or discard entered values.
 - Saved create and replacement operations recalculate through Core. Reopening a
@@ -86,8 +89,12 @@ solely for this verification and none of its saved vehicles need to be kept.
 - Permanent deletion removes the vehicle aggregate from PostgreSQL. When the
   open vehicle is deleted in the interface, its current form and result remain
   as an unsaved draft.
-- Manual calculation is enabled. Rule search, URL analysis, and AI review remain
-  disabled, and no Codex authentication or external listing service is needed.
+- A saved listing can create or open its calculation. Updating the listing marks
+  a linked calculation outdated without altering its assumptions or snapshot;
+  explicit review and save acknowledge the current listing version.
+- Manual calculation and URL analysis are enabled. Rule search and advisory AI
+  review remain disabled. Automated acceptance uses the fake extractor and does
+  not require Codex authentication or an external listing service.
 
 ## Unraid smoke test
 

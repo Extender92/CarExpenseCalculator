@@ -88,6 +88,7 @@ public sealed class SavedCostScenarioStore(
         Guid vehicleId,
         long expectedRevision,
         CostScenario scenario,
+        SavedScenarioListingLinkMode listingLinkMode,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(scenario);
@@ -98,6 +99,17 @@ public sealed class SavedCostScenarioStore(
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedCostScenarioNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
+
+        if (!Enum.IsDefined(listingLinkMode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(listingLinkMode));
+        }
+
+        if (listingLinkMode == SavedScenarioListingLinkMode.Current
+            && vehicle.Listing is null)
+        {
+            throw new SavedScenarioListingLinkUnavailableException(vehicleId);
+        }
 
         try
         {
@@ -129,6 +141,10 @@ public sealed class SavedCostScenarioStore(
             vehicle.Revision++;
             vehicle.UpdatedAtUtc = now;
             ApplyScenario(savedScenario, scenario, result, now);
+            if (listingLinkMode == SavedScenarioListingLinkMode.Current)
+            {
+                savedScenario.SourceListingVersion = vehicle.Listing!.ListingVersion;
+            }
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -183,6 +199,7 @@ public sealed class SavedCostScenarioStore(
                 .ThenInclude(entity => entity!.OtherRecurringCosts)
             .Include(entity => entity.Scenario)
                 .ThenInclude(entity => entity!.OtherOneTimeCosts)
+            .Include(entity => entity.Listing)
             .AsSplitQuery();
         return tracking ? query : query.AsNoTrackingWithIdentityResolution();
     }
@@ -361,6 +378,9 @@ public sealed class SavedCostScenarioStore(
             CostCalculationSnapshot.Deserialize(entity.ResultSnapshotJson),
             entity.CalculationVersion,
             entity.ResultSchemaVersion,
+            entity.SourceListingVersion,
+            vehicle.Listing?.ListingVersion,
+            vehicle.Listing is not null,
             vehicle.Revision,
             vehicle.CreatedAtUtc,
             vehicle.UpdatedAtUtc,

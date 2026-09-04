@@ -47,6 +47,10 @@ const savedResponse: SavedCostScenarioResponse = {
   revision: 1,
   calculationVersion: 1,
   resultSchemaVersion: 1,
+  sourceListingVersion: null,
+  currentListingVersion: null,
+  isListingOutdated: false,
+  hasSavedListing: false,
   createdAtUtc: "2026-08-30T08:00:00Z",
   updatedAtUtc: "2026-08-30T08:00:00Z",
   calculatedAtUtc: "2026-08-30T08:00:00Z",
@@ -83,13 +87,20 @@ describe("saved cost scenario API client", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await createSavedCostScenario({ registrationNumber: "ABC123", scenario });
-    await replaceSavedCostScenario(savedResponse.vehicleId, { expectedRevision: 1, scenario });
+    await replaceSavedCostScenario(savedResponse.vehicleId, {
+      expectedRevision: 1,
+      scenario,
+      listingLinkMode: "preserve",
+    });
     await deleteSavedCostScenario(savedResponse.vehicleId, 2);
 
     expect(requestMethod(fetchMock.mock.calls[0][0])).toBe("POST");
     expect(await requestBody(fetchMock.mock.calls[0][0])).toMatchObject({ registrationNumber: "ABC123" });
     expect(requestMethod(fetchMock.mock.calls[1][0])).toBe("PUT");
-    expect(await requestBody(fetchMock.mock.calls[1][0])).toMatchObject({ expectedRevision: 1 });
+    expect(await requestBody(fetchMock.mock.calls[1][0])).toMatchObject({
+      expectedRevision: 1,
+      listingLinkMode: "preserve",
+    });
     expect(requestMethod(fetchMock.mock.calls[2][0])).toBe("DELETE");
     expect(requestUrl(fetchMock.mock.calls[2][0])).toContain("expectedRevision=2");
   });

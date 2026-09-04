@@ -20,6 +20,13 @@ import {
 } from "@/test/listing-analysis";
 import { UrlAnalysisPage } from "./UrlAnalysisPage";
 
+const { navigateMock } = vi.hoisted(() => ({ navigateMock: vi.fn() }));
+
+vi.mock("react-router-dom", async (importOriginal) => {
+  const original = await importOriginal<typeof import("react-router-dom")>();
+  return { ...original, useNavigate: () => navigateMock };
+});
+
 vi.mock("@/api/client", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/api/client")>();
   return {
@@ -43,6 +50,7 @@ const healthyStatus = {
 };
 
 beforeEach(() => {
+  navigateMock.mockReset();
   vi.mocked(getSystemStatus).mockResolvedValue(healthyStatus);
   vi.mocked(analyzeListing).mockReset();
   vi.mocked(createSavedListing).mockReset();
@@ -233,6 +241,10 @@ describe("Swedish URL analysis workspace", () => {
     expect(await screen.findByText("ABC123")).toBeInTheDocument();
     expect(screen.getByText("Volvo V70 2008")).toBeInTheDocument();
     expect(screen.getByText(/revision 3/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Skapa kalkyl" }));
+    expect(navigateMock).toHaveBeenCalledWith(
+      `/manual?listingVehicleId=${savedListingSummary.vehicleId}`,
+    );
   });
 
   it("focuses an already open saved card and confirms before discarding its edits", async () => {

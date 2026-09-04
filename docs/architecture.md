@@ -79,7 +79,7 @@ The complete feature contracts and implemented runtime boundary are defined in t
 PostgreSQL 18 is the permanent database. The migrations store one current vehicle aggregate with optional scenario and listing records:
 
 - `vehicles` owns the UUIDv7 identity, unique normalized registration number, optional label, timestamps, and optimistic-concurrency revision.
-- `saved_cost_scenarios` has a unique vehicle relationship and stores scalar inputs, calculation/result schema versions, the calculation timestamp, and a persistence-owned JSONB result snapshot.
+- `saved_cost_scenarios` has a unique vehicle relationship and stores scalar inputs, calculation/result schema versions, an optional source-listing version, the calculation timestamp, and a persistence-owned JSONB result snapshot.
 - Energy sources, custom recurring costs, and custom one-time costs use ordered child tables with foreign keys and cascade deletion.
 - `vehicle_listings` has a unique optional vehicle relationship and stores current typed listing scalars, listing/extraction versions, normalized status and missing codes, timestamps, and bounded JSONB values.
 - `listing_sources` and `listing_equipment` preserve normalized order in child rows. Fuel types use a nullable string array. Energy consumption, seller claims, condition notes, and field provenance use bounded persistence-owned JSONB. Raw Codex output is never stored.
@@ -95,9 +95,10 @@ be listing-only, scenario-only, or contain both current records. One current
 `vehicle_listings` row owns typed listing values plus bounded JSONB, with
 ordered source and equipment children. The aggregate revision changes after
 any write; a separate listing version changes only when listing content changes.
-Saved scenarios sourced from a listing will later record that listing version so a
-later listing replacement can mark, but never silently recalculate, the stored
-calculation. Deleting a saved listing permanently deletes the complete vehicle
+Saved scenarios sourced from a listing record that listing version. A later
+listing replacement marks, but never silently recalculates, the stored
+calculation. Manual-only scenarios have no source version and are never marked
+outdated. Deleting a saved listing permanently deletes the complete vehicle
 aggregate, including any saved scenario.
 
 Advertised geography is represented by separate nullable `locality` and
@@ -128,5 +129,7 @@ without starting a search turn. Overall health remains database-based and URL
 analysis is enabled because its complete unsaved Swedish interface and manual
 fallback exist. The Swedish interface also exposes current-listing management,
 including explicit field-by-field duplicate comparison and optimistic-concurrency
-recovery. Calculator-version linkage remains planned. Extractor configuration remains an independent integration status and
-does not affect overall database-based health.
+recovery. Saved listings can open the manual calculator through a reload-safe
+vehicle UUID query, and the UI requires explicit review before linking a saved
+scenario to the current listing version. Extractor configuration remains an
+independent integration status and does not affect overall database-based health.

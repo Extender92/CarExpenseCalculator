@@ -89,6 +89,8 @@ export const savedListingResponse: SavedListingResponse = {
   listing: completeListingDraft,
   missingFields: [],
   hasSavedCostScenario: false,
+  savedCostScenarioSourceListingVersion: null,
+  savedCostScenarioOutdated: false,
 };
 
 export const savedListingSummary: SavedListingSummary = {
@@ -106,5 +108,7 @@ export const savedListingSummary: SavedListingSummary = {
   status: "complete",
   missingFieldCount: 0,
   hasSavedCostScenario: false,
+  savedCostScenarioSourceListingVersion: null,
+  savedCostScenarioOutdated: false,
   updatedAtUtc: savedListingResponse.updatedAtUtc,
 };

@@ -218,10 +218,15 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
             {
                 ExpectedRevision = created.Revision,
                 Scenario = SavedCostScenarioTestData.Incomplete("Scenario attached"),
+                ListingLinkMode = ListingLinkMode.Preserve,
             });
         attachScenarioResponse.EnsureSuccessStatusCode();
         var attachedScenario = (await attachScenarioResponse.Content
             .ReadFromJsonAsync<SavedCostScenarioResponse>())!;
+        Assert.Null(attachedScenario.SourceListingVersion);
+        Assert.Equal(1, attachedScenario.CurrentListingVersion);
+        Assert.False(attachedScenario.IsListingOutdated);
+        Assert.True(attachedScenario.HasSavedListing);
 
         using var replaceResponse = await _client.PutAsJsonAsync(
             $"/api/saved-listings/{created.VehicleId}",
@@ -243,6 +248,76 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         using var scenarioGet = await _client.GetAsync(
             $"/api/saved-cost-scenarios/{created.VehicleId}");
         scenarioGet.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Linked_scenario_becomes_outdated_after_listing_replacement_and_can_be_reviewed()
+    {
+        using var createdResponse = await CreateAsync(
+            "ABC123",
+            SavedListingTestData.Complete("ABC123"));
+        var listing = await ReadSavedListingAsync(createdResponse);
+
+        using var attachResponse = await _client.PutAsJsonAsync(
+            $"/api/saved-cost-scenarios/{listing.VehicleId}",
+            new ReplaceSavedCostScenarioRequest
+            {
+                ExpectedRevision = listing.Revision,
+                Scenario = SavedCostScenarioTestData.Complete("Linked"),
+                ListingLinkMode = ListingLinkMode.Current,
+            });
+        var linked = (await attachResponse.Content
+            .ReadFromJsonAsync<SavedCostScenarioResponse>())!;
+        Assert.Equal(1, linked.SourceListingVersion);
+        Assert.Equal(1, linked.CurrentListingVersion);
+        Assert.False(linked.IsListingOutdated);
+        Assert.True(linked.HasSavedListing);
+
+        using var currentListingResponse = await _client.GetAsync(
+            $"/api/saved-listings/{listing.VehicleId}");
+        var currentListing = await ReadSavedListingAsync(currentListingResponse);
+        Assert.Equal(1, currentListing.SavedCostScenarioSourceListingVersion);
+        Assert.False(currentListing.SavedCostScenarioOutdated);
+
+        using var replaceListingResponse = await _client.PutAsJsonAsync(
+            $"/api/saved-listings/{listing.VehicleId}",
+            new ReplaceSavedListingRequest
+            {
+                ExpectedRevision = linked.Revision,
+                Listing = SavedListingTestData.ManualOnly("Updated listing"),
+            });
+        var refreshed = await ReadSavedListingAsync(replaceListingResponse);
+        Assert.Equal(2, refreshed.ListingVersion);
+        Assert.Equal(1, refreshed.SavedCostScenarioSourceListingVersion);
+        Assert.True(refreshed.SavedCostScenarioOutdated);
+
+        using var scenarioResponse = await _client.GetAsync(
+            $"/api/saved-cost-scenarios/{listing.VehicleId}");
+        var staleScenario = (await scenarioResponse.Content
+            .ReadFromJsonAsync<SavedCostScenarioResponse>())!;
+        Assert.Equal(1, staleScenario.SourceListingVersion);
+        Assert.Equal(2, staleScenario.CurrentListingVersion);
+        Assert.True(staleScenario.IsListingOutdated);
+
+        using var reviewResponse = await _client.PutAsJsonAsync(
+            $"/api/saved-cost-scenarios/{listing.VehicleId}",
+            new ReplaceSavedCostScenarioRequest
+            {
+                ExpectedRevision = refreshed.Revision,
+                Scenario = staleScenario.Scenario,
+                ListingLinkMode = ListingLinkMode.Current,
+            });
+        var reviewed = (await reviewResponse.Content
+            .ReadFromJsonAsync<SavedCostScenarioResponse>())!;
+        Assert.Equal(2, reviewed.SourceListingVersion);
+        Assert.Equal(2, reviewed.CurrentListingVersion);
+        Assert.False(reviewed.IsListingOutdated);
+
+        using var listResponse = await _client.GetAsync("/api/saved-listings");
+        var summary = Assert.Single((await listResponse.Content
+            .ReadFromJsonAsync<SavedListingSummaryResponse[]>())!);
+        Assert.Equal(2, summary.SavedCostScenarioSourceListingVersion);
+        Assert.False(summary.SavedCostScenarioOutdated);
     }
 
     [Fact]
@@ -300,6 +375,7 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
             {
                 ExpectedRevision = created.Revision,
                 Scenario = SavedCostScenarioTestData.Incomplete("Combined"),
+                ListingLinkMode = ListingLinkMode.Preserve,
             });
         var scenario = (await attachScenarioResponse.Content
             .ReadFromJsonAsync<SavedCostScenarioResponse>())!;
@@ -579,13 +655,15 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
                 "vehicleId", "registrationNumber", "revision", "listingVersion", "listingSchemaVersion",
                 "createdAtUtc", "updatedAtUtc", "analyzedAtUtc", "submittedUrl", "normalizedUrl", "status",
                 "requestedModel", "promptVersion", "schemaVersion", "sources", "listing", "missingFields",
-                "hasSavedCostScenario",
+                "hasSavedCostScenario", "savedCostScenarioSourceListingVersion",
+                "savedCostScenarioOutdated",
             ],
             RequiredProperties(schemas.GetProperty("SavedListingResponse")));
         Assert.Equal(["code"], RequiredProperties(schemas.GetProperty("SavedListingProblemDetails")));
-        Assert.False(schemas.GetProperty("SavedListingResponse")
-            .GetProperty("properties")
-            .TryGetProperty("savedCostScenarioOutdated", out _));
+        Assert.True(HasNullType(
+            schemas.GetProperty("SavedListingResponse")
+                .GetProperty("properties")
+                .GetProperty("savedCostScenarioSourceListingVersion")));
         Assert.True(HasNullType(
             schemas.GetProperty("ReviewedListingInput")
                 .GetProperty("properties")
@@ -681,6 +759,10 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         Assert.Equal(expected.RegistrationNumber, actual.RegistrationNumber);
         Assert.Equal(expected.Revision, actual.Revision);
         Assert.Equal(expected.ListingVersion, actual.ListingVersion);
+        Assert.Equal(
+            expected.SavedCostScenarioSourceListingVersion,
+            actual.SavedCostScenarioSourceListingVersion);
+        Assert.Equal(expected.SavedCostScenarioOutdated, actual.SavedCostScenarioOutdated);
         Assert.Equal(expected.NormalizedUrl, actual.NormalizedUrl);
         Assert.Equivalent(expected.Listing, actual.Listing, strict: true);
         Assert.Equal(expected.MissingFields, actual.MissingFields);

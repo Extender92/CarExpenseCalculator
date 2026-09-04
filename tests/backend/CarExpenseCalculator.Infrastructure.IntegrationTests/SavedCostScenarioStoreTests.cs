@@ -141,7 +141,8 @@ public sealed class SavedCostScenarioStoreTests(PostgreSqlFixture fixture)
         var replaced = await store.ReplaceAsync(
             created.VehicleId,
             created.Revision,
-            ScenarioFactory.Replacement());
+            ScenarioFactory.Replacement(),
+            SavedScenarioListingLinkMode.Preserve);
 
         Assert.Equal(created.VehicleId, replaced.VehicleId);
         Assert.Equal(created.RegistrationNumber, replaced.RegistrationNumber);
@@ -181,13 +182,15 @@ public sealed class SavedCostScenarioStoreTests(PostgreSqlFixture fixture)
         var replaced = await store.ReplaceAsync(
             created.VehicleId,
             created.Revision,
-            ScenarioFactory.Replacement());
+            ScenarioFactory.Replacement(),
+            SavedScenarioListingLinkMode.Preserve);
 
         var updateException = await Assert.ThrowsAsync<SavedCostScenarioConcurrencyException>(
             () => store.ReplaceAsync(
                 created.VehicleId,
                 created.Revision,
-                ScenarioFactory.Complete("Stale")));
+                ScenarioFactory.Complete("Stale"),
+                SavedScenarioListingLinkMode.Preserve));
         var deleteException = await Assert.ThrowsAsync<SavedCostScenarioConcurrencyException>(
             () => store.DeleteAsync(created.VehicleId, created.Revision));
 
@@ -209,7 +212,11 @@ public sealed class SavedCostScenarioStoreTests(PostgreSqlFixture fixture)
 
         Assert.Null(await store.GetAsync(missingId));
         await Assert.ThrowsAsync<SavedCostScenarioNotFoundException>(
-            () => store.ReplaceAsync(missingId, 1, ScenarioFactory.Replacement()));
+            () => store.ReplaceAsync(
+                missingId,
+                1,
+                ScenarioFactory.Replacement(),
+                SavedScenarioListingLinkMode.Preserve));
         await Assert.ThrowsAsync<SavedCostScenarioNotFoundException>(
             () => store.DeleteAsync(missingId, 1));
     }
@@ -257,6 +264,10 @@ public sealed class SavedCostScenarioStoreTests(PostgreSqlFixture fixture)
         await Assert.ThrowsAsync<PostgresException>(
             () => ExecuteNonQueryAsync(
                 fixture.ConnectionString,
+                "UPDATE saved_cost_scenarios SET source_listing_version = 0"));
+        await Assert.ThrowsAsync<PostgresException>(
+            () => ExecuteNonQueryAsync(
+                fixture.ConnectionString,
                 "UPDATE vehicles SET registration_number = 'ABI123'"));
         await Assert.ThrowsAsync<PostgresException>(
             () => ExecuteNonQueryAsync(
@@ -290,6 +301,9 @@ public sealed class SavedCostScenarioStoreTests(PostgreSqlFixture fixture)
         Assert.Equal(expected.Revision, actual.Revision);
         Assert.Equal(expected.CreatedAtUtc, actual.CreatedAtUtc);
         Assert.Equal(expected.UpdatedAtUtc, actual.UpdatedAtUtc);
+        Assert.Equal(expected.SourceListingVersion, actual.SourceListingVersion);
+        Assert.Equal(expected.CurrentListingVersion, actual.CurrentListingVersion);
+        Assert.Equal(expected.HasSavedListing, actual.HasSavedListing);
         Assert.Equivalent(expected.Scenario, actual.Scenario, strict: true);
         Assert.Equivalent(expected.Result, actual.Result, strict: true);
     }

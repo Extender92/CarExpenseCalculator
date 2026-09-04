@@ -75,13 +75,17 @@ describe("saved scenario form mapping", () => {
     expect(validateManualCalculationForm(form).request).toEqual(saved.scenario);
   });
 
-  it("extracts only the persisted identity and concurrency metadata", () => {
+  it("extracts persisted identity, concurrency, and listing-link metadata", () => {
     const saved = createSavedResponse(baseScenario());
 
     expect(savedScenarioMetadata(saved)).toEqual({
       vehicleId: saved.vehicleId,
       registrationNumber: "ABC123",
       revision: 3,
+      sourceListingVersion: null,
+      currentListingVersion: null,
+      isListingOutdated: false,
+      hasSavedListing: false,
       createdAtUtc: saved.createdAtUtc,
       updatedAtUtc: saved.updatedAtUtc,
     });
@@ -112,6 +116,10 @@ function createSavedResponse(scenario: ManualCalculationRequest): SavedCostScena
     revision: 3,
     calculationVersion: 1,
     resultSchemaVersion: 1,
+    sourceListingVersion: null,
+    currentListingVersion: null,
+    isListingOutdated: false,
+    hasSavedListing: false,
     createdAtUtc: "2026-08-30T08:00:00Z",
     updatedAtUtc: "2026-08-30T09:00:00Z",
     calculatedAtUtc: "2026-08-30T09:00:00Z",

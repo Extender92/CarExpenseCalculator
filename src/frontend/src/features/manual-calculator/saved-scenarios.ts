@@ -26,6 +26,10 @@ export interface OpenedSavedScenario {
   vehicleId: string;
   registrationNumber: string;
   revision: number;
+  sourceListingVersion: number | null;
+  currentListingVersion: number | null;
+  isListingOutdated: boolean;
+  hasSavedListing: boolean;
   createdAtUtc: string;
   updatedAtUtc: string;
 }
@@ -107,6 +111,10 @@ export function savedScenarioMetadata(saved: SavedCostScenarioResponse): OpenedS
     vehicleId: saved.vehicleId,
     registrationNumber: saved.registrationNumber,
     revision: saved.revision,
+    sourceListingVersion: saved.sourceListingVersion,
+    currentListingVersion: saved.currentListingVersion,
+    isListingOutdated: saved.isListingOutdated,
+    hasSavedListing: saved.hasSavedListing,
     createdAtUtc: saved.createdAtUtc,
     updatedAtUtc: saved.updatedAtUtc,
   };

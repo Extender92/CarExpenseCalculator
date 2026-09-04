@@ -72,6 +72,75 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
   await expect(page.getByText(`${vehicleName} (${registrationNumber})`)).not.toBeVisible();
 });
 
+test("links a saved listing, detects listing drift, and reviews the current version", async ({ page }) => {
+  const registrationNumber = "LNK123";
+  await removeVehicleIfPresent(page, registrationNumber);
+
+  await page.goto("/analyze-urls");
+  await page.getByLabel("URL:er").fill("https://cars.example/item/complete");
+  await page.getByRole("button", { name: "Analysera URL:er" }).click();
+  const listingCard = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "complete" });
+  await expect(listingCard.getByText("Volvo V70 2.4")).toBeVisible();
+  await listingCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await listingCard.getByLabel("Registreringsnummer").fill(registrationNumber);
+  const listingCreate = page.waitForResponse((response) =>
+    response.url().endsWith("/api/saved-listings") && response.request().method() === "POST",
+  );
+  await listingCard.getByRole("button", { name: "Spara bil" }).click();
+  expect((await listingCreate).status()).toBe(201);
+
+  await listingCard.getByRole("button", { name: "Skapa kalkyl" }).click();
+  await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  await expect(page.getByRole("heading", { name: "Annonsuppgifter för kalkylen" })).toBeVisible();
+  await expect(page.getByLabel("Registreringsnummer")).toHaveValue(registrationNumber);
+  await expect(page.getByLabel(/Inköpspris/)).toHaveValue("20000");
+  await fillLinkedScenarioAssumptions(page);
+
+  const scenarioCreate = page.waitForResponse((response) =>
+    response.url().includes("/api/saved-cost-scenarios/")
+      && response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Spara kalkyl" }).click();
+  expect((await scenarioCreate).status()).toBe(200);
+  await expect(page.getByText("Kopplad till aktuell annons")).toBeVisible();
+  await expect(page.getByText(/64\s000,00\s*kr/).first()).toBeVisible();
+  await expect(page.getByText(/49\s000,00\s*kr/).first()).toBeVisible();
+
+  await page.goto("/analyze-urls");
+  const summary = page.getByText(registrationNumber, { exact: true }).first().locator("xpath=ancestor::li");
+  await expect(summary.getByText("Kalkyl aktuell")).toBeVisible();
+  await summary.getByRole("button", { name: "Öppna", exact: true }).click();
+  const opened = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Volvo V70 2.4" });
+  await opened.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await opened.getByLabel("Annonspris").fill("21000");
+  const listingReplace = page.waitForResponse((response) =>
+    response.url().includes("/api/saved-listings/") && response.request().method() === "PUT",
+  );
+  await opened.getByRole("button", { name: "Spara ändringar" }).click();
+  expect((await listingReplace).status()).toBe(200);
+  await expect(opened.getByText("Kalkyl inaktuell")).toBeVisible();
+
+  await opened.getByRole("button", { name: "Öppna kalkyl" }).click();
+  await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  await expect(page.getByText("Tidigare kalkyl är inaktuell")).toBeVisible();
+  await expect(page.getByLabel(/Inköpspris/)).toHaveValue("20000");
+  const listingPanel = page.getByRole("heading", { name: "Annonsuppgifter för kalkylen" })
+    .locator("xpath=ancestor::div[contains(@class,'rounded-2xl')][1]");
+  await expect(listingPanel.getByText(/21\s000,00\s*kr/)).toBeVisible();
+  await listingPanel.getByRole("button", { name: "Använd annonsvärdet" }).first().click();
+  await expect(page.getByLabel(/Inköpspris/)).toHaveValue("21000");
+
+  const reviewSave = page.waitForResponse((response) =>
+    response.url().includes("/api/saved-cost-scenarios/")
+      && response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Spara ändringar" }).click();
+  expect((await reviewSave).status()).toBe(200);
+  await expect(page.getByText("Kopplad till aktuell annons")).toBeVisible();
+
+  await removeVehicleIfPresent(page, registrationNumber);
+});
+
 async function fillDocumentedScenario(page: Page) {
   await page.getByLabel(/Inköpspris/).fill("20000");
   await page.getByLabel(/Årlig körsträcka/).fill("1500");
@@ -107,6 +176,55 @@ async function fillDocumentedScenario(page: Page) {
   await page.getByRole("button", { name: "Lägg till engångskostnad" }).click();
   await page.locator("#manual-otherOneTimeCosts-0-label").fill("Leverans");
   await page.locator("#manual-otherOneTimeCosts-0-amountSek").fill("2000");
+}
+
+async function fillLinkedScenarioAssumptions(page: Page) {
+  await page.getByLabel(/Årlig körsträcka/).fill("1500");
+  await page.getByRole("group", { name: "Förväntat restvärde" })
+    .getByRole("radio", { name: "Känt", exact: true }).check();
+  await page.getByLabel(/Förväntat restvärde/).fill("15000");
+
+  await page.getByRole("radio", { name: "Finansiering" }).check();
+  await page.getByLabel(/Kontantinsats/).fill("5000");
+  await page.getByLabel(/Nominell årsränta/).fill("0");
+  await page.getByLabel(/Lånets löptid/).fill("12");
+
+  await page.locator("#manual-energySources-0-pricePerUnitSek").fill("20");
+  await page.locator("#manual-energySources-0-distanceSharePercent").fill("100");
+  await page.locator('input[name="insurance.known"][value="known"]').check();
+  await page.locator("#manual-insurance-amountSek").fill("500");
+  await page.locator("#manual-insurance-cadence").selectOption("monthly");
+  await page.locator('input[name="maintenanceAndRepairs.known"][value="known"]').check();
+  await page.locator("#manual-maintenanceAndRepairs-amountSek").fill("6000");
+  await page.locator("#manual-maintenanceAndRepairs-cadence").selectOption("annual");
+
+  await page.getByRole("button", { name: "Lägg till återkommande" }).click();
+  await page.locator("#manual-otherRecurringCosts-0-label").fill("Övrigt");
+  await page.locator("#manual-otherRecurringCosts-0-amountSek").fill("300");
+  await page.locator("#manual-otherRecurringCosts-0-cadence").selectOption("monthly");
+  await page.getByRole("button", { name: "Lägg till engångskostnad" }).click();
+  await page.locator("#manual-otherOneTimeCosts-0-label").fill("Leverans");
+  await page.locator("#manual-otherOneTimeCosts-0-amountSek").fill("2000");
+}
+
+async function removeVehicleIfPresent(page: Page, registrationNumber: string) {
+  const listing = await page.request.get(`/api/saved-listings/by-registration/${registrationNumber}`);
+  if (listing.ok()) {
+    const resource = await listing.json() as { vehicleId: string; revision: number };
+    await page.request.delete(
+      `/api/saved-listings/${resource.vehicleId}?expectedRevision=${resource.revision}`,
+    );
+    return;
+  }
+
+  const scenario = await page.request.get(
+    `/api/saved-cost-scenarios/by-registration/${registrationNumber}`,
+  );
+  if (!scenario.ok()) return;
+  const resource = await scenario.json() as { vehicleId: string; revision: number };
+  await page.request.delete(
+    `/api/saved-cost-scenarios/${resource.vehicleId}?expectedRevision=${resource.revision}`,
+  );
 }
 
 function randomRegistrationNumber() {

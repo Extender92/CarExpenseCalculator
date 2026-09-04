@@ -7,7 +7,7 @@ Core listing domain, private Codex extraction sidecar, provider-neutral
 Infrastructure adapter, unsaved public HTTP endpoint, and Swedish in-memory
 review interface are implemented. PostgreSQL persistence and the public HTTP
 lifecycle for one current listing per vehicle are also implemented, together
-with the Swedish saved-listing workflow. Calculator linkage remains planned.
+with the Swedish saved-listing workflow and explicit calculator linkage.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -517,16 +517,16 @@ sources: ordered ListingAnalysisSource[]
 listing: ListingDraft
 missingFields: ordered ListingFieldCode[]
 hasSavedCostScenario: boolean
+savedCostScenarioSourceListingVersion: positive integer?
+savedCostScenarioOutdated: boolean
 ```
 
 `SavedListingSummaryResponse` contains vehicle identity/revisions, optional
 vehicle label, make, model, model year, price, odometer, status, missing-field
-count, update timestamp, and `hasSavedCostScenario`. List results are ordered by `updatedAtUtc`
-descending and then UUID, with no pagination in the local-only version.
-
-`savedCostScenarioOutdated` is not exposed yet. Milestone issue #38 will add the
-nullable source-listing version to saved scenarios and the deterministic
-outdated indicator together.
+count, update timestamp, `hasSavedCostScenario`, the nullable calculation source
+listing version, and its deterministic outdated indicator. List results are
+ordered by `updatedAtUtc` descending and then UUID, with no pagination in the
+local-only version.
 
 Create returns HTTP 201 with a UUID `Location`; reads and replacement return
 HTTP 200; deletion returns HTTP 204. Formatted registration lookup normalizes
@@ -614,17 +614,20 @@ second vehicle for the same registration number.
 
 ## Manual-calculator relationship
 
-A future linked saved scenario created from a listing will store nullable
-`sourceListingVersion`. When it differs from the vehicle's current
-`listingVersion`, the calculation and stored result remain unchanged but are
-reported as outdated. No automatic recalculation occurs. The user clears the
-outdated state only by reviewing and explicitly saving the scenario against the
-current listing version.
+A linked saved scenario stores nullable `sourceListingVersion`. When it differs
+from the vehicle's current `listingVersion`, the calculation and stored result
+remain unchanged but are reported as outdated. No database recalculation occurs.
+The user clears the outdated state only by reviewing and explicitly saving the
+scenario against the current listing version. Manual-only scenarios store no
+source listing version and are unaffected by listing replacement.
 
-Manual-only scenarios will store no source listing version and are unaffected by
-listing replacement.
+The saved APIs expose both sides of this relationship. Saved-scenario full and
+summary responses contain `sourceListingVersion`, `currentListingVersion`,
+`isListingOutdated`, and `hasSavedListing`. Saved-listing full and summary
+responses contain `savedCostScenarioSourceListingVersion` and
+`savedCostScenarioOutdated`. The outdated value is computed and is not stored.
 
-`Skapa kalkyl från bilen` may prefill only:
+`Skapa kalkyl` prefills only:
 
 - vehicle label;
 - normalized registration number;
@@ -632,9 +635,22 @@ listing replacement.
 - annual vehicle tax; and
 - each advertised energy-consumption value and unit.
 
+The action navigates to `/manual?listingVehicleId=<uuid>` and reloads current
+server data, so it also works after a browser reload. Registration is locked to
+the existing aggregate. Annual distance, energy price/share, insurance,
+maintenance, financing, residual value, and custom costs remain empty. Existing
+saved calculation assumptions and their stored result are opened unchanged;
+current listing values appear only as explicit suggestions.
+
+Scenario replacement requires `listingLinkMode`. `preserve` keeps the existing
+nullable source version. `current` requires a saved listing and records its
+current version; otherwise the API returns `409 listingLinkUnavailable`. A
+stale aggregate revision prevents linking against a concurrently replaced
+listing. There is no unlink operation or per-field calculation provenance.
+
 It never maps odometer to annual driving distance. Distance, unit prices,
 insurance, maintenance/repairs, financing, residual value, and other unknown
-assumptions remain empty. The user reviews all values before previewing or
+assumptions remain empty. The user supplies and reviews these assumptions before
 saving a calculation.
 
 ## Privacy and retention

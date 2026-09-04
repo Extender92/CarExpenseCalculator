@@ -74,7 +74,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await page.reload();
   const savedSummary = page.getByText("ABC123", { exact: true }).first().locator("xpath=ancestor::li");
   await expect(savedSummary).toContainText("Volvo V70 2008");
-  await savedSummary.getByRole("button", { name: "Öppna" }).click();
+  await savedSummary.getByRole("button", { name: "Öppna", exact: true }).click();
   const opened = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Volvo V70 2.4" });
   await opened.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
   await expect(opened.getByLabel("Registreringsnummer")).toHaveAttribute("readonly", "");
@@ -103,7 +103,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await page.reload();
   const updatedSummary = page.getByText("ABC123", { exact: true }).first().locator("xpath=ancestor::li");
   await expect(updatedSummary).toContainText("Saab V70 2008");
-  await updatedSummary.getByRole("button", { name: "Öppna" }).click();
+  await updatedSummary.getByRole("button", { name: "Öppna", exact: true }).click();
   const updatedCard = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Saab V70 2.4" });
   await updatedCard.getByRole("button", { name: "Radera bilen" }).click();
   await expect(page.getByRole("alertdialog", { name: /Radera ABC123 permanent/ })).toContainText("permanent");
@@ -116,7 +116,8 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   expectSameOrigin(page, deleted);
   await expect(updatedCard.getByText("Osparat utkast", { exact: true })).toBeVisible();
   await expect(updatedCard.getByText(/ligger kvar här som ett osparat utkast/)).toBeVisible();
-  await expect(page.getByText("Inga annonser är sparade ännu.", { exact: false })).toBeVisible();
+  const missing = await page.request.get("/api/saved-listings/by-registration/ABC123");
+  expect(missing.status()).toBe(404);
 });
 
 test("attaches a manual listing to a scenario-only vehicle and warns before deleting both", async ({ page }) => {

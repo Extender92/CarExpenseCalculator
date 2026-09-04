@@ -101,7 +101,7 @@ docker compose -f compose.unraid.yaml run --rm api migrate
 docker compose -f compose.unraid.yaml up --detach codex-extractor api web
 ```
 
-The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. This includes `AddCurrentVehicleListings`, which adds the current saved-listing tables without exposing a saved-listing API yet. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
+The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. This includes `AddCurrentVehicleListings` and `LinkSavedScenariosToListings`, which add current listing storage and nullable calculation-to-listing version metadata. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
 
 Verify liveness, database readiness, and feature status through the single published origin:
 
@@ -118,7 +118,7 @@ Complete the browser and saved-data checks in [Manual calculator verification](m
 
 ## Upgrades
 
-Create and verify a PostgreSQL backup before an upgrade. This is mandatory before applying `20260904100409_AddCurrentVehicleListings`. Build the new images while the current application is still running, then use a short maintenance window for migration and replacement:
+Create and verify a PostgreSQL backup before an upgrade. This is mandatory before applying `20260904100409_AddCurrentVehicleListings` or `20260904132333_LinkSavedScenariosToListings`. Build the new images while the current application is still running, then use a short maintenance window for migration and replacement:
 
 ```bash
 docker compose -f compose.unraid.yaml build
@@ -158,7 +158,16 @@ An explicit migration name may be supplied as the final argument. Target `0` rol
 docker compose -f compose.unraid.yaml run --rm api migrate 0
 ```
 
-Rolling back only the listing migration uses:
+Rolling back only calculation-to-listing linkage metadata, while retaining all
+saved listings and scenarios, uses:
+
+```bash
+docker compose -f compose.unraid.yaml run --rm api migrate 20260904100409_AddCurrentVehicleListings
+```
+
+Existing scenarios become manual-only after this rollback because the nullable
+source-listing version column no longer exists. Rolling back the complete
+listing persistence layer uses:
 
 ```bash
 docker compose -f compose.unraid.yaml run --rm api migrate 20260830181537_InitialSavedCostScenarios

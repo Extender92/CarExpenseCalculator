@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish review interface, and PostgreSQL-backed save, open, compare, replace, and permanent-delete management for one current listing per vehicle. Calculator linkage, automatic search, and advisory AI review are not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, automatic unsaved previews, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish review interface, PostgreSQL-backed current-listing management, and explicit listing-to-calculator linkage with outdated-version detection. Complete URL-flow verification, automatic search, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -26,7 +26,7 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API and complete Swedish current-listing workflow are implemented while calculator linkage and advisory AI review remain later work
+- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the URL-analysis, saved-listing, and linked-calculator workflows are implemented while advisory AI review remains later work
 
 ## Quick start with Docker
 
@@ -42,9 +42,9 @@ docker compose up --detach api web
 
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
 
-Open **Manuell kalkyl** to calculate without saving. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Unsaved previews remain independent from PostgreSQL persistence.
+Open **Manuell kalkyl** to calculate without saving. Valid edits refresh the unsaved preview automatically after a short delay, while **Beräkna nu** remains available for an immediate calculation. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Preview calculations never persist changes.
 
-Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing. The same page can reopen saved vehicles, compare every changed value before replacing a duplicate registration, handle concurrent revisions, and permanently delete the complete vehicle aggregate after an explicit warning. Unsaved drafts still disappear on reload. A missing Codex login disables automatic extraction without disabling manual drafts, saved-listing management, or the manual calculator.
+Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing. A saved listing can create or open its vehicle calculation through a reload-safe link. Safe advertised values are offered as explicit calculator inputs; a later listing replacement marks the saved calculation outdated without changing its assumptions or result. Unsaved drafts still disappear on reload. A missing Codex login disables automatic extraction without disabling manual drafts, saved-listing management, or the manual calculator.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 
@@ -55,6 +55,11 @@ docker compose down
 Add `--volumes` only when the local development database should also be deleted.
 
 Database migrations are explicit and never run during API startup. See [Unraid deployment](docs/deployment-unraid.md) before applying or rolling back migrations on persistent data.
+
+Saved calculations linked to a listing store the reviewed listing version, not
+an independently mutable outdated flag. Replacing the listing preserves the
+calculation snapshot and exposes it as outdated until the user reviews and
+explicitly saves the calculation against the current version.
 
 ## Local development
 
@@ -109,7 +114,7 @@ for the private runtime and one-time login procedure.
 - `GET /api/saved-cost-scenarios` – list saved-vehicle summaries
 - `GET /api/saved-cost-scenarios/{vehicleId}` – read a complete saved scenario
 - `GET /api/saved-cost-scenarios/by-registration/{registrationNumber}` – find a saved vehicle by registration number
-- `PUT /api/saved-cost-scenarios/{vehicleId}` – fully replace a scenario using its expected revision
+- `PUT /api/saved-cost-scenarios/{vehicleId}` – fully replace a scenario using its expected revision and explicitly preserve or acknowledge the current listing version
 - `DELETE /api/saved-cost-scenarios/{vehicleId}?expectedRevision={revision}` – permanently delete an aggregate using its expected revision
 - `GET /api/openapi/v1.json` – OpenAPI document used to generate frontend types
 

@@ -56,6 +56,8 @@ public sealed record SavedListing(
     int? ExtractionSchemaVersion,
     ListingProcessingResult ProcessingResult,
     bool HasSavedCostScenario,
+    long? SavedCostScenarioSourceListingVersion,
+    bool SavedCostScenarioOutdated,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 

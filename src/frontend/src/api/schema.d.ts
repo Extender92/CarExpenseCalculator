@@ -1047,6 +1047,8 @@ export interface components {
         };
         /** @enum {unknown} */
         ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "locality" | "county" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
+        /** @enum {unknown} */
+        ListingLinkMode: "preserve" | "current";
         ManualCalculationRequest: {
             vehicleLabel?: null | string;
             /** Format: int32 */
@@ -1135,6 +1137,7 @@ export interface components {
             /** Format: int64 */
             expectedRevision: number;
             scenario: components["schemas"]["ManualCalculationRequest"];
+            listingLinkMode: components["schemas"]["ListingLinkMode"];
         };
         ReplaceSavedListingRequest: {
             /** Format: int64 */
@@ -1182,6 +1185,12 @@ export interface components {
             calculationVersion: number;
             /** Format: int32 */
             resultSchemaVersion: number;
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+            /** Format: int64 */
+            currentListingVersion: null | number;
+            isListingOutdated: boolean;
+            hasSavedListing: boolean;
             /** Format: date-time */
             createdAtUtc: string;
             /** Format: date-time */
@@ -1198,6 +1207,12 @@ export interface components {
             vehicleLabel: null | string;
             /** Format: int64 */
             revision: number;
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+            /** Format: int64 */
+            currentListingVersion: null | number;
+            isListingOutdated: boolean;
+            hasSavedListing: boolean;
             /** Format: double */
             purchasePriceSek: number;
             /** Format: int32 */
@@ -1259,6 +1274,9 @@ export interface components {
             listing: components["schemas"]["ListingDraftResponse"];
             missingFields: components["schemas"]["ListingFieldCode"][];
             hasSavedCostScenario: boolean;
+            /** Format: int64 */
+            savedCostScenarioSourceListingVersion: null | number;
+            savedCostScenarioOutdated: boolean;
         };
         SavedListingSummaryResponse: {
             /** Format: uuid */
@@ -1283,6 +1301,9 @@ export interface components {
             /** Format: int32 */
             missingFieldCount: number;
             hasSavedCostScenario: boolean;
+            /** Format: int64 */
+            savedCostScenarioSourceListingVersion: null | number;
+            savedCostScenarioOutdated: boolean;
             /** Format: date-time */
             updatedAtUtc: string;
         };

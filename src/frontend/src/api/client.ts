@@ -95,9 +95,11 @@ export async function getSystemStatus(): Promise<SystemStatus> {
 
 export async function calculateManualScenario(
   request: ManualCalculationRequest,
+  signal?: AbortSignal,
 ): Promise<ManualCalculationResult> {
   const { data, error, response } = await api.POST("/api/manual-calculations", {
     body: request,
+    signal,
   });
 
   if (data) {
@@ -335,6 +337,7 @@ function createSavedScenarioError(status: number, error: unknown) {
     registrationNumberConflict: "Det finns redan en sparad bil med registreringsnumret.",
     revisionConflict: "Den sparade bilen har ändrats sedan den öppnades.",
     unsupportedSavedScenarioVersion: "Den sparade bilen har en version som inte kan visas.",
+    listingLinkUnavailable: "Bilen har ingen sparad annons att koppla kalkylen till.",
   };
 
   return new SavedCostScenarioApiError(
