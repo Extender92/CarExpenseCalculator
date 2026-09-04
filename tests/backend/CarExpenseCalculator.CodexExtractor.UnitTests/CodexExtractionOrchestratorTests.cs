@@ -27,6 +27,30 @@ public sealed class CodexExtractionOrchestratorTests
         Assert.DoesNotContain(TestData.EmptyDraftJson(), string.Join(' ', logger.Messages));
     }
 
+    [Fact]
+    public async Task Deterministic_jsonl_uses_only_opened_pages_as_source_evidence()
+    {
+        var runner = FakeRunner.Success();
+        runner.Result = new CodexProcessResult(
+            0,
+            TestData.SuccessfulJsonl(
+                TestData.EmptyDraftJson(),
+                TestData.WebEvent("search", "https://search-result.example/item/1"),
+                TestData.WebEvent("open_page", ValidRequest.NormalizedUrl),
+                TestData.WebEvent("find_in_page", "https://example.com/item/2")),
+            string.Empty,
+            false);
+
+        var execution = await CreateOrchestrator(runner)
+            .ExecuteAsync(ValidRequest, CancellationToken.None);
+
+        var success = Assert.IsType<CodexExtractionSucceeded>(execution);
+        Assert.Equal(
+            ["https://example.com/item/1", "https://example.com/item/2"],
+            success.Response.Sources);
+        Assert.Equal(1, runner.RunCalls);
+    }
+
     [Theory]
     [InlineData(1, 2, (int)CodexExecutionFailure.UnsupportedVersion)]
     [InlineData(2, 1, (int)CodexExecutionFailure.UnsupportedVersion)]
@@ -125,6 +149,21 @@ public sealed class CodexExtractionOrchestratorTests
     {
         var runner = FakeRunner.Success();
         runner.Result = runner.Result with { OutputLimitExceeded = true };
+
+        var execution = await CreateOrchestrator(runner)
+            .ExecuteAsync(ValidRequest, CancellationToken.None);
+
+        Assert.Equal(
+            CodexExecutionFailure.InvalidOutput,
+            Assert.IsType<CodexExtractionFailed>(execution).Failure);
+        Assert.Equal(1, runner.RunCalls);
+    }
+
+    [Fact]
+    public async Task Malformed_jsonl_is_invalid_and_is_not_retried()
+    {
+        var runner = FakeRunner.Success();
+        runner.Result = new CodexProcessResult(0, ["{not-json"], string.Empty, false);
 
         var execution = await CreateOrchestrator(runner)
             .ExecuteAsync(ValidRequest, CancellationToken.None);

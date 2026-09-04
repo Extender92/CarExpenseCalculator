@@ -17,14 +17,17 @@ Blocket is the first desired marketplace. Its documented Pro Import API manages 
 
 Milestone 2 uses one user-triggered, ChatGPT-authenticated Codex turn for each
 URL the user selects. The private runtime, adapter, one-URL public preview
-endpoint, and Swedish in-memory review flow are implemented. The internal
+endpoint, Swedish review flow, current-only saved-listing lifecycle, and
+calculator linkage are implemented and covered by fake-only acceptance. The internal
 sidecar gives Codex access only to host-restricted hosted web search. The browser, API, and sidecar
 do not directly download or scrape the page, and the application contains no
 Blocket-specific parser. Hosted search is an extraction aid, not proof of permission or
 availability: applicable source terms still govern use, and an inaccessible or
 unmatched page produces an unavailable result with manual fallback rather than
 a workaround. See [Codex listing extraction](codex-extraction.md) for the
-runtime and authentication boundary.
+runtime and authentication boundary and
+[URL analysis verification](url-analysis-verification.md) for the synthetic
+source, same-origin, persistence, and manual-fallback acceptance boundary.
 
 The architecture must allow additional providers, such as Bytbil, without changing rules or calculations.
 

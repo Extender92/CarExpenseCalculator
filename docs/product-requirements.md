@@ -43,10 +43,13 @@ The user enters vehicle, operating, financing, and usage values directly. Saving
 
 ## Current delivery status
 
-The repository foundation and manual-calculator milestone are implemented. The application provides the three-mode navigation, health and status endpoints, deterministic manual calculations, optional PostgreSQL-backed saved scenarios, Docker deployment, tests, CI, and documentation.
+The repository foundation, manual-calculator milestone, and URL-analysis
+milestone are implemented. The application provides three-mode navigation,
+health and status endpoints, deterministic calculations and normalization,
+PostgreSQL-backed current scenarios and listings, private source-aware
+extraction, Docker deployment, tests, CI, and documentation.
 
-The URL-analysis Core domain, private ChatGPT-authenticated Codex extraction
-runtime, unsaved public preview endpoint, current-listing persistence/API, and
-Swedish review and saved-listing interface, and explicit calculator linkage are
-implemented. Complete URL-flow verification, rule-based search, automatic
-discovery, comparison, and advisory AI review remain future work.
+The complete URL flow is covered by fake-only automated acceptance from
+independent extraction outcomes through manual review, saved-listing lifecycle,
+and listing-linked calculation versioning. Rule-based search and comparison,
+automatic discovery, advisory AI review, and image review remain future work.

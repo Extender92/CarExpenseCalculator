@@ -53,8 +53,8 @@ The implementation is introduced incrementally as each feature milestone begins:
 ## URL-analysis flow
 
 The implemented `POST /api/listing-analyses` endpoint accepts one URL per
-request. A future browser interface will submit separate requests and limit
-itself to two concurrent requests. The API normalizes the URL through Core and
+request. The browser interface submits separate requests through a FIFO
+scheduler limited to two concurrent requests. The API normalizes the URL through Core and
 calls an application-owned Infrastructure adapter. That adapter uses a typed
 internal HTTP client to a private ASP.NET Core `codex-extractor`
 sidecar. The sidecar runs one ChatGPT-authenticated `codex exec` turn with
@@ -72,7 +72,9 @@ AI review is a separate milestone and never shares authority with extraction.
 
 The complete feature contracts and implemented runtime boundary are defined in the
 [URL analysis specification](url-analysis.md) and
-[Codex listing extraction](codex-extraction.md).
+[Codex listing extraction](codex-extraction.md). The fake-only acceptance
+boundary and reproducible deployment checks are documented in
+[URL analysis verification](url-analysis-verification.md).
 
 ## Persistence
 

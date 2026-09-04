@@ -89,7 +89,9 @@ session is operationally necessary. Restoring it gives access equivalent to the
 saved Codex session. Re-authentication is safer than retaining an unprotected
 copy. The application has no Platform API-key fallback. CI never authenticates,
 starts a live turn, or consumes ChatGPT usage. See
-[Codex listing extraction](codex-extraction.md).
+[Codex listing extraction](codex-extraction.md). Automated acceptance uses a
+separate Compose project and a private fake extractor, so it never starts this
+service or mounts this authentication directory.
 
 ## Initial deployment
 
@@ -114,7 +116,9 @@ docker compose -f compose.unraid.yaml ps
 
 Use the configured `WEB_PORT` instead of `8088` when it has been changed. The Compose output must show a published port only for `web`; `api` must not have a host-port mapping. The existing `postgresql18` container must not publish PostgreSQL to the LAN for this application.
 
-Complete the browser and saved-data checks in [Manual calculator verification](manual-calculator-verification.md).
+Complete the browser and saved-data checks in
+[URL analysis verification](url-analysis-verification.md) and
+[Manual calculator verification](manual-calculator-verification.md).
 
 ## Upgrades
 

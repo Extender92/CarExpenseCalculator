@@ -5,7 +5,8 @@
 The milestone 2 extraction runtime, unsaved public API, and Swedish in-memory
 review interface are implemented. The runtime consists of a
 ChatGPT-authenticated Codex sidecar and a provider-neutral Infrastructure
-adapter. Listing persistence remains planned. A configured installation can
+adapter. Current-only listing persistence, its saved workflow, and calculator
+linkage are also implemented. A configured installation can
 start one-URL extraction through `POST /api/listing-analyses`; without a saved
 login, the interface remains usable for manual drafts.
 
@@ -225,8 +226,12 @@ fake processes, fake HTTP handlers, and deterministic JSONL fixtures to verify:
 - secret-safe logging and the lack of raw-output persistence; and
 - container boundaries, including no published sidecar port or database secret.
 
-Later Compose and Playwright verification uses a fake internal extractor. CI
-never depends on a real ChatGPT session.
+Compose and Playwright acceptance uses a private fake internal extractor with
+deterministic success and failure cases, a global two-operation gate, and safe
+aggregate counters. The E2E override removes the API dependency on the real
+sidecar and uses a distinct Compose project, so CI never mounts a real Codex
+home or depends on a ChatGPT session. The complete procedure is documented in
+[URL analysis verification](url-analysis-verification.md).
 
 ## Official references
 

@@ -12,14 +12,15 @@
 - Port valid cost-calculation ideas from the legacy prototype with explicit units and decimal money values.
 - Support unsaved calculations and optionally saved scenarios.
 
-## 2. URL analysis
+## 2. URL analysis — complete
 
 The specification, dependency-free listing domain, private Codex extraction
 runtime, unsaved public preview API, and Swedish review interface are
 implemented. Current-listing PostgreSQL persistence and its public saved-listing
 HTTP lifecycle are also implemented, together with the Swedish saved-listing
-workflow and calculator linkage are implemented. Complete-flow verification
-remains planned.
+workflow and calculator linkage. Fake-only complete-flow verification covers
+the extraction boundary, PostgreSQL lifecycle, same-origin deployment, and
+linked-calculation versioning without consuming ChatGPT usage.
 
 - Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
 - Add dependency-free listing concepts and deterministic validation in Core.
