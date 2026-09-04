@@ -5,9 +5,9 @@
 This document defines the target behavior for milestone 2. The dependency-free
 Core listing domain, private Codex extraction sidecar, provider-neutral
 Infrastructure adapter, unsaved public HTTP endpoint, and Swedish in-memory
-review interface are implemented. PostgreSQL persistence for one current listing
-per vehicle is also implemented. Its public saved-listing API and UI remain
-planned.
+review interface are implemented. PostgreSQL persistence and the public HTTP
+lifecycle for one current listing per vehicle are also implemented. The Swedish
+saved-listing UI and calculator linkage remain planned.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -476,7 +476,7 @@ until milestone 5.
 
 ## Saved-listing HTTP lifecycle
 
-The future saved-listing API exposes:
+The saved-listing API exposes:
 
 - `POST /api/saved-listings`
 - `GET /api/saved-listings`
@@ -489,8 +489,9 @@ The future saved-listing API exposes:
 required `listing` of type `ReviewedListingInput`.
 `ReplaceSavedListingRequest` contains a required positive `expectedRevision`
 and the same required `listing`. `ReviewedListingInput` contains the submitted
-URL, analysis timestamp, nullable extraction model/prompt/schema metadata, ordered
-sources, and the reviewed `ListingDraft`. The server recomputes normalized URL,
+URL, analysis timestamp, required-but-nullable extraction model/prompt/schema
+metadata, ordered source URLs, and the reviewed `ListingDraft` under `draft`.
+Every draft property is required but may be explicitly null. The server recomputes normalized URL,
 source matches, missing codes, and analysis status; callers cannot submit those
 as trusted results.
 
@@ -515,14 +516,16 @@ sources: ordered ListingAnalysisSource[]
 listing: ListingDraft
 missingFields: ordered ListingFieldCode[]
 hasSavedCostScenario: boolean
-savedCostScenarioOutdated: boolean
 ```
 
 `SavedListingSummaryResponse` contains vehicle identity/revisions, optional
 vehicle label, make, model, model year, price, odometer, status, missing-field
-count, update timestamp, `hasSavedCostScenario`, and
-`savedCostScenarioOutdated`. List results are ordered by `updatedAtUtc`
+count, update timestamp, and `hasSavedCostScenario`. List results are ordered by `updatedAtUtc`
 descending and then UUID, with no pagination in the local-only version.
+
+`savedCostScenarioOutdated` is not exposed yet. Milestone issue #38 will add the
+nullable source-listing version to saved scenarios and the deterministic
+outdated indicator together.
 
 Create returns HTTP 201 with a UUID `Location`; reads and replacement return
 HTTP 200; deletion returns HTTP 204. Formatted registration lookup normalizes
@@ -540,12 +543,16 @@ version, listing schema version, status, missing codes, database timestamps, or
 raw extractor content. PUT cannot change registration number.
 
 Duplicate registration returns `409 registrationNumberConflict` with the
-existing UUID and current aggregate revision; create never overwrites. PUT uses
+nullable existing UUID and current aggregate revision; create never overwrites. PUT uses
 the vehicle UUID and positive expected aggregate revision, keeps registration
 immutable, and fully replaces the current listing. A stale revision returns
 `409 revisionConflict` with expected and actual revisions. Missing resources
 return `404 savedListingNotFound`, and unsupported stored versions return
-`409 unsupportedSavedListingVersion`.
+`409 unsupportedSavedListingVersion` with the stored listing, prompt, and
+extraction-schema versions. All typed failures use `application/problem+json`.
+
+Saved routes use only the deterministic Core processor and PostgreSQL store.
+They never start Codex extraction or recalculate a saved cost scenario.
 
 DELETE permanently removes the complete vehicle aggregate, including its current
 listing and any saved calculation. The Swedish UI must warn about both before

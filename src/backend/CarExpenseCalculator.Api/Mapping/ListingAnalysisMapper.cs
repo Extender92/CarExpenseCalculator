@@ -28,7 +28,7 @@ internal static class ListingAnalysisMapper
             extraction.ProcessingResult.MissingFields.Select(MapFieldCode).ToArray());
     }
 
-    private static ApiContracts.ListingDraftResponse MapListing(CoreContracts.ListingDraft listing)
+    internal static ApiContracts.ListingDraftResponse MapListing(CoreContracts.ListingDraft listing)
     {
         return new ApiContracts.ListingDraftResponse(
             MapValue(listing.RegistrationNumber, value => value.Value),
@@ -132,7 +132,7 @@ internal static class ListingAnalysisMapper
             value.ConsumptionPer100Kilometres);
     }
 
-    private static ApiContracts.ListingAnalysisStatus MapStatus(CoreContracts.ListingAnalysisStatus status)
+    internal static ApiContracts.ListingAnalysisStatus MapStatus(CoreContracts.ListingAnalysisStatus status)
     {
         return status switch
         {
@@ -254,7 +254,7 @@ internal static class ListingAnalysisMapper
         };
     }
 
-    private static ApiContracts.ListingFieldCode MapFieldCode(CoreContracts.ListingFieldCode code)
+    internal static ApiContracts.ListingFieldCode MapFieldCode(CoreContracts.ListingFieldCode code)
     {
         return code switch
         {

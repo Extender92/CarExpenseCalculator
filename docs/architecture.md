@@ -119,10 +119,13 @@ registration numbers and stale writes return typed conflicts instead of
 silently overwriting current data. API DTOs remain separate from Core and
 persistence types, and stored result snapshots are never accepted from clients.
 
-The URL-analysis API exposes its unsaved preview endpoint, and the internal
-current-listing store is implemented; the public saved-listing lifecycle remains
-planned. Preview analysis never accesses PostgreSQL. System status reports whether the Codex extractor is configured
+The URL-analysis API exposes its unsaved preview endpoint and the complete
+current saved-listing lifecycle. Create, list, UUID/registration reads, full
+replacement, and permanent aggregate deletion delegate to the current-listing
+store. Preview analysis never accesses PostgreSQL, and saved reads/writes never
+invoke Codex or the extractor. System status reports whether the Codex extractor is configured
 without starting a search turn. Overall health remains database-based and URL
 analysis is enabled because its complete unsaved Swedish interface and manual
-fallback exist. Extractor configuration remains an independent integration
-status and does not affect overall database-based health.
+fallback exist. The saved-listing UI and calculator-version linkage remain
+planned. Extractor configuration remains an independent integration status and
+does not affect overall database-based health.

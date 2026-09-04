@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish in-memory review interface, and PostgreSQL store for one current listing per vehicle. The saved-listing HTTP/UI lifecycle, automatic search, and advisory AI review are not implemented yet.
+The repository foundation and manual-calculator milestone are complete. The application includes Core calculations, the unsaved preview API, the Swedish calculator interface, and PostgreSQL-backed save, open, replace, and permanent-delete management for one current scenario per vehicle. URL analysis now includes its Core domain, private Codex extraction runtime, public preview API, Swedish in-memory review interface, and PostgreSQL-backed HTTP lifecycle for one current listing per vehicle. The saved-listing UI, automatic search, and advisory AI review are not implemented yet.
 
 The three product modes are:
 
@@ -26,12 +26,12 @@ The initial example profile requires a tow bar, a price from SEK 5,000 through S
 - Node.js `22.22.2` and npm with a committed lockfile
 - Nginx and Docker Compose for local and Unraid deployment
 - xUnit, Testcontainers, Vitest, Testing Library, and Playwright
-- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API, Swedish review interface, and internal current-listing persistence are implemented while saved-listing endpoints and advisory AI review remain later work
+- Private Codex extraction sidecar using ChatGPT-authenticated `gpt-5.6-luna`; the unsaved URL-analysis API, Swedish review interface, and current saved-listing API are implemented while saved-listing UI and advisory AI review remain later work
 
 ## Quick start with Docker
 
 Docker is the supported development path. Apply the database migrations
-explicitly before using saved scenarios or the future saved-listing API:
+explicitly before using saved scenarios or the saved-listing API:
 
 ```bash
 docker compose build
@@ -44,7 +44,7 @@ Open [http://localhost:8088](http://localhost:8088). The dashboard should report
 
 Open **Manuell kalkyl** to calculate without saving. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Unsaved previews remain independent from PostgreSQL persistence.
 
-Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. These listing drafts still exist only in browser memory and disappear on reload because the saved-listing HTTP/UI lifecycle is not implemented. The internal current-listing PostgreSQL store is ready for that future lifecycle. A missing Codex login disables automatic extraction without disabling manual drafts or the manual calculator.
+Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. These reviewed drafts still disappear on reload because the Swedish interface does not use the implemented saved-listing API yet. API clients can create, list, read, fully replace, and permanently delete one current listing per vehicle. A missing Codex login disables automatic extraction without disabling manual drafts, saved reads, or the manual calculator.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 
@@ -98,6 +98,12 @@ for the private runtime and one-time login procedure.
 - `GET /api/health/ready` – readiness including PostgreSQL
 - `GET /api/system/status` – version, overall/database state, feature availability, and non-paid Codex extraction configuration status
 - `POST /api/listing-analyses` – source-aware unsaved listing extraction for one public URL
+- `POST /api/saved-listings` – create a current saved listing for a new vehicle
+- `GET /api/saved-listings` – list current saved-listing summaries
+- `GET /api/saved-listings/{vehicleId}` – read a complete current saved listing
+- `GET /api/saved-listings/by-registration/{registrationNumber}` – find a saved listing by registration number
+- `PUT /api/saved-listings/{vehicleId}` – attach or fully replace a listing using its expected aggregate revision
+- `DELETE /api/saved-listings/{vehicleId}?expectedRevision={revision}` – permanently delete the complete vehicle aggregate
 - `POST /api/manual-calculations` – deterministic unsaved ownership-cost preview
 - `POST /api/saved-cost-scenarios` – create a saved vehicle and current scenario
 - `GET /api/saved-cost-scenarios` – list saved-vehicle summaries
