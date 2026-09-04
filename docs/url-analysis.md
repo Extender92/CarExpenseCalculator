@@ -5,8 +5,9 @@
 This document defines the target behavior for milestone 2. The dependency-free
 Core listing domain, private Codex extraction sidecar, provider-neutral
 Infrastructure adapter, unsaved public HTTP endpoint, and Swedish in-memory
-review interface are implemented. Saved-listing persistence is not implemented
-yet.
+review interface are implemented. PostgreSQL persistence for one current listing
+per vehicle is also implemented. Its public saved-listing API and UI remain
+planned.
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
 uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
@@ -556,12 +557,17 @@ append-only history, or automatic refresh in milestone 2.
 PostgreSQL continues to use `vehicles` as the aggregate root. A vehicle may be
 listing-only, scenario-only, or contain both current records.
 
-| Table | Planned responsibility |
+| Table | Responsibility |
 | --- | --- |
 | `vehicles` | Existing UUID, immutable normalized registration, label, aggregate revision, and timestamps. |
 | `vehicle_listings` | One current listing, analysis/source version metadata, typed rule-relevant values, bounded provenance/claims/notes/consumption JSONB, listing version, and timestamps. |
 | `listing_sources` | Ordered normalized source URLs and submitted-page match flag. |
 | `listing_equipment` | Ordered normalized equipment entries. |
+
+This relational/JSONB split is implemented by migration
+`20260904100409_AddCurrentVehicleListings`. It stores no raw Codex response,
+complete description, seller identity, contact data, street address, or listing
+history.
 
 The public `revision` is the vehicle aggregate optimistic-concurrency revision
 and changes after any aggregate write. `listingVersion` starts at 1 and changes
@@ -575,13 +581,12 @@ and update timestamps. It never retains superseded values or raw Codex output.
 Permanent vehicle deletion cascades through listing and calculation
 children without orphans.
 
-Existing saved-scenario queries continue to return only vehicles that have a
-scenario. A future explicit scenario operation may attach a scenario to a
-listing-only vehicle rather than creating a duplicate registration. In the
-opposite direction, an explicit saved-listing PUT may attach the first listing
-to an existing scenario-only vehicle using its UUID and current aggregate
-revision. Neither operation creates a second vehicle for the same registration
-number.
+Existing saved-scenario queries return only vehicles that have a scenario, and
+scenario replacement can attach a first scenario to a listing-only vehicle.
+The listing store can likewise attach a first listing to an existing
+scenario-only vehicle using its UUID and current aggregate revision. The future
+HTTP layer will expose this behavior. Neither operation creates a second vehicle
+for the same registration number.
 
 ## Manual-calculator relationship
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
 
 namespace CarExpenseCalculator.Infrastructure.Persistence.SavedCostScenarios;
 

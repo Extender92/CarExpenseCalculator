@@ -101,7 +101,7 @@ docker compose -f compose.unraid.yaml run --rm api migrate
 docker compose -f compose.unraid.yaml up --detach codex-extractor api web
 ```
 
-The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
+The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. This includes `AddCurrentVehicleListings`, which adds the current saved-listing tables without exposing a saved-listing API yet. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
 
 Verify liveness, database readiness, and feature status through the single published origin:
 
@@ -118,7 +118,7 @@ Complete the browser and saved-data checks in [Manual calculator verification](m
 
 ## Upgrades
 
-Create and verify a PostgreSQL backup before an upgrade. Build the new images while the current application is still running, then use a short maintenance window for migration and replacement:
+Create and verify a PostgreSQL backup before an upgrade. This is mandatory before applying `20260904100409_AddCurrentVehicleListings`. Build the new images while the current application is still running, then use a short maintenance window for migration and replacement:
 
 ```bash
 docker compose -f compose.unraid.yaml build
@@ -158,4 +158,19 @@ An explicit migration name may be supplied as the final argument. Target `0` rol
 docker compose -f compose.unraid.yaml run --rm api migrate 0
 ```
 
-**Warning:** rollback can permanently drop tables and saved data. Back up PostgreSQL first, confirm the exact target migration, and use `0` only when intentionally removing the complete application schema. Separate runtime and migration database roles are future hardening; the current dedicated application role owns only `car_expense_calculator` and must never receive access to other application databases.
+Rolling back only the listing migration uses:
+
+```bash
+docker compose -f compose.unraid.yaml run --rm api migrate 20260830181537_InitialSavedCostScenarios
+```
+
+**Warning:** rolling back to `InitialSavedCostScenarios` permanently removes all
+saved listing data and deletes every listing-only vehicle root. Combined vehicles
+retain their saved scenarios, and scenario-only vehicles are unaffected. A
+rollback to `0` removes the complete application schema and all saved scenarios
+as well. Back up and verify PostgreSQL first, stop application writes, confirm
+the exact target, and restore the newer application/migration before expecting
+listing persistence again. Separate runtime and migration database roles are
+future hardening; the current dedicated application role owns only
+`car_expense_calculator` and must never receive access to other application
+databases.
