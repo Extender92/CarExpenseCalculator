@@ -1,6 +1,7 @@
 using CarExpenseCalculator.Core.CostScenarios;
 using CarExpenseCalculator.Core.Listings;
 using CarExpenseCalculator.Core.Vehicles;
+using CarExpenseCalculator.Extraction.Contracts;
 using CarExpenseCalculator.Infrastructure.ListingExtraction;
 
 namespace CarExpenseCalculator.Api.IntegrationTests;
@@ -25,7 +26,8 @@ internal static class ListingAnalysisTestData
             PriceSek = Value(89_900.50m, provenance),
             OdometerKilometres = Value(198_765.432m, provenance),
             SellerType = Value(SellerType.Dealer, provenance),
-            Location = Value("Göteborg", provenance),
+            Locality = Value("Göteborg", provenance),
+            County = Value("Västra Götalands län", provenance),
             PublishedDate = Value(new DateOnly(2026, 8, 30), provenance),
             UpdatedDate = Value(new DateOnly(2026, 9, 2), provenance),
             ImageCount = Value(12, provenance),
@@ -77,8 +79,8 @@ internal static class ListingAnalysisTestData
         return new ListingExtractionSuccess(
             submittedUrl,
             "gpt-5.6-luna",
-            1,
-            1,
+            ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema,
             AnalyzedAtUtc,
             new ListingProcessingResult(
                 status,

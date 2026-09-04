@@ -72,6 +72,8 @@ describe("Swedish URL analysis workspace", () => {
     expect(screen.getByRole("link", { name: /cars\.example\/item\/1/ })).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getByText("Matchar annonsen")).toBeInTheDocument();
     expect(screen.getAllByText(/Annons · AI · Inte verifierad/).length).toBeGreaterThan(20);
+    expect(screen.getByLabelText("Ort eller stad")).toHaveValue("Tenhult");
+    expect(screen.getByLabelText("Län")).toHaveValue("Jönköpings län");
 
     const make = screen.getByLabelText("Märke");
     await user.clear(make);
@@ -79,6 +81,11 @@ describe("Swedish URL analysis workspace", () => {
     expect(screen.getAllByText(/Användare · Manuell · Bekräftad/).length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Modell")).toHaveValue("V70");
     expect(screen.getByText((content) => content.startsWith("Motsvarar") && content.includes("167") && content.includes("km"))).toBeInTheDocument();
+
+    const county = screen.getByLabelText("Län");
+    await user.clear(county);
+    expect(screen.getByLabelText("Ort eller stad")).toHaveValue("Tenhult");
+    expect(screen.getByText("län")).toBeInTheDocument();
   });
 
   it("keeps manual entry available when extraction is unconfigured", async () => {

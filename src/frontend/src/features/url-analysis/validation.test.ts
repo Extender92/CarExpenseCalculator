@@ -127,4 +127,19 @@ describe("listing review validation", () => {
     expect(errors.publishedDate).toBeDefined();
     expect(errors.annualVehicleTaxSek).toBeDefined();
   });
+
+  it("normalizes and validates locality and county independently", () => {
+    const draft = analysisResponseToDraft(completeListingAnalysisResponse);
+    draft.fields.locality.input = "  Te\u006Ehult  ";
+    draft.fields.county.input = "x".repeat(101);
+
+    expect(normalizeScalarInput("locality", draft.fields.locality.input)).toBe("Tenhult");
+    const errors = validateReviewDraft(draft);
+    expect(errors.locality).toBeUndefined();
+    expect(errors.county).toContain("100");
+
+    draft.fields.locality.input = "";
+    draft.fields.county.input = "Jönköpings län";
+    expect(validateReviewDraft(draft)).toEqual({});
+  });
 });

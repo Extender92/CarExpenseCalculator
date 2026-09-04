@@ -11,7 +11,8 @@ const nullDraft = {
   priceSek: null,
   odometerKilometres: null,
   sellerType: null,
-  location: null,
+  locality: null,
+  county: null,
   publishedDate: null,
   updatedDate: null,
   imageCount: null,
@@ -44,8 +45,8 @@ const server = createServer(async (request, response) => {
       requestedModel: "gpt-5.6-luna",
       reasoningEffort: "medium",
       codexCliVersion: "0.153.0",
-      promptVersion: 1,
-      schemaVersion: 1,
+      promptVersion: 2,
+      schemaVersion: 2,
     });
   }
   if (request.method !== "POST" || request.url !== "/internal/listing-extractions") {
@@ -72,7 +73,8 @@ const server = createServer(async (request, response) => {
         priceSek: partial ? null : 20000,
         odometerKilometres: partial ? null : 167100,
         sellerType: "private",
-        location: "Tenhult",
+        locality: "Tenhult",
+        county: "Jönköpings län",
         publishedDate: "2026-08-20",
         updatedDate: "2026-08-27",
         imageCount: 8,
@@ -97,8 +99,8 @@ const server = createServer(async (request, response) => {
 
   return json(response, 200, {
     requestedModel: "gpt-5.6-luna",
-    promptVersion: 1,
-    schemaVersion: 1,
+    promptVersion: 2,
+    schemaVersion: 2,
     analyzedAtUtc: "2026-09-03T08:00:00Z",
     sources: unavailable ? [] : [payload.normalizedUrl, "https://manufacturer.example/model"],
     draft,

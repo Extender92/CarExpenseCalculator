@@ -28,8 +28,10 @@ public sealed class CodexExtractionOrchestratorTests
     }
 
     [Theory]
-    [InlineData(1, 99, (int)CodexExecutionFailure.UnsupportedVersion)]
-    [InlineData(99, 1, (int)CodexExecutionFailure.UnsupportedVersion)]
+    [InlineData(1, 2, (int)CodexExecutionFailure.UnsupportedVersion)]
+    [InlineData(2, 1, (int)CodexExecutionFailure.UnsupportedVersion)]
+    [InlineData(2, 99, (int)CodexExecutionFailure.UnsupportedVersion)]
+    [InlineData(99, 2, (int)CodexExecutionFailure.UnsupportedVersion)]
     public async Task Unsupported_versions_never_start_codex(
         int promptVersion,
         int schemaVersion,

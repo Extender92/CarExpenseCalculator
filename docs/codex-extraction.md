@@ -53,7 +53,7 @@ contracts:
 - `GET /internal/status` checks the pinned CLI and saved ChatGPT login without
   starting a paid/search turn; and
 - `POST /internal/listing-extractions` accepts `normalizedUrl`,
-  `promptVersion: 1`, and `schemaVersion: 1`.
+  `promptVersion: 2`, and `schemaVersion: 2`.
 
 A successful extraction response contains `requestedModel`, the two versions,
 the UTC analysis time, normalized concrete opened-source URLs, and the raw
@@ -131,10 +131,13 @@ JSON, non-schema output, or output that cannot be safely associated with the
 turn is an invalid-runtime response. Structurally valid individual listing
 values still pass through Core, which discards invalid AI fields independently.
 
-Prompt and schema versions start at 1. The response records `requestedModel`,
-which proves the model requested by the pinned invocation but does not claim to
-prove provider-side routing. The current Codex JSONL event contract does not
-report a provider-confirmed model identifier.
+Prompt and schema versions are currently 2. This version replaces the former
+general location field with separately nullable locality and county facts. The
+prompt forbids inferring a county from a locality and excludes street and seller
+addresses. The response records `requestedModel`, which proves the model
+requested by the pinned invocation but does not claim to prove provider-side
+routing. The current Codex JSONL event contract does not report a
+provider-confirmed model identifier.
 
 ## Authentication and configuration
 

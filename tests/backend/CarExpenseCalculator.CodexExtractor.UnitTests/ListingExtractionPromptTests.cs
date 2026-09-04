@@ -16,8 +16,11 @@ public sealed class ListingExtractionPromptTests
         Assert.Contains("exact submitted page", prompt, StringComparison.Ordinal);
         Assert.Contains("Return null", prompt, StringComparison.Ordinal);
         Assert.Contains("seller names", prompt, StringComparison.Ordinal);
-        Assert.Contains("street addresses", prompt, StringComparison.Ordinal);
+        Assert.Contains("street or seller addresses", prompt, StringComparison.Ordinal);
         Assert.Contains("Do not infer, recommend", prompt, StringComparison.Ordinal);
         Assert.Contains("1 mil = 10 kilometres", prompt, StringComparison.Ordinal);
+        Assert.Contains("Extract locality and county as separate facts", prompt, StringComparison.Ordinal);
+        Assert.Contains("never infer a", prompt, StringComparison.Ordinal);
+        Assert.Contains("county from a locality", prompt, StringComparison.Ordinal);
     }
 }

@@ -35,7 +35,8 @@ public sealed class ListingAnalysisMapperTests
         Assert.Equal(89_900.50m, listing.PriceSek!.Value);
         Assert.Equal(198_765.432m, listing.OdometerKilometres!.Value);
         Assert.Equal(ApiListing.SellerType.Dealer, listing.SellerType!.Value);
-        Assert.Equal("Göteborg", listing.Location!.Value);
+        Assert.Equal("Göteborg", listing.Locality!.Value);
+        Assert.Equal("Västra Götalands län", listing.County!.Value);
         Assert.Equal(new DateOnly(2026, 8, 30), listing.PublishedDate!.Value);
         Assert.Equal(new DateOnly(2026, 9, 2), listing.UpdatedDate!.Value);
         Assert.Equal(12, listing.ImageCount!.Value);

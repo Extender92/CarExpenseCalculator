@@ -94,6 +94,24 @@ public sealed class CodexJsonlParserTests
     }
 
     [Fact]
+    public void Parse_requires_v2_locality_and_county_and_rejects_legacy_location()
+    {
+        var legacy = JsonNode.Parse(TestData.EmptyDraftJson())!.AsObject();
+        legacy.Remove("locality");
+        legacy.Remove("county");
+        legacy["location"] = "Tenhult";
+
+        Assert.False(parser.TryParse(TestData.SuccessfulJsonl(legacy.ToJsonString()), out _, out _));
+
+        var current = JsonNode.Parse(TestData.EmptyDraftJson())!.AsObject();
+        current["locality"] = "Tenhult";
+        current["county"] = "Jönköpings län";
+        Assert.True(parser.TryParse(TestData.SuccessfulJsonl(current.ToJsonString()), out var output, out _));
+        Assert.Equal("Tenhult", output!.Draft.Locality);
+        Assert.Equal("Jönköpings län", output.Draft.County);
+    }
+
+    [Fact]
     public void Parse_requires_a_completed_turn_after_the_final_message()
     {
         var lines = TestData.SuccessfulJsonl(TestData.EmptyDraftJson()).ToList();

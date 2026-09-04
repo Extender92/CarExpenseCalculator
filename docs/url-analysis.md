@@ -218,7 +218,8 @@ missing-field code.
 | `priceSek` | `SourcedValue<decimal>?` | Advertised vehicle price in SEK. |
 | `odometerKilometres` | `SourcedValue<decimal>?` | Core and HTTP use kilometres; the Swedish UI may display mil. |
 | `sellerType` | `SourcedValue<SellerType>?` | `private` or `dealer`; unknown stays null. |
-| `location` | `SourcedValue<string>?` | General advertised place, never a street or seller address. |
+| `locality` | `SourcedValue<string>?` | Advertised city, town, or locality. Do not infer it from an address. |
+| `county` | `SourcedValue<string>?` | Advertised county when explicitly supported; never derived from locality. |
 | `publishedDate` | `SourcedValue<DateOnly>?` | Date only. |
 | `updatedDate` | `SourcedValue<DateOnly>?` | Date only. |
 | `imageCount` | `SourcedValue<int>?` | Count only; images and image URLs are not retained. |
@@ -290,6 +291,10 @@ and limited to 100 characters. VIN is trimmed, uppercased, Unicode-normalized,
 and limited to 50 characters because this version does not assume every
 historical vehicle has a modern 17-character VIN.
 
+`locality` and `county` are independent optional general labels. Either may be
+known while the other remains null, and each carries its own provenance. Core
+does not perform address parsing, geographic lookup, or county inference.
+
 After trimming and NFC normalization, duplicate entries in any closed or string
 collection are invalid using ordinal case-insensitive comparison. Input order is
 otherwise preserved. Decimal values are never converted through `double`.
@@ -316,27 +321,28 @@ the corresponding externally sourced field is null:
 7. `priceSek`
 8. `odometerKilometres`
 9. `sellerType`
-10. `location`
-11. `publishedDate`
-12. `updatedDate`
-13. `imageCount`
-14. `fuelTypes`
-15. `transmission`
-16. `drivetrain`
-17. `bodyType`
-18. `colour`
-19. `horsepower`
-20. `engineDisplacementCubicCentimetres`
-21. `energyConsumptions`
-22. `annualVehicleTaxSek`
-23. `ownerCount`
-24. `firstRegistrationDate`
-25. `lastInspectionDate`
-26. `nextInspectionDate`
-27. `towBar`
-28. `equipment`
-29. `sellerClaims`
-30. `conditionNotes`
+10. `locality`
+11. `county`
+12. `publishedDate`
+13. `updatedDate`
+14. `imageCount`
+15. `fuelTypes`
+16. `transmission`
+17. `drivetrain`
+18. `bodyType`
+19. `colour`
+20. `horsepower`
+21. `engineDisplacementCubicCentimetres`
+22. `energyConsumptions`
+23. `annualVehicleTaxSek`
+24. `ownerCount`
+25. `firstRegistrationDate`
+26. `lastInspectionDate`
+27. `nextInspectionDate`
+28. `towBar`
+29. `equipment`
+30. `sellerClaims`
+31. `conditionNotes`
 
 Vehicle label is deliberately absent from this enum. Explicit numeric zero,
 false, and a known-empty `SourcedCollection` do not produce missing codes.
@@ -369,13 +375,17 @@ Each request uses this policy:
 The pinned invocation is recorded as `requestedModel`. This is configuration
 evidence and does not claim to prove provider-side routing because the current
 Codex JSONL event contract contains no provider-reported model identifier.
-Prompt and extraction-schema versions begin at `1` and are returned with every
-structurally successful Codex response.
+The current prompt and extraction-schema versions are both `2`. Version 2
+replaces the former general location field with independent nullable locality
+and county fields. Both versions are returned with every structurally successful
+Codex response, and incompatible versions are rejected.
 
 The instruction treats all page material as untrusted data and says to ignore
 instructions embedded in the page. It requests only supported listing facts and
-rejects contact details, seller identities, addresses, cookies, hidden-page
-content, recommendations, purchase conclusions, and unsupported inference.
+rejects contact details, seller identities, street and seller addresses,
+cookies, hidden-page content, recommendations, purchase conclusions, and
+unsupported inference. It requests locality and county separately, and county
+must remain null when it would require a geographic lookup or inference.
 Missing values must be null.
 
 Codex receives the normalized listing URL and the sidecar request. It does not

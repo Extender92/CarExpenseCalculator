@@ -50,12 +50,14 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
             payload.Status);
         Assert.Equal(ListingAnalysisTestData.AnalyzedAtUtc, payload.AnalyzedAtUtc);
         Assert.Equal("gpt-5.6-luna", payload.RequestedModel);
-        Assert.Equal(1, payload.PromptVersion);
-        Assert.Equal(1, payload.SchemaVersion);
+        Assert.Equal(2, payload.PromptVersion);
+        Assert.Equal(2, payload.SchemaVersion);
         Assert.Equal([false, true], payload.Sources.Select(source => source.MatchesSubmittedUrl));
         Assert.Equal("ABC12D", payload.Listing.RegistrationNumber!.Value);
         Assert.Equal(89_900.50m, payload.Listing.PriceSek!.Value);
         Assert.Equal(198_765.432m, payload.Listing.OdometerKilometres!.Value);
+        Assert.Equal("Göteborg", payload.Listing.Locality!.Value);
+        Assert.Equal("Västra Götalands län", payload.Listing.County!.Value);
         Assert.False(payload.Listing.TowBar!.Value);
         Assert.Empty(payload.MissingFields);
         using var document = JsonDocument.Parse(json);
@@ -121,7 +123,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
         Assert.Equal(
             [
                 "registrationNumber", "make", "model", "variant", "modelYear", "vin", "vehicleLabel",
-                "priceSek", "odometerKilometres", "sellerType", "location", "publishedDate", "updatedDate",
+                "priceSek", "odometerKilometres", "sellerType", "locality", "county", "publishedDate", "updatedDate",
                 "imageCount", "fuelTypes", "transmission", "drivetrain", "bodyType", "colour", "horsepower",
                 "engineDisplacementCubicCentimetres", "energyConsumptions", "annualVehicleTaxSek", "ownerCount",
                 "firstRegistrationDate", "lastInspectionDate", "nextInspectionDate", "towBar", "equipment",
@@ -129,6 +131,8 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
             ],
             listing.EnumerateObject().Select(property => property.Name));
         Assert.Equal(JsonValueKind.Null, listing.GetProperty("make").ValueKind);
+        Assert.Equal(JsonValueKind.Null, listing.GetProperty("locality").ValueKind);
+        Assert.Equal(JsonValueKind.Null, listing.GetProperty("county").ValueKind);
         Assert.Equal(0m, listing.GetProperty("priceSek").GetProperty("value").GetDecimal());
         Assert.Equal(0m, listing.GetProperty("odometerKilometres").GetProperty("value").GetDecimal());
         Assert.Equal(0, listing.GetProperty("imageCount").GetProperty("value").GetInt32());
@@ -260,7 +264,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
     public async Task System_status_reports_configuration_independently_from_database_health()
     {
         _extractionService.StatusHandler = _ => Task.FromResult(
-            new ListingExtractionConfigurationStatus(true, "gpt-5.6-luna", 1, 1));
+            new ListingExtractionConfigurationStatus(true, "gpt-5.6-luna", 2, 2));
 
         using var response = await _client.GetAsync("/api/system/status");
 
@@ -360,7 +364,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
         Assert.Equal(
             [
                 "registrationNumber", "make", "model", "variant", "modelYear", "vin", "vehicleLabel",
-                "priceSek", "odometerKilometres", "sellerType", "location", "publishedDate", "updatedDate",
+                "priceSek", "odometerKilometres", "sellerType", "locality", "county", "publishedDate", "updatedDate",
                 "imageCount", "fuelTypes", "transmission", "drivetrain", "bodyType", "colour", "horsepower",
                 "engineDisplacementCubicCentimetres", "energyConsumptions", "annualVehicleTaxSek", "ownerCount",
                 "firstRegistrationDate", "lastInspectionDate", "nextInspectionDate", "towBar", "equipment",
@@ -370,7 +374,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
         Assert.Equal(
             ["complete", "partial", "unavailable"],
             EnumValues(schemas.GetProperty("ListingAnalysisStatus")));
-        Assert.Equal(30, EnumValues(schemas.GetProperty("ListingFieldCode")).Count);
+        Assert.Equal(31, EnumValues(schemas.GetProperty("ListingFieldCode")).Count);
         Assert.Equal(
             ["unverified", "userConfirmed", "registryVerified"],
             EnumValues(schemas.GetProperty("VerificationStatus")));

@@ -98,6 +98,12 @@ later listing replacement can mark, but never silently recalculate, the stored
 calculation. Deleting a saved listing permanently deletes the complete vehicle
 aggregate, including any saved scenario.
 
+Advertised geography is represented by separate nullable `locality` and
+`county` sourced values. Each has independent provenance. The domain does not
+retain a general location value or street address and does not infer counties
+or resolve geographic data. Future listing persistence uses separate typed
+nullable columns for these current facts.
+
 ## Public foundation API
 
 - `GET /api/health/live` checks process liveness only.

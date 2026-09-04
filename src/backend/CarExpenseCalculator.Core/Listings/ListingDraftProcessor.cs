@@ -174,9 +174,16 @@ public sealed class ListingDraftProcessor
                 hasMatchedSource,
                 mode,
                 errors),
-            Location = NormalizeGeneralLabel(
-                draft.Location,
-                "location",
+            Locality = NormalizeGeneralLabel(
+                draft.Locality,
+                "locality",
+                submittedUrl,
+                hasMatchedSource,
+                mode,
+                errors),
+            County = NormalizeGeneralLabel(
+                draft.County,
+                "county",
                 submittedUrl,
                 hasMatchedSource,
                 mode,
@@ -840,7 +847,7 @@ public sealed class ListingDraftProcessor
 
     private static IReadOnlyList<ListingFieldCode> CreateMissingFields(ListingDraft listing)
     {
-        var missing = new List<ListingFieldCode>(30);
+        var missing = new List<ListingFieldCode>(31);
         AddMissing(missing, listing.RegistrationNumber, ListingFieldCode.RegistrationNumber);
         AddMissing(missing, listing.Make, ListingFieldCode.Make);
         AddMissing(missing, listing.Model, ListingFieldCode.Model);
@@ -850,7 +857,8 @@ public sealed class ListingDraftProcessor
         AddMissing(missing, listing.PriceSek, ListingFieldCode.PriceSek);
         AddMissing(missing, listing.OdometerKilometres, ListingFieldCode.OdometerKilometres);
         AddMissing(missing, listing.SellerType, ListingFieldCode.SellerType);
-        AddMissing(missing, listing.Location, ListingFieldCode.Location);
+        AddMissing(missing, listing.Locality, ListingFieldCode.Locality);
+        AddMissing(missing, listing.County, ListingFieldCode.County);
         AddMissing(missing, listing.PublishedDate, ListingFieldCode.PublishedDate);
         AddMissing(missing, listing.UpdatedDate, ListingFieldCode.UpdatedDate);
         AddMissing(missing, listing.ImageCount, ListingFieldCode.ImageCount);
@@ -922,7 +930,8 @@ public sealed class ListingDraftProcessor
             || listing.PriceSek is not null
             || listing.OdometerKilometres is not null
             || listing.SellerType is not null
-            || listing.Location is not null
+            || listing.Locality is not null
+            || listing.County is not null
             || listing.PublishedDate is not null
             || listing.UpdatedDate is not null
             || listing.ImageCount is not null

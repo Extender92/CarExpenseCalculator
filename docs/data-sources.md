@@ -7,6 +7,9 @@
 - Provider-specific code lives behind infrastructure adapters.
 - The application stores only data permitted by the applicable source agreement.
 - Raw source responses, copied page content, and seller contact data are not retained for URL analysis.
+- Advertised locality and county may be retained as separate optional sourced
+  facts. Street and seller addresses are excluded, and a missing county is never
+  inferred from the locality.
 
 ## Listing marketplaces
 

@@ -20,6 +20,8 @@ describe("listing review mapping", () => {
     expect(draft.fields.priceSek.input).toBe("0");
     expect(draft.fields.odometerKilometres.input).toBe("16710");
     expect(draft.fields.towBar.input).toBe("false");
+    expect(draft.fields.locality.input).toBe("Tenhult");
+    expect(draft.fields.county.input).toBe("Jönköpings län");
     expect(draft.fuelTypes.values).toEqual(["petrol"]);
     expect(draft.equipment.values.map((entry) => entry.value)).toEqual(["AC", "Isofix"]);
     expect(draft.conditionNotes).toMatchObject({ mode: "empty", values: [] });
@@ -31,10 +33,11 @@ describe("listing review mapping", () => {
     expect(deriveMissingFields(draft)).toEqual([]);
   });
 
-  it("keeps all 30 missing codes in stable order for an empty draft", () => {
+  it("keeps all 31 missing codes in stable order for an empty draft", () => {
     const missing = deriveMissingFields(createEmptyReviewDraft());
-    expect(missing).toHaveLength(30);
+    expect(missing).toHaveLength(31);
     expect(missing.slice(0, 4)).toEqual(["registrationNumber", "make", "model", "variant"]);
+    expect(missing.slice(8, 12)).toEqual(["sellerType", "locality", "county", "publishedDate"]);
     expect(missing.slice(-4)).toEqual(["towBar", "equipment", "sellerClaims", "conditionNotes"]);
   });
 
@@ -50,6 +53,22 @@ describe("listing review mapping", () => {
     });
     expect(changed.fields.model.provenance).toEqual(draft.fields.model.provenance);
     expect(editScalarField(changed, "make", "", completeListingAnalysisResponse.normalizedUrl).fields.make.provenance).toBeNull();
+  });
+
+  it("tracks locality and county values and provenance independently", () => {
+    const draft = analysisResponseToDraft(completeListingAnalysisResponse);
+    const changed = editScalarField(
+      draft,
+      "county",
+      "Östergötlands län",
+      completeListingAnalysisResponse.normalizedUrl,
+    );
+
+    expect(changed.fields.locality).toEqual(draft.fields.locality);
+    expect(changed.fields.county.input).toBe("Östergötlands län");
+    expect(changed.fields.county.provenance?.origin).toBe("user");
+    expect(deriveMissingFields(editScalarField(changed, "locality", "", changed.fields.county.provenance!.sourceUrl)))
+      .toContain("locality");
   });
 
   it("distinguishes unknown, known-empty, and manually entered collections", () => {

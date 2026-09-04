@@ -11,7 +11,7 @@
     <ProjectReference Include="..\CarExpenseCalculator.Extraction.Contracts\CarExpenseCalculator.Extraction.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Update="Schemas\listing-extraction-v1.schema.json">
+    <Content Update="Schemas\listing-extraction-v2.schema.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

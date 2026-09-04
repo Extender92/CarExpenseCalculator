@@ -12,7 +12,7 @@ const finalLetters = "ABCDEFGHJKLMNPRSTUWXYZ";
 const registrationPattern = new RegExp(`^[${ordinaryLetters}]{3}\\d{2}[\\d${finalLetters}]$`);
 
 const generalTextFields: ScalarFieldName[] = [
-  "make", "model", "variant", "vehicleLabel", "location", "colour",
+  "make", "model", "variant", "vehicleLabel", "locality", "county", "colour",
 ];
 const dateFields: ScalarFieldName[] = [
   "publishedDate", "updatedDate", "firstRegistrationDate", "lastInspectionDate", "nextInspectionDate",
