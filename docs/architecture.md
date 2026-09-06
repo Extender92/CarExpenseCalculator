@@ -120,12 +120,17 @@ purchase-financing foundation described in the
 [Core financing contract](household-calculations.md#implemented-core-financing-foundation).
 It composes immutable household assumptions and car purchase inputs, with
 independent validation/missing results and unrounded decimal installments.
+The [Core ownership-cost engine](household-calculations.md#implemented-core-ownership-costs)
+composes that financing with independent depreciation, energy and operating
+sections. Internal amounts retain decimal precision; result sections round
+only after aggregation. Exact integer comparisons protect fractional-year
+depreciation from decimal underflow without introducing external packages.
 No household-profile, lease, score, or draft persistence model is implemented.
 
 The planned household profile owns common driving and financing assumptions,
 purchase cash, energy prices, and separate startup/ongoing budget limits.
-Current vehicle facts remain car-specific and registration-based. Core will
-compose these inputs into deterministic calculation results without HTTP,
+Current vehicle facts remain car-specific and registration-based. Core
+composes these inputs into deterministic purchase-cost results without HTTP,
 database, clock, or AI dependencies; calculation dates must be explicit inputs
 when future payment scheduling requires them.
 
