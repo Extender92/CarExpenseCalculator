@@ -63,6 +63,26 @@ Its exact runtime, reasoning level, retention controls, versioned prompt, and
 schema will be decided independently when milestone 5 is refined; milestone 2
 does not silently establish those choices.
 
+### Planned maintenance and repair assistance
+
+The [Household calculations and comparison plan](household-comparison-plan.md)
+starts with manually entered amounts and documented evidence such as workshop
+estimates. Optional AI assistance is later work and does not block the
+deterministic household-calculation stage.
+
+Such assistance may suggest relevant service items, questions, and supported
+cost assumptions for a specific car using its known model, age, mileage, and
+history. Suggestions must cite their relevant evidence, expose uncertainty,
+and require explicit user adoption before entering the calculator. Unsupported
+amounts remain missing; the user may separately enter an explicit estimate.
+AI must not diagnose hidden defects or imply that a model-level issue is a
+verified defect of an individual vehicle.
+
+The exact proposal schema, permitted sources, and quality checks require
+refinement. Profile edits and table refreshes never automatically invoke this
+assistance. It does not reuse the narrow listing-extraction endpoint as a
+general review service, retain superseded calculations, or override Core.
+
 ### Review package
 
 The backend may send all meaningful structured vehicle information: listing URL, reviewed listing fields, short seller claims and condition notes, registration number, registry facts, owner count, inspection and tax information, deterministic rule output, cost output, data provenance, and relevant user notes. It must never send complete listing descriptions, copied page text, API keys, database credentials, internal secrets, or unrelated application data.

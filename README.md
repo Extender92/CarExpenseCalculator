@@ -10,6 +10,15 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Rule-based comparison, automatic discovery, and advisory AI review are not implemented yet.
 
+The next planned work is split into household calculations (stage 3A) and
+comparison with configurable buying scores (stage 3B). A common editable
+household profile will drive dynamic cost tables for all cars, including
+purchase financing from available cash and a separate leasing model. Current
+data remains registration-based with no calculation history. See the
+[Household calculations and comparison plan](docs/household-comparison-plan.md)
+for accepted decisions and normative target specifications; these features
+are not available in the current application.
+
 The three product modes are:
 
 1. **Rule-based search** – define requirements and evaluate matching listings.
@@ -177,6 +186,11 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 ## Documentation
 
 - [Product requirements](docs/product-requirements.md)
+- [Household calculations and comparison plan](docs/household-comparison-plan.md)
+- [Household calculations specification](docs/household-calculations.md)
+- [Comparison and buying scores specification](docs/comparison-and-buying-scores.md)
+- [Household and comparison verification](docs/household-comparison-verification.md)
+- [Household and comparison delivery backlog](docs/household-comparison-backlog.md)
 - [URL analysis specification](docs/url-analysis.md)
 - [URL analysis verification](docs/url-analysis-verification.md)
 - [Codex listing extraction](docs/codex-extraction.md)
