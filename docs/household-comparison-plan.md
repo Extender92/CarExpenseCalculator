@@ -3,7 +3,9 @@
 ## Status and authority
 
 These decisions were agreed on 2026-09-06. Stages **3A, Household calculations**,
-and **3B, Comparison and buying scores**, are specified but not implemented.
+and **3B, Comparison and buying scores**, are specified. The first 3A shared-input
+and purchase-financing foundation is implemented in Core; the remaining 3A
+features and stage 3B are not implemented.
 The implemented contracts remain in [Manual calculator](manual-calculator.md)
 and [URL analysis](url-analysis.md).
 

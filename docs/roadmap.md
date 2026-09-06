@@ -33,13 +33,16 @@ linked-calculation versioning without consuming ChatGPT usage.
 - Verify the complete flow through a fake extractor, PostgreSQL, Compose, and
   browser tests without live Codex calls or ChatGPT usage.
 
-## 3A. Household calculations — planned
+## 3A. Household calculations — in progress
 
 This is a separate delivery stage before rules and comparison. The accepted
 direction and normative specifications are in the
 [Household calculations and comparison plan](household-comparison-plan.md).
 The existing manual-calculator milestone remains complete for its version 1
-scope; these changes are not implemented yet.
+scope. The shared-input and purchase-financing Core foundation from #55 is
+implemented; operating/lease calculations, persistence, HTTP and UI remain
+subsequent work. See the
+[Core financing contract](household-calculations.md#implemented-core-financing-foundation).
 
 - Define one editable household profile for common use, available cash, loan
   assumptions, energy prices, and optional budget limits across all cars.
