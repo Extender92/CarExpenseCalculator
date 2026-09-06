@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-Normative target for stage 3A, agreed 2026-09-06; **partially implemented in Core**. The
+Normative target for stage 3A, agreed 2026-09-06; **Core and persistence implemented**. The
 [product plan](household-comparison-plan.md) sets scope. This document adds
 future contracts without changing the implemented [v1 API](manual-calculator.md).
 Core owns deterministic decimal calculation; API maps HTTP; Infrastructure owns current
@@ -235,8 +235,126 @@ See [calendar tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/Househ
 and [payment precision tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdPaymentPrecisionTests.cs).
 They cover A2/A7-A11, year boundaries, partial data, deposits/inclusions,
 bounded immutable inputs, sensitivity, local arithmetic errors and budget
-thresholds. Persistence/migration (#58), HTTP/types (#59), Swedish UI (#60),
+thresholds. Persistence/migration is implemented by #58 below. HTTP/types (#59), Swedish UI (#60),
 and the practical whole-stage acceptance (#61) remain later work.
+
+## Implemented household persistence
+
+Issue #58 adds PostgreSQL stores under
+[`Persistence/Households`](../src/backend/CarExpenseCalculator.Infrastructure/Persistence/Households/HouseholdContracts.cs).
+These are Infrastructure contracts, separate from the future HTTP DTOs. Core
+calculation/result versions remain **2**; the persisted input format starts at
+**1**. No household result cache or history table is introduced.
+
+| Table | Stored state |
+| --- | --- |
+| `household_state` | Singleton `id=1`, nullable typed JSONB profile, storage version, independent profile and transition revisions. Initially both revisions are 0 and profile is null. |
+| `vehicle_cost_inputs` | One JSONB input/review payload per existing vehicle UUID, storage version and nullable reviewed listing version. Vehicle identity, label, timestamps and revision remain in `vehicles`. |
+| `vehicle_draft` | Singleton `id=1`, own revision, nullable registered payload, storage version, original vehicle UUID/revision when editing an existing car. Initially revision 0 with no content. |
+
+Persistence-owned payload records explicitly map all profile, purchase, lease,
+energy, cost, timing, evidence and reviewed listing fields to/from Core. Decimal
+JSON numbers are serialized/deserialized as `decimal`, with no display rounding
+or floating-point conversion. Null, zero, confirmed empty and included-with-extras
+remain distinct, including array order and sensitivity trios. Each JSONB payload
+is bounded to 2 MiB. Core validation rejects every supplied invalid value,
+including inactive sensitivity values; missing typed fields remain saveable.
+Vehicle and draft saves do not require a populated household profile. The Core
+100-candidate calculation limit does not truncate the collection of saved cars.
+
+| Store | Implemented operations |
+| --- | --- |
+| `IHouseholdProfileStore` | Read nullable profile/revision; replace the complete profile with an expected revision. A null row never supplies financial defaults. |
+| `IVehicleCostInputStore` | Create a registered car, read by UUID or normalized registration, list all listing-only/legacy-pending/current cars, replace current inputs, delete the whole vehicle. Persisted calculation candidate keys use the normalized registration. |
+| `ISharedVehicleDraftStore` | Read, explicit save/replace, delete, atomically adopt the saved contents. All mutations require the slot revision. |
+| `IHouseholdTransitionStore` | Read a consistent review snapshot; explicitly confirm the newly entered profile and complete set of pending vehicle mappings. |
+
+All relevant writes, including existing v1 scenario and listing writes, acquire
+`SELECT ... FOR UPDATE` on `household_state` inside a transaction **before**
+loading and checking revision-owned data. Stores discard their previous tracked
+entities before loading fresh values. Profile revision changes only on profile
+save or transition confirmation. Vehicle revision changes once per aggregate
+write; listing version changes only on listing writes. Transition revision
+changes when pending legacy inputs are created, replaced, deleted, their listing
+changes, or confirmation removes the pending set. A draft-only save does not
+alter profile/vehicle/transition revisions. Transition and combined input reads
+use a repeatable-read database snapshot, including split child queries.
+
+`HouseholdStoreException` exposes a stable code, affected vehicle UUID and
+expected/actual revision when applicable. Conflict codes include
+`profileRevisionConflict`, `vehicleRevisionConflict`, `draftRevisionConflict`,
+`transitionRevisionConflict`, `transitionSetConflict` and
+`registrationNumberConflict`. Deleted originals return `vehicleNotFound`;
+unsupported new storage formats return `unsupportedHouseholdInputVersion`.
+Core input errors retain their field paths in `HouseholdInputValidationException`.
+There is no automatic retry or overwrite. Cancellation/database failure rolls
+back every modified row, including intermediate listing-child replacements.
+The v1 stores retain their existing conflict types for current HTTP compatibility.
+
+Drafts require cost input, a normalized bounded reviewed listing, or both.
+Cross-registration replacement additionally requires `replaceExisting: true`.
+An existing-car draft requires its original UUID and current base revision on
+save and adoption; a new-car draft must still have an unused registration on
+adoption. Reads do not consume it. Adoption writes only supplied parts, leaving
+omitted cost/listing parts unchanged, then clears the slot in the same transaction.
+The aggregate revision increases once, even when both parts change.
+`SavedScenarioListingLinkMode.Preserve` retains the reviewed listing version;
+`Current` explicitly acknowledges the version after any included listing write.
+It requires a listing. Deleting or consuming a draft increases the slot revision;
+even deleting an already empty slot increases it. No expiry is scheduled.
+`VehicleCostWrite.VehicleLabel` sets a cost-only vehicle's label. When a listing
+exists, its label and provenance are preserved; a differing supplied cost label
+returns `listingLabelRequiresReview`. Change that label through the reviewed
+listing part, keeping any supplied cost label consistent with it.
+
+Schema migration preserves all existing v1 data. Direct profile saves and new
+cost replacement/adoption on a legacy car return `householdTransitionRequired`
+until explicit confirmation. Legacy recovery reconstructs inputs without
+deserializing or checking derived result versions. It exposes original individual
+assumptions for review, never selects one car's assumptions as a shared profile.
+Suggestions retain purchase price, fixed residual with its original horizon,
+unambiguous tax/insurance and recurring amounts. Missing payment dates stay missing.
+
+Each original tax, insurance, combined-maintenance, energy, recurring and
+one-time item has a stable key based on its persisted source UUID. Confirmation
+requires a disposition for **every** source: `KeepForReview`, `Map` to an explicit
+current item key, or `Discard`. Mappings require distinct existing targets;
+retained/discarded sources cannot also be included under their old keys.
+Combined maintenance is not guessed into service/repairs/reserve, energy fuel
+identity/basis is not inferred from a label, and undated one-time costs are not
+assigned a month. All 50 recurring plus 50 one-time sources fit in the review
+envelope separately, alongside up to three scalar costs and two energy sources
+(105 review items maximum). The 50-item current custom-cost limit is unchanged.
+Unmapped overflow remains review material rather than being truncated or merged.
+
+Confirmation verifies transition/profile revisions, the exact pending vehicle
+set and every vehicle revision. It writes the entire profile and reviewed inputs
+atomically, preserves vehicle/listing identity and explicitly acknowledged links,
+then deletes replaced legacy inputs, children and result snapshots. Only unresolved
+car facts survive as current `UnresolvedLegacyItems`; old household overrides and
+completed disposition decisions are not archived. Later input replacement must
+either omit decisions to retain the complete unresolved set or explicitly account
+for each remaining item. Each review item exposes `Reason` and `AffectedSections`.
+**#59 must combine this metadata with Core previews** so unresolved legacy costs
+block affected completeness even if other current categories appear complete.
+
+Existing v1 writes cannot reintroduce a scenario on a converted car; they return
+the typed `householdTransitionRequired` store error. Its HTTP mapping belongs to
+#59. Every old/new whole-vehicle deletion path removes listings, old/new inputs,
+child rows/results and a matching UUID/registration draft, while retaining the
+household profile and empty draft revision metadata. Rules/evaluations remain
+future 3B work and have no placeholder tables.
+
+The real migration is `20260906151351_AddHouseholdPersistence`. See the
+[explicit migration, backup and destructive rollback procedure](deployment-unraid.md#household-storage-migration-and-rollback).
+Automated PostgreSQL coverage is in
+[storage tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdCostStoreTests.cs),
+[transition tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdTransitionStoreTests.cs),
+[draft tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/SharedVehicleDraftStoreTests.cs),
+[concurrency tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdConcurrencyTests.cs)
+and [migration tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
+HTTP/generated types (#59), Swedish flows (#60) and practical stage acceptance
+(#61) remain unimplemented by this delivery.
 
 ## Inputs and units
 
@@ -522,7 +640,7 @@ field validation uses ValidationProblemDetails. Never accept trusted client
 result snapshots. Existing v1 routes remain compatible for unconverted records;
 v1 writes to converted records return `householdTransitionRequired` with the
 new route, preventing divergence. Existing delete routes retain whole-aggregate
-semantics. This guard is future API work, not part of this documentation PR.
+semantics. The store guard is implemented by #58; its HTTP mapping is #59 work.
 
 ## Saving, concurrency, draft, and migration
 

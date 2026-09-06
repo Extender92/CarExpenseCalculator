@@ -8,6 +8,17 @@ feature tests**. Use the normative [calculation](household-calculations.md) and
 remain required. Routine extraction tests use the existing synthetic fake;
 no real AI calls, provider purchases, or production-data experiments.
 
+Issue #58 implements the persistence portions in PostgreSQL integration tests:
+[current inputs](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdCostStoreTests.cs),
+[legacy transition](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdTransitionStoreTests.cs),
+[shared draft](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/SharedVehicleDraftStoreTests.cs),
+[separate-client concurrency and consistent snapshots](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdConcurrencyTests.cs),
+and [seeded upgrade/rollback/reapply](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
+They exercise failures after partial in-transaction work, preserved empty-slot
+revisions, legacy result corruption and the 50+50 old cost collections. The
+HTTP completeness mapping, UI recovery and practical household flow remain
+#59-#61 acceptance work; passing store tests does not complete those gates.
+
 ## Required automated regression coverage
 
 | Area | Required cases and observable assertion |

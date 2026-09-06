@@ -34,7 +34,13 @@ public sealed class SavedListingApiFactory : WebApplicationFactory<Program>, IAs
         ExtractionService.Reset();
         await using var scope = Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CarExpenseDbContext>();
-        await dbContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE vehicles CASCADE");
+        // TRUNCATE CASCADE also removes the draft singleton through its optional vehicle FK.
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            TRUNCATE TABLE vehicles, household_state CASCADE;
+            INSERT INTO household_state (id, profile_revision, transition_revision, schema_version)
+                VALUES (1, 0, 0, 1);
+            INSERT INTO vehicle_draft (id, revision, schema_version) VALUES (1, 0, 1);
+            """);
     }
 
     public async Task ExecuteDatabaseCommandAsync(string sql)

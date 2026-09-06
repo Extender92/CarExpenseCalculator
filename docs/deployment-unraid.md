@@ -162,8 +162,8 @@ An explicit migration name may be supplied as the final argument. Target `0` rol
 docker compose -f compose.unraid.yaml run --rm api migrate 0
 ```
 
-Rolling back only calculation-to-listing linkage metadata, while retaining all
-saved listings and scenarios, uses:
+After accounting for the household-data removal described below, a further
+rollback of calculation-to-listing linkage metadata uses:
 
 ```bash
 docker compose -f compose.unraid.yaml run --rm api migrate 20260904100409_AddCurrentVehicleListings
@@ -187,3 +187,41 @@ listing persistence again. Separate runtime and migration database roles are
 future hardening; the current dedicated application role owns only
 `car_expense_calculator` and must never receive access to other application
 databases.
+
+### Household storage migration and rollback
+
+`20260906151351_AddHouseholdPersistence` adds `household_state`,
+`vehicle_cost_inputs` and `vehicle_draft`. Applying it leaves existing scenarios,
+listings and result snapshots intact. The two singleton rows start at revision
+0 with null contents; no financial profile is inferred from an existing car.
+The explicit migrations command above is still required before running the new
+application. Normal API startup never migrates. Persistence contracts are
+implemented; the household HTTP/UI flows arrive in #59-#60.
+
+Before any rollback, stop application writes and make a verified PostgreSQL
+backup of `car_expense_calculator` using the existing `postgresql18` container.
+Keep the current application image available to execute its Down migration;
+an older image does not know this migration. Never use `immich-postgres`.
+
+The explicitly supported rollback to the previous schema is:
+
+```bash
+docker compose -f compose.unraid.yaml stop web api codex-extractor
+docker compose -f compose.unraid.yaml run --rm api migrate 20260904132333_LinkSavedScenariosToListings
+```
+
+**This command permanently removes the shared household profile, all new
+purchase/lease inputs and current review material, and the shared draft.** It
+also deletes vehicle roots with neither a remaining legacy scenario nor a
+listing. Unconverted legacy scenarios, their children/results, existing listings
+and their vehicle identities remain. Converted calculations are not recreated:
+recovering their removed information requires restoring the backup. Lower
+migration targets also perform this household-data removal before their own
+documented destructive steps.
+
+Deploy the matching older application only after the target migration succeeds.
+Reapplying the latest migration recreates empty household/draft metadata and
+preserves surviving listings and unconverted scenarios; it does not restore
+discarded household data. Test upgrade/rollback/reapply only on disposable
+PostgreSQL 18 fixtures. Unraid's persistent application data is never a test
+target. See the [implemented storage/transition contract](household-calculations.md#implemented-household-persistence).
