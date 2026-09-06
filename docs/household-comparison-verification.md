@@ -16,8 +16,18 @@ Issue #58 implements the persistence portions in PostgreSQL integration tests:
 and [seeded upgrade/rollback/reapply](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
 They exercise failures after partial in-transaction work, preserved empty-slot
 revisions, legacy result corruption and the 50+50 old cost collections. The
-HTTP completeness mapping, UI recovery and practical household flow remain
-#59-#61 acceptance work; passing store tests does not complete those gates.
+UI recovery and practical household flow remain #60-#61 acceptance work;
+passing store or HTTP tests does not complete those gates.
+
+Issue #59 adds [preview contracts and independent completeness](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/HouseholdPreviewEndpointTests.cs),
+[PostgreSQL HTTP lifecycle and concurrency](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/HouseholdPersistenceEndpointTests.cs),
+and [storage/extraction isolation and cancellation](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/HouseholdIsolationEndpointTests.cs).
+These cover numeric errors versus malformed requests, original 50+50 review
+collections, 101-vehicle atomic transition, full deletion through all three
+routes, draft conflicts/adoption and corrupt current/legacy results. The
+[browser/proxy checks](../src/frontend/e2e/household-api.spec.ts) exercise preview
+from the browser and exact/oversized 2 MiB bodies through Nginx, including chunked
+transfer. See the [implemented API contract](household-api.md).
 
 ## Required automated regression coverage
 

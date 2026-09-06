@@ -14,6 +14,8 @@ internal static partial class HouseholdJson
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false), new SensitivityConverter() },
     };
 
@@ -30,6 +32,18 @@ internal static partial class HouseholdJson
         if (version != SchemaVersion)
             throw new HouseholdStoreException("unsupportedHouseholdInputVersion", "Stored input version is unsupported.");
         return JsonSerializer.Deserialize<T>(json, Options) ?? throw new JsonException("Stored input is missing.");
+    }
+
+    // JSON nullability checks cannot validate collection element annotations.
+    // Keep failures while materializing stored DTOs inside the decoding boundary;
+    // HTTP can then report unavailable input without catching application faults.
+    public static T Decode<T>(Func<T> materialize)
+    {
+        try { return materialize(); }
+        catch (Exception exception) when (exception is NullReferenceException or ArgumentException or InvalidOperationException)
+        {
+            throw new JsonException("Stored household input could not be decoded.", exception);
+        }
     }
 
     internal sealed record ProfilePayload(CalendarMonthPayload? StartMonth, int? PeriodMonths, decimal? AnnualDistanceKilometres,
