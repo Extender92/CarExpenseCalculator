@@ -2283,7 +2283,7 @@ export interface components {
             /** Format: double */
             purchaseCashSek?: null | number;
             loanTerms?: null | components["schemas"]["HouseholdLoanTerms"];
-            energyPrices: components["schemas"]["HouseholdEnergyPrice"][];
+            energyPrices?: components["schemas"]["HouseholdEnergyPrice"][];
             electricDrivingSharePercent?: null | components["schemas"]["SensitivityValue"];
             homeChargingSharePercent?: null | components["schemas"]["SensitivityValue"];
             homeChargingPricePerKilowattHourSek?: null | components["schemas"]["SensitivityValue"];

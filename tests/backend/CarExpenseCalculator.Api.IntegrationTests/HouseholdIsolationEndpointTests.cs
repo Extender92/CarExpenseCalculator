@@ -24,12 +24,17 @@ public sealed class HouseholdIsolationEndpointTests
         Assert.Equal(["monthly", "annual"], cadence["enum"]!.AsArray().Select(x => x!.GetValue<string>()).ToArray());
         Assert.DoesNotContain("null", cadence.ToJsonString());
         Assert.NotNull(document["components"]!["schemas"]!["LegacyRecurringCostCadence"]);
+        var profile = document["components"]!["schemas"]!["HouseholdProfileInput"]!;
+        Assert.DoesNotContain("energyPrices", profile["required"]?.ToJsonString() ?? "");
         var errors = document["paths"]!["/api/household-calculations/preview"]!["post"]!["responses"]!["400"]!["content"]!;
         Assert.NotNull(errors["application/problem+json"]);
         Assert.Null(errors["text/plain"]);
         var recovery = document["components"]!["schemas"]!["SavedCostScenarioProblemDetails"]!["properties"]!;
         Assert.NotNull(recovery["recoveryRoute"]);
         Assert.NotNull(recovery["vehicleId"]);
+        var invalid = Preview();
+        invalid["profile"]!["energyPrices"] = null;
+        await Json(await Post(client, invalid), HttpStatusCode.BadRequest);
     }
 
     [Fact]

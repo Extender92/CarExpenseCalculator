@@ -51,7 +51,6 @@ public sealed record HouseholdProfileInput
     public decimal? AnnualDistanceKilometres { get; init; }
     public decimal? PurchaseCashSek { get; init; }
     public HouseholdLoanTerms? LoanTerms { get; init; }
-    [Required(AllowEmptyStrings = true)]
     public IReadOnlyList<HouseholdEnergyPrice> EnergyPrices { get; init; } = [];
     public SensitivityValue? ElectricDrivingSharePercent { get; init; }
     public SensitivityValue? HomeChargingSharePercent { get; init; }
