@@ -4,6 +4,7 @@ using CarExpenseCalculator.Infrastructure.ListingExtraction;
 using CarExpenseCalculator.Infrastructure.Persistence;
 using CarExpenseCalculator.Infrastructure.Persistence.SavedCostScenarios;
 using CarExpenseCalculator.Infrastructure.Persistence.SavedListings;
+using CarExpenseCalculator.Infrastructure.Persistence.Households;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,10 @@ public static class DependencyInjection
         services.AddSingleton<ListingDraftProcessor>();
         services.AddScoped<ISavedCostScenarioStore, SavedCostScenarioStore>();
         services.AddScoped<ISavedListingStore, SavedListingStore>();
+        services.AddScoped<IHouseholdProfileStore, HouseholdProfileStore>();
+        services.AddScoped<IVehicleCostInputStore, VehicleCostInputStore>();
+        services.AddScoped<ISharedVehicleDraftStore, SharedVehicleDraftStore>();
+        services.AddScoped<IHouseholdTransitionStore, HouseholdTransitionStore>();
 
         var extractorAddress = configuration["CodexExtraction:BaseUrl"]
             ?? "http://codex-extractor:8080";

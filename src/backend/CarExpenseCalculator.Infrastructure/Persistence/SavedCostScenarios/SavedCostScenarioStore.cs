@@ -1,6 +1,7 @@
 using CarExpenseCalculator.Core.CostScenarios;
 using CarExpenseCalculator.Core.Vehicles;
 using CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
+using CarExpenseCalculator.Infrastructure.Persistence.Households;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -23,6 +24,7 @@ public sealed class SavedCostScenarioStore(
         ArgumentNullException.ThrowIfNull(scenario);
 
         var result = calculator.Calculate(scenario);
+        await using var session = await HouseholdWriteSession.BeginAsync(dbContext, cancellationToken);
         var existingId = await dbContext.Vehicles
             .AsNoTracking()
             .Where(vehicle => vehicle.RegistrationNumber == registrationNumber.Value)
@@ -36,10 +38,11 @@ public sealed class SavedCostScenarioStore(
         var now = timeProvider.GetUtcNow();
         var vehicle = CreateVehicleEntity(registrationNumber, scenario, result, now);
         dbContext.Vehicles.Add(vehicle);
+        session.LegacyChanged();
 
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException exception) when (IsRegistrationNumberConflict(exception))
         {
@@ -94,11 +97,14 @@ public sealed class SavedCostScenarioStore(
         ArgumentNullException.ThrowIfNull(scenario);
 
         var result = calculator.Calculate(scenario);
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var session = await HouseholdWriteSession.BeginAsync(dbContext, cancellationToken);
         var vehicle = await CompleteQuery(tracking: true)
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedCostScenarioNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
+        if (vehicle.HouseholdCostInput is not null)
+            throw new HouseholdStoreException("householdTransitionRequired", "This vehicle uses household inputs.", vehicle.Id);
+        session.LegacyChanged();
 
         if (!Enum.IsDefined(listingLinkMode))
         {
@@ -146,12 +152,11 @@ public sealed class SavedCostScenarioStore(
                 savedScenario.SourceListingVersion = vehicle.Listing!.ListingVersion;
             }
 
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await dbContext.Database.CurrentTransaction!.RollbackAsync(cancellationToken);
             var actualRevision = await FindActualRevisionAsync(vehicleId, cancellationToken);
             throw new SavedCostScenarioConcurrencyException(
                 vehicleId,
@@ -168,19 +173,24 @@ public sealed class SavedCostScenarioStore(
         long expectedRevision,
         CancellationToken cancellationToken = default)
     {
+        await using var session = await HouseholdWriteSession.BeginAsync(dbContext, cancellationToken);
         var vehicle = await dbContext.Vehicles
-            .Where(entity => entity.Scenario != null)
+            .Include(entity => entity.Scenario)
+            .Where(entity => entity.Scenario != null || entity.HouseholdCostInput != null)
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedCostScenarioNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
+        if (vehicle.Scenario is not null) session.LegacyChanged();
+        await session.ClearMatchingDraftAsync(vehicle, cancellationToken);
         dbContext.Vehicles.Remove(vehicle);
 
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
         {
+            await dbContext.Database.CurrentTransaction!.RollbackAsync(cancellationToken);
             var actualRevision = await FindActualRevisionAsync(vehicleId, cancellationToken);
             throw new SavedCostScenarioConcurrencyException(
                 vehicleId,
@@ -200,6 +210,7 @@ public sealed class SavedCostScenarioStore(
             .Include(entity => entity.Scenario)
                 .ThenInclude(entity => entity!.OtherOneTimeCosts)
             .Include(entity => entity.Listing)
+            .Include(entity => entity.HouseholdCostInput)
             .AsSplitQuery();
         return tracking ? query : query.AsNoTrackingWithIdentityResolution();
     }
@@ -338,13 +349,34 @@ public sealed class SavedCostScenarioStore(
                 entity.ResultSchemaVersion);
         }
 
+        var scenario = RecoverInput(vehicle);
+
+        return new SavedCostScenario(
+            vehicle.Id,
+            RegistrationNumber.Parse(vehicle.RegistrationNumber),
+            scenario,
+            CostCalculationSnapshot.Deserialize(entity.ResultSnapshotJson),
+            entity.CalculationVersion,
+            entity.ResultSchemaVersion,
+            entity.SourceListingVersion,
+            vehicle.Listing?.ListingVersion,
+            vehicle.Listing is not null,
+            vehicle.Revision,
+            vehicle.CreatedAtUtc,
+            vehicle.UpdatedAtUtc,
+            entity.CalculatedAtUtc);
+    }
+
+    internal static CostScenario RecoverInput(VehicleEntity vehicle)
+    {
+        var entity = vehicle.Scenario ?? throw new InvalidOperationException("No legacy inputs.");
         var financing = entity.FinancingDownPaymentSek is null
             ? null
             : new FinancingTerms(
                 entity.FinancingDownPaymentSek.Value,
                 entity.FinancingAnnualNominalInterestRatePercent!.Value,
                 entity.FinancingTermMonths!.Value);
-        var scenario = new CostScenario(
+        return new CostScenario(
             vehicle.VehicleLabel,
             entity.CalculationPeriodMonths,
             entity.PurchasePriceSek,
@@ -370,21 +402,6 @@ public sealed class SavedCostScenarioStore(
             entity.OtherOneTimeCosts
                 .OrderBy(cost => cost.Position)
                 .Select(cost => new OneTimeCost(cost.Label, cost.AmountSek)));
-
-        return new SavedCostScenario(
-            vehicle.Id,
-            RegistrationNumber.Parse(vehicle.RegistrationNumber),
-            scenario,
-            CostCalculationSnapshot.Deserialize(entity.ResultSnapshotJson),
-            entity.CalculationVersion,
-            entity.ResultSchemaVersion,
-            entity.SourceListingVersion,
-            vehicle.Listing?.ListingVersion,
-            vehicle.Listing is not null,
-            vehicle.Revision,
-            vehicle.CreatedAtUtc,
-            vehicle.UpdatedAtUtc,
-            entity.CalculatedAtUtc);
     }
 
     private static RecurringCost? ToRecurringCost(

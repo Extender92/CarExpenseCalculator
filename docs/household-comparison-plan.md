@@ -6,7 +6,9 @@ These decisions were agreed on 2026-09-06. Stages **3A, Household calculations**
 and **3B, Comparison and buying scores**, are specified. Shared inputs, purchase
 financing and partial ownership costs with energy, depreciation and sensitivity
 are implemented in Core, together with leasing, calendar payments, cash/cost
-reconciliation and startup/average-month budgets. The remaining 3A integration
+reconciliation and startup/average-month budgets. Infrastructure implements one
+shared profile, current purchase/lease inputs, explicit legacy transition and
+one revision-controlled registered draft (#58). The remaining HTTP/UI integration
 and stage 3B are not implemented.
 The implemented HTTP contracts remain in [Manual calculator](manual-calculator.md)
 and [URL analysis](url-analysis.md).
@@ -16,8 +18,8 @@ are in [Household calculations](household-calculations.md) and
 [Comparison and buying scores](comparison-and-buying-scores.md). The
 [verification plan](household-comparison-verification.md) defines regressions
 and practical acceptance; the [delivery backlog](household-comparison-backlog.md)
-maps the work to GitHub. This planning delivery changes documentation and the
-backlog only, without enabling features or introducing code or migrations.
+maps the work to GitHub. The original planning PR only published specifications;
+the implemented Core and persistence boundaries above were delivered separately.
 
 ## Objective and accepted decisions
 

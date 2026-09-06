@@ -24,8 +24,11 @@ independent ownership-cost sections for energy, depreciation, service, repairs
 and other operating costs. It returns complete or partial totals, monthly and
 per-mil costs, and explicit sensitivity results. Core also implements leasing,
 calendar payments, separate startup/average-month budgets and cost/cash
-reconciliation. This foundation is not yet
-wired to HTTP, persistence, or the UI. See the
+reconciliation. Infrastructure now stores one shared profile, current purchase/
+lease inputs and one registered draft, with revision checks and explicit atomic
+transition from older calculations. HTTP and UI integration remain #59-#60 work.
+See the [persistence contract](docs/household-calculations.md#implemented-household-persistence)
+and the
 [Core cost contract](docs/household-calculations.md#implemented-core-ownership-costs).
 
 The three product modes are:

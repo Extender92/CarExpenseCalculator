@@ -2,6 +2,7 @@ using CarExpenseCalculator.Core.Listings;
 using CarExpenseCalculator.Core.Vehicles;
 using CarExpenseCalculator.Extraction.Contracts;
 using CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
+using CarExpenseCalculator.Infrastructure.Persistence.Households;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -23,6 +24,7 @@ public sealed class SavedListingStore(
         ArgumentNullException.ThrowIfNull(input);
 
         var prepared = Prepare(registrationNumber, input);
+        await using var session = await HouseholdWriteSession.BeginAsync(dbContext, cancellationToken);
         var existing = await FindIdentityAsync(registrationNumber, cancellationToken);
         if (existing is not null)
         {
@@ -48,10 +50,11 @@ public sealed class SavedListingStore(
 
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException exception) when (IsRegistrationNumberConflict(exception))
         {
+            await dbContext.Database.CurrentTransaction!.RollbackAsync(cancellationToken);
             dbContext.ChangeTracker.Clear();
             var conflict = await FindIdentityAsync(registrationNumber, cancellationToken);
             throw new SavedListingRegistrationConflictException(
@@ -107,11 +110,12 @@ public sealed class SavedListingStore(
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var session = await HouseholdWriteSession.BeginAsync(dbContext, cancellationToken);
         var vehicle = await CompleteQuery(tracking: true)
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedListingNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
+        if (vehicle.Scenario is not null) session.LegacyChanged();
         EnsureSupportedVersions(vehicle);
         var registrationNumber = RegistrationNumber.Parse(vehicle.RegistrationNumber);
         var prepared = Prepare(registrationNumber, input);
@@ -139,12 +143,11 @@ public sealed class SavedListingStore(
             vehicle.VehicleLabel = prepared.Result.Listing.VehicleLabel?.Value;
             vehicle.Revision++;
             vehicle.UpdatedAtUtc = now;
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await dbContext.Database.CurrentTransaction!.RollbackAsync(cancellationToken);
             var actualRevision = await FindActualRevisionAsync(vehicleId, cancellationToken);
             throw new SavedListingConcurrencyException(
                 vehicleId,
@@ -161,19 +164,24 @@ public sealed class SavedListingStore(
         long expectedRevision,
         CancellationToken cancellationToken = default)
     {
+        await using var session = await HouseholdWriteSession.BeginAsync(dbContext, cancellationToken);
         var vehicle = await dbContext.Vehicles
+            .Include(entity => entity.Scenario)
             .Where(entity => entity.Listing != null)
             .SingleOrDefaultAsync(entity => entity.Id == vehicleId, cancellationToken)
             ?? throw new SavedListingNotFoundException(vehicleId);
         EnsureExpectedRevision(vehicle, expectedRevision);
+        if (vehicle.Scenario is not null) session.LegacyChanged();
+        await session.ClearMatchingDraftAsync(vehicle, cancellationToken);
         dbContext.Vehicles.Remove(vehicle);
 
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await session.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
         {
+            await dbContext.Database.CurrentTransaction!.RollbackAsync(cancellationToken);
             var actualRevision = await FindActualRevisionAsync(vehicleId, cancellationToken);
             throw new SavedListingConcurrencyException(
                 vehicleId,
@@ -181,6 +189,35 @@ public sealed class SavedListingStore(
                 actualRevision,
                 exception);
         }
+    }
+
+    internal SavedListingInput NormalizeDraft(RegistrationNumber registrationNumber, SavedListingInput input)
+    {
+        var prepared = Prepare(registrationNumber, input);
+        return new(prepared.SubmittedUrl, prepared.AnalyzedAtUtc, prepared.RequestedModel, prepared.PromptVersion,
+            prepared.ExtractionSchemaVersion, prepared.Result.Sources.Select(source => source.Url), prepared.Result.Listing);
+    }
+
+    // The caller owns the encompassing transaction and increments the vehicle revision once.
+    internal async Task ApplyDraftAsync(VehicleEntity vehicle, SavedListingInput input, CancellationToken cancellationToken)
+    {
+        EnsureSupportedVersions(vehicle);
+        var prepared = Prepare(RegistrationNumber.Parse(vehicle.RegistrationNumber), input);
+        var now = timeProvider.GetUtcNow();
+        if (vehicle.Listing is null)
+            vehicle.Listing = CreateListing(vehicle, prepared, now);
+        else
+        {
+            dbContext.RemoveRange(vehicle.Listing.Sources);
+            dbContext.RemoveRange(vehicle.Listing.Equipment);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            vehicle.Listing.Sources.Clear();
+            vehicle.Listing.Equipment.Clear();
+            vehicle.Listing.ListingVersion = checked(vehicle.Listing.ListingVersion + 1);
+            vehicle.Listing.UpdatedAtUtc = now;
+            ApplyListing(vehicle.Listing, prepared, now);
+        }
+        vehicle.VehicleLabel = prepared.Result.Listing.VehicleLabel?.Value;
     }
 
     private PreparedListing Prepare(RegistrationNumber registrationNumber, SavedListingInput input)

@@ -1,5 +1,6 @@
 using CarExpenseCalculator.Infrastructure.Persistence.SavedCostScenarios;
 using CarExpenseCalculator.Infrastructure.Persistence.SavedListings;
+using CarExpenseCalculator.Infrastructure.Persistence.Households;
 
 namespace CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
 
@@ -20,4 +21,6 @@ internal sealed class VehicleEntity
     public SavedCostScenarioEntity? Scenario { get; set; }
 
     public VehicleListingEntity? Listing { get; set; }
+
+    public VehicleCostInputEntity? HouseholdCostInput { get; set; }
 }

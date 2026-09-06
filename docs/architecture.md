@@ -85,6 +85,9 @@ PostgreSQL 18 is the permanent database. The migrations store one current vehicl
 - Energy sources, custom recurring costs, and custom one-time costs use ordered child tables with foreign keys and cascade deletion.
 - `vehicle_listings` has a unique optional vehicle relationship and stores current typed listing scalars, listing/extraction versions, normalized status and missing codes, timestamps, and bounded JSONB values.
 - `listing_sources` and `listing_equipment` preserve normalized order in child rows. Fuel types use a nullable string array. Energy consumption, seller claims, condition notes, and field provenance use bounded persistence-owned JSONB. Raw Codex output is never stored.
+- `household_state` holds a nullable shared profile, its revision and a separate legacy-transition revision. Its seeded singleton contains no financial defaults.
+- `vehicle_cost_inputs` extends the same vehicle UUID with one current purchase/lease payload and unresolved current legacy review items, plus the reviewed listing version. Storage-owned JSONB DTOs preserve decimal input precision and have storage version 1; household calculation/result versions remain 2.
+- `vehicle_draft` holds one registered cost/listing draft, its original vehicle UUID/revision when applicable, and independent slot revision. Empty slots retain revision metadata, with no automatic expiry.
 
 The user-facing registration number is a current natural key, not the database primary key. Transportstyrelsen stopped future number reuse in 2024 because historical reuse could associate the same registration number with different vehicle individuals. Personal plate text is not accepted as vehicle identity. See [registration-number reuse](https://www.transportstyrelsen.se/sv/vagtrafik/fordon/intressenter/ateranvandning-av-registreringsnummer-upphor/) and [ordinary formats](https://www.transportstyrelsen.se/sv/vagtrafik/fordon/intressenter/nu-har-de-nya-registreringsnumrena-lanserats/).
 
@@ -125,7 +128,12 @@ composes that financing with independent depreciation, energy and operating
 sections. Internal amounts retain decimal precision; result sections round
 only after aggregation. Exact integer comparisons protect fractional-year
 depreciation from decimal underflow without introducing external packages.
-No household-profile, lease, score, or draft persistence model is implemented.
+Infrastructure implements the shared profile, purchase/lease inputs, explicit
+legacy transition and shared draft. The
+[storage contract](household-calculations.md#implemented-household-persistence)
+defines the four store interfaces and typed conflict outcomes. HTTP/types (#59),
+UI (#60), complete stage acceptance (#61), and score persistence remain later work.
+No new household result cache or historical tables are introduced.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.
@@ -135,12 +143,11 @@ decimal components feed costs and payments before display rounding. The
 [payment contract](household-calculations.md#implemented-core-leasing-and-payments)
 defines partial calendars, deposits, repair saving and budget evidence.
 
-The planned household profile owns common driving and financing assumptions,
+The household profile owns common driving and financing assumptions,
 purchase cash, energy prices, and separate startup/ongoing budget limits.
 Current vehicle facts remain car-specific and registration-based. Core
 composes these inputs into deterministic purchase-cost results without HTTP,
-database, clock, or AI dependencies; calculation dates must be explicit inputs
-when future payment scheduling requires them.
+database, clock, or AI dependencies; calculation dates are explicit inputs.
 
 Profile edits refresh derived previews across candidates, with explicit save,
 independent profile/vehicle revisions, and one response generation across all
@@ -158,11 +165,17 @@ One shared registration-linked draft has explicit save, its own revision, no
 automatic expiry, and atomic adoption; opening it does not consume it.
 Saved vehicles continue to require registration numbers. Deleting a vehicle
 removes its associated inputs, listing, derived results, and any associated
-draft, while retaining shared household and rule profiles. Target public
-contracts are specified; physical tables and real migrations belong to their
-explicitly scoped implementation issues. Legacy inputs remain accessible until
-the user confirms a shared-profile transition; unsupported result versions
-must not prevent recovery. No result or input archive is introduced.
+draft, while retaining the shared household profile. Rule profiles remain 3B work.
+All vehicle/profile/draft/transition writers, including v1 scenario and listing
+stores, first take a transaction row lock on `household_state`, then check fresh
+revisions. Multi-query input and transition reads use repeatable-read snapshots.
+Draft adoption updates the supplied aggregate parts and consumes the slot in
+one transaction, with one vehicle revision increase. Legacy inputs remain
+accessible independently of result version/deserialization until an explicit
+all-vehicle transition confirmation replaces them atomically. Current review
+items identify affected calculation sections for #59. No result or input archive
+is introduced; old results are removed on confirmation. Migrations remain an
+explicit command, with [documented rollback](deployment-unraid.md#household-storage-migration-and-rollback).
 
 ## Public foundation API
 
