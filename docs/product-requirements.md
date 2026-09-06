@@ -27,7 +27,9 @@ integration, clearly marks missing and unverified values, permits manual
 correction, and can store one current reviewed listing per vehicle. Extraction
 failure leaves manual entry available.
 
-Rule evaluation and side-by-side comparison are applied to these saved candidates in milestone 3; they are not part of the URL-ingestion milestone itself.
+Rule evaluation and side-by-side comparison are applied to these saved candidates
+in stage 3B, after household calculations in stage 3A; they are not part of the
+URL-ingestion milestone itself.
 
 ### Manual calculation
 
@@ -53,3 +55,42 @@ The complete URL flow is covered by fake-only automated acceptance from
 independent extraction outcomes through manual review, saved-listing lifecycle,
 and listing-linked calculation versioning. Rule-based search and comparison,
 automatic discovery, advisory AI review, and image review remain future work.
+
+## Planned household calculation and comparison direction
+
+The next work is split into two separate stages: household calculations (3A),
+then comparison and configurable buying scores (3B). The objective is to compare
+cars under the same household assumptions and determine estimated total cost
+after the chosen months or years, with a prominent monthly equivalent.
+
+- All supported car fuel types have equal priority, including combustion,
+  electric, and hybrid vehicles. Purchase and leasing are in planned scope;
+  keeping an already owned car is not a planned comparison mode.
+- One editable household profile owns common driving, cash, financing, energy,
+  and budget assumptions. Purchase cash and the startup budget are separate.
+  Profile changes update calculated tables dynamically; persistence requires
+  explicit **Spara**. Monthly budget checks use average funding, not peak months.
+- Each car retains its own current facts and costs. There are no independently
+  named saved scenarios per car and no superseded calculation history.
+- The comparison workspace contains a main total-cost table and multiple
+  breakdown tables. Incomplete candidates stay visible with explicit missing
+  calculations and partial totals.
+- User-defined favorable, baseline, and cautious sensitivity views operate on
+  current data. They do not create historical or separately saved scenarios.
+- Buying priorities and weights are editable and produce current explainable
+  scores without overriding hard rules or verification boundaries.
+- Saved vehicles still require registration numbers. Deletion removes all
+  vehicle-owned data while preserving shared profiles. One registration-linked
+  recoverable draft is shared across devices and explicitly saved/replaced.
+- A downloadable PDF presents the current comparison and its assumptions.
+- Maintenance/repair amounts start with manual/evidenced inputs; optional AI
+  suggestions are later work. Each stage includes practical acceptance with
+  representative cars alongside its automated tests.
+
+The accepted criteria, fixed-target weighted scores, unknown-score intervals,
+and complete-cost ordering are recorded in the normative
+[Household calculations](household-calculations.md) and
+[Comparison and buying scores](comparison-and-buying-scores.md) specifications.
+The delivery stages and separate later refinement work are recorded in the
+[Household calculations and comparison plan](household-comparison-plan.md).
+These are target requirements, not claims about current implementation.

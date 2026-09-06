@@ -13,6 +13,14 @@ permanent deletion.
 The repeatable acceptance procedure is documented in
 [Manual calculator verification](manual-calculator-verification.md).
 
+This document remains the implemented version 1 specification. The planned
+household profile, dynamically derived purchase financing, leasing, payment
+schedule, and current-data sensitivity views are specified in
+[Household calculations](household-calculations.md), with delivery context in
+[Household calculations and comparison](household-comparison-plan.md).
+That future work does not add multiple saved scenarios or historical results.
+Those target contracts do not change this implemented v1 API in the planning PR.
+
 The calculation must work without persistence or external services. Core is the
 source of truth and must not depend on HTTP, PostgreSQL, AI, marketplace data, or
 locale-specific parsing.

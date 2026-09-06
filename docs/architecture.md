@@ -109,6 +109,44 @@ retain a general location value or street address and does not infer counties
 or resolve geographic data. Listing persistence uses separate typed nullable
 columns for these current facts.
 
+## Planned household calculations and comparison
+
+Stages 3A and 3B are defined in the
+[Household calculations and comparison plan](household-comparison-plan.md),
+[household contract](household-calculations.md), and
+[comparison contract](comparison-and-buying-scores.md).
+They extend the implemented system; no household-profile, lease, score, or
+draft persistence model is implemented by this planning update.
+
+The planned household profile owns common driving and financing assumptions,
+purchase cash, energy prices, and separate startup/ongoing budget limits.
+Current vehicle facts remain car-specific and registration-based. Core will
+compose these inputs into deterministic calculation results without HTTP,
+database, clock, or AI dependencies; calculation dates must be explicit inputs
+when future payment scheduling requires them.
+
+Profile edits refresh derived previews across candidates, with explicit save,
+independent profile/vehicle revisions, and one response generation across all
+tables. Listing facts retain the implemented explicit review boundary.
+Profile edits do not authorize automatic adoption of unreviewed listing facts
+or background AI calls.
+
+Retain current data only: one shared profile and one current vehicle input set,
+with version/revision metadata for compatibility and concurrency. Sensitivity
+views and changed buying weights do not create saved scenario alternatives or
+evaluation history. Calculation upgrades need a defined way to recover current
+inputs and replace current derived results without archival snapshots.
+
+One shared registration-linked draft has explicit save, its own revision, no
+automatic expiry, and atomic adoption; opening it does not consume it.
+Saved vehicles continue to require registration numbers. Deleting a vehicle
+removes its associated inputs, listing, derived results, and any associated
+draft, while retaining shared household and rule profiles. Target public
+contracts are specified; physical tables and real migrations belong to their
+explicitly scoped implementation issues. Legacy inputs remain accessible until
+the user confirms a shared-profile transition; unsupported result versions
+must not prevent recovery. No result or input archive is introduced.
+
 ## Public foundation API
 
 - `GET /api/health/live` checks process liveness only.

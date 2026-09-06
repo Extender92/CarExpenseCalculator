@@ -679,8 +679,15 @@ automatic discovery, background refresh, marketplace-specific parsing,
 registry integration, rule evaluation, comparison, broad model research,
 advisory purchase recommendations, or image analysis.
 
-Rule evaluation and comparison belong to milestone 3. Automatic discovery
-belongs to milestone 4 and still requires approved marketplace access. Advisory
+Rule evaluation and comparison belong to stage 3B, following the common
+household calculations in stage 3A. The
+[Household calculations and comparison plan](household-comparison-plan.md)
+preserves registration-required saved identity, current data only, and whole
+vehicle deletion. Its single shared registered recovery draft is explicitly
+saved and does not replace the transient multi-URL workspace; see the target
+[draft contract](household-calculations.md#saving-concurrency-draft-and-migration).
+Automatic discovery belongs to milestone 4 and still requires approved
+marketplace access. Advisory
 AI review and separately requested cited research belong to milestone 5. Image
 review belongs to milestone 6.
 
