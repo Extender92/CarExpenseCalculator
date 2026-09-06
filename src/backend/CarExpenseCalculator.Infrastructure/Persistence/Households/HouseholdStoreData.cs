@@ -29,10 +29,12 @@ internal static class HouseholdStoreData
         return result;
     }
 
-    public static SavedHouseholdProfile Profile(HouseholdStateEntity state) => new(state.ProfileJson is null ? null
-        : HouseholdJson.Deserialize<HouseholdJson.ProfilePayload>(state.ProfileJson, state.SchemaVersion).ToCore(), state.ProfileRevision);
+    public static SavedHouseholdProfile Profile(HouseholdStateEntity state) => HouseholdJson.Decode(() => new SavedHouseholdProfile(state.ProfileJson is null ? null
+        : HouseholdJson.Deserialize<HouseholdJson.ProfilePayload>(state.ProfileJson, state.SchemaVersion).ToCore(), state.ProfileRevision));
 
-    public static SavedVehicleCostInput Vehicle(VehicleEntity vehicle)
+    public static SavedVehicleCostInput Vehicle(VehicleEntity vehicle) => HouseholdJson.Decode(() => ReadVehicle(vehicle));
+
+    private static SavedVehicleCostInput ReadVehicle(VehicleEntity vehicle)
     {
         var entity = vehicle.HouseholdCostInput;
         var stored = entity is null ? null : HouseholdJson.Deserialize<HouseholdJson.StoredCostPayload>(entity.InputJson, entity.SchemaVersion);

@@ -104,7 +104,9 @@ public sealed class SharedVehicleDraftStore(CarExpenseDbContext dbContext, Listi
         return vehicle;
     }
 
-    private static SavedVehicleDraft ToSaved(VehicleDraftEntity slot)
+    private static SavedVehicleDraft ToSaved(VehicleDraftEntity slot) => HouseholdJson.Decode(() => ReadSaved(slot));
+
+    private static SavedVehicleDraft ReadSaved(VehicleDraftEntity slot)
     {
         if (slot.InputJson is null) return new(slot.Revision, null);
         var payload = HouseholdJson.Deserialize<DraftPayload>(slot.InputJson, slot.SchemaVersion);

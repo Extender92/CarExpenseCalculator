@@ -26,7 +26,9 @@ per-mil costs, and explicit sensitivity results. Core also implements leasing,
 calendar payments, separate startup/average-month budgets and cost/cash
 reconciliation. Infrastructure now stores one shared profile, current purchase/
 lease inputs and one registered draft, with revision checks and explicit atomic
-transition from older calculations. HTTP and UI integration remain #59-#60 work.
+transition from older calculations. Household HTTP routes and generated frontend
+types are implemented; the Swedish household workspace remains #60 work.
+See the [HTTP contract](docs/household-api.md).
 See the [persistence contract](docs/household-calculations.md#implemented-household-persistence)
 and the
 [Core cost contract](docs/household-calculations.md#implemented-core-ownership-costs).

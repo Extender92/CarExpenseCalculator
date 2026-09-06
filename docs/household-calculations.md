@@ -2,9 +2,9 @@
 
 ## Status and scope
 
-Normative target for stage 3A, agreed 2026-09-06; **Core and persistence implemented**. The
+Normative target for stage 3A, agreed 2026-09-06; **Core, persistence and HTTP implemented**. The
 [product plan](household-comparison-plan.md) sets scope. This document adds
-future contracts without changing the implemented [v1 API](manual-calculator.md).
+household contracts alongside the implemented [v1 API](manual-calculator.md).
 Core owns deterministic decimal calculation; API maps HTTP; Infrastructure owns current
 PostgreSQL data; React owns Swedish forms and request cancellation.
 
@@ -15,7 +15,7 @@ Issue #55 implements `Households.HouseholdProfileInput`, `HouseholdLoanTerms`,
 `HouseholdFinancingCalculator`. The remaining sections describe the complete
 stage target. The ownership-cost subset added by #56 is documented below;
 leasing, payment calendars and budgets added by #57 are documented below.
-Persistence, HTTP and UI remain later work.
+Persistence (#58) and HTTP (#59) are implemented; the Swedish UI remains #60 work.
 
 The current pure operation is
 `Calculate(HouseholdProfileInput, IReadOnlyList<VehiclePurchaseInput>)`.
@@ -39,7 +39,7 @@ and 1-120 characters; a batch accepts 0-100 purchases. Malformed keys, duplicate
 keys, null entries, unsupported enums and oversized collections throw
 `HouseholdInputValidationException`. Numeric errors instead invalidate only
 dependent financing results. Core paths start with `profile` or `vehicles[i]`;
-future HTTP mappings must preserve the associated field meaning.
+HTTP mappings preserve the associated field meaning.
 
 Each purchase result exposes state, cash allocation, optional loan/installments,
 setup/monthly fees, financing cost (interest plus fees), acquisition cash
@@ -235,14 +235,14 @@ See [calendar tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/Househ
 and [payment precision tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdPaymentPrecisionTests.cs).
 They cover A2/A7-A11, year boundaries, partial data, deposits/inclusions,
 bounded immutable inputs, sensitivity, local arithmetic errors and budget
-thresholds. Persistence/migration is implemented by #58 below. HTTP/types (#59), Swedish UI (#60),
-and the practical whole-stage acceptance (#61) remain later work.
+thresholds. Persistence/migration (#58) and HTTP/types (#59) are implemented.
+Swedish UI (#60) and practical whole-stage acceptance (#61) remain later work.
 
 ## Implemented household persistence
 
 Issue #58 adds PostgreSQL stores under
 [`Persistence/Households`](../src/backend/CarExpenseCalculator.Infrastructure/Persistence/Households/HouseholdContracts.cs).
-These are Infrastructure contracts, separate from the future HTTP DTOs. Core
+These are Infrastructure contracts, separate from the implemented HTTP DTOs. Core
 calculation/result versions remain **2**; the persisted input format starts at
 **1**. No household result cache or history table is introduced.
 
@@ -335,12 +335,12 @@ car facts survive as current `UnresolvedLegacyItems`; old household overrides an
 completed disposition decisions are not archived. Later input replacement must
 either omit decisions to retain the complete unresolved set or explicitly account
 for each remaining item. Each review item exposes `Reason` and `AffectedSections`.
-**#59 must combine this metadata with Core previews** so unresolved legacy costs
+**The HTTP layer combines this metadata with Core previews** so unresolved legacy costs
 block affected completeness even if other current categories appear complete.
 
 Existing v1 writes cannot reintroduce a scenario on a converted car; they return
-the typed `householdTransitionRequired` store error. Its HTTP mapping belongs to
-#59. Every old/new whole-vehicle deletion path removes listings, old/new inputs,
+the typed `householdTransitionRequired` store error, mapped to HTTP 409 by #59.
+Every old/new whole-vehicle deletion path removes listings, old/new inputs,
 child rows/results and a matching UUID/registration draft, while retaining the
 household profile and empty draft revision metadata. Rules/evaluations remain
 future 3B work and have no placeholder tables.
@@ -353,8 +353,8 @@ Automated PostgreSQL coverage is in
 [draft tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/SharedVehicleDraftStoreTests.cs),
 [concurrency tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdConcurrencyTests.cs)
 and [migration tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
-HTTP/generated types (#59), Swedish flows (#60) and practical stage acceptance
-(#61) remain unimplemented by this delivery.
+HTTP/generated types (#59) are implemented. Swedish flows (#60) and practical
+stage acceptance (#61) remain subsequent work.
 
 ## Inputs and units
 
@@ -585,7 +585,15 @@ extras as distinct items. Lease payments never receive purchase depreciation,
 purchase cash allocation, principal, interest, or resale equity. Lease price
 and use assumptions remain quote-dependent; saving still requires registration.
 
-## Partial preview and future HTTP contract
+<a id="partial-preview-and-future-http-contract"></a>
+
+## Partial preview and HTTP contract
+
+Issue #59 implements this boundary with API-owned DTOs and generated frontend
+types. See the [implemented HTTP contracts](household-api.md) for exact envelopes,
+review handling, status codes and examples. UI integration and practical whole-flow
+acceptance remain #60-#61 work. Calculation/result versions stay 2 and storage
+version stays 1; no migration is introduced by the HTTP layer.
 
 `CalculateHousehold(profile, vehicles) -> HouseholdPreview` is pure. A preview
 contains a client `requestId`, normalized profile, active mode, calculation
@@ -611,7 +619,7 @@ cost sections are complete, residual/horizon is valid, and unresolved legacy
 cost items do not remain. Missing payment timing affects cash/budget completeness
 but does not by itself invalidate an otherwise complete accrued cost.
 
-| Future route | Semantics |
+| Route | Semantics |
 | --- | --- |
 | `POST /api/household-calculations/preview` | Fully supplied profile and candidate inputs; 200 independent results, no database or AI access. |
 | `GET /api/household-profile` | Current values/revision, or 404 before initialization. |
@@ -623,8 +631,8 @@ but does not by itself invalidate an otherwise complete accrued cost.
 | `DELETE /api/vehicle-cost-inputs/{vehicleId}?expectedRevision={revision}` | 204 whole-vehicle deletion. |
 | `GET /api/household-transition` | Current legacy inputs, review obligations, transition revision, and vehicle revisions; no guessed shared defaults. |
 | `POST /api/household-transition` | Atomically confirm supplied shared profile and reviewed mappings using all expected revisions. |
-| `GET/PUT/DELETE /api/vehicle-draft` | Read/explicitly save/remove the shared singleton draft with its own expected revision; empty GET returns 200 with null payload and current slot revision. |
-| `POST /api/vehicle-draft/adopt` | Atomically adopt draft into current registered data and consume it, checking draft and vehicle revisions. |
+| `GET/PUT/DELETE /api/vehicle-draft` | Read/explicitly save/remove the shared singleton draft with its own expected revision; all return 200 with payload and slot revision. Empty content is null. DELETE takes the expected revision in the query. |
+| `POST /api/vehicle-draft/adopt` | Atomically adopt draft into current registered data and consume it, checking draft and vehicle revisions; 200 current vehicle input. Read the draft again when its latest slot revision is needed. |
 
 When legacy scenarios await transition, profile creation/replacement uses the
 transition operation; direct profile PUT returns `householdTransitionRequired`
@@ -640,7 +648,7 @@ field validation uses ValidationProblemDetails. Never accept trusted client
 result snapshots. Existing v1 routes remain compatible for unconverted records;
 v1 writes to converted records return `householdTransitionRequired` with the
 new route, preventing divergence. Existing delete routes retain whole-aggregate
-semantics. The store guard is implemented by #58; its HTTP mapping is #59 work.
+semantics. Both the store guard (#58) and its HTTP mapping (#59) are implemented.
 
 ## Saving, concurrency, draft, and migration
 

@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
 using CarExpenseCalculator.Api.Health;
+using CarExpenseCalculator.Api.Households;
+using CarExpenseCalculator.Core.Households;
+using Microsoft.AspNetCore.Mvc;
 using CarExpenseCalculator.Core.CostScenarios;
 using CarExpenseCalculator.Infrastructure;
 using CarExpenseCalculator.Infrastructure.Health;
@@ -18,6 +21,20 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddSingleton<CostScenarioCalculator>();
+builder.Services.AddSingleton<HouseholdCostCalculator>();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    var original = options.InvalidModelStateResponseFactory;
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        if (!HouseholdHttpBoundary.IsHousehold(context.HttpContext.Request.Path)) return original(context);
+        var errors = context.ModelState.SelectMany(pair => pair.Value!.Errors.Select(error =>
+            new CarExpenseCalculator.Api.Contracts.Households.HouseholdInputError(pair.Key, "invalidInput",
+                string.IsNullOrWhiteSpace(error.ErrorMessage) ? "Input cannot be read." : error.ErrorMessage))).ToArray();
+        return new BadRequestObjectResult(HouseholdHttpBoundary.Validation(context.HttpContext, errors))
+            { ContentTypes = { "application/problem+json" } };
+    };
+});
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services
     .AddHealthChecks()
@@ -38,6 +55,7 @@ if (args.Length > 0 && string.Equals(args[0], "migrate", StringComparison.Ordina
 }
 
 app.UseExceptionHandler();
+app.UseMiddleware<HouseholdHttpBoundary>();
 
 app.MapOpenApi("/api/openapi/{documentName}.json");
 app.MapControllers();

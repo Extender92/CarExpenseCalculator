@@ -60,8 +60,9 @@ Stage 3A Core supports shared household assumptions, purchase financing and
 partial ownership costs, including energy, compound depreciation, separate
 service/repairs/allowance and explicit sensitivity modes. Core also supports
 leasing, calendar payments, cash/cost reconciliation and separate startup and
-average-month budgets. HTTP, saved household inputs and the Swedish interface
-remain later work; the current application continues to use the implemented v1 calculator.
+average-month budgets. Shared input persistence and household HTTP contracts are
+implemented. The Swedish household interface remains #60 work; the current UI
+continues to use the implemented v1 calculator.
 
 ## Planned household calculation and comparison direction
 

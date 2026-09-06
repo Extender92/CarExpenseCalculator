@@ -131,8 +131,10 @@ depreciation from decimal underflow without introducing external packages.
 Infrastructure implements the shared profile, purchase/lease inputs, explicit
 legacy transition and shared draft. The
 [storage contract](household-calculations.md#implemented-household-persistence)
-defines the four store interfaces and typed conflict outcomes. HTTP/types (#59),
-UI (#60), complete stage acceptance (#61), and score persistence remain later work.
+defines the four store interfaces and typed conflict outcomes. The
+[household HTTP layer](household-api.md) exposes these stores and Core previews
+through API-owned DTOs and generated frontend types (#59). UI (#60), complete
+stage acceptance (#61), and score persistence remain later work.
 No new household result cache or historical tables are introduced.
 
 Core also implements explicit lease contracts, bounded payment calendars,
@@ -173,7 +175,8 @@ Draft adoption updates the supplied aggregate parts and consumes the slot in
 one transaction, with one vehicle revision increase. Legacy inputs remain
 accessible independently of result version/deserialization until an explicit
 all-vehicle transition confirmation replaces them atomically. Current review
-items identify affected calculation sections for #59. No result or input archive
+items identify affected calculation sections; the API blocks dependent complete
+totals and budget passes while preserving known contributions. No result or input archive
 is introduced; old results are removed on confirmation. Migrations remain an
 explicit command, with [documented rollback](deployment-unraid.md#household-storage-migration-and-rollback).
 

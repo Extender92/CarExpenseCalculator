@@ -4,6 +4,372 @@
  */
 
 export interface paths {
+    "/api/household-calculations/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HouseholdPreviewRequest"];
+                    "application/*+json": components["schemas"]["HouseholdPreviewRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["HouseholdPreviewResponse"];
+                        "application/json": components["schemas"]["HouseholdPreviewResponse"];
+                        "text/json": components["schemas"]["HouseholdPreviewResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["HouseholdProfileResponse"];
+                        "application/json": components["schemas"]["HouseholdProfileResponse"];
+                        "text/json": components["schemas"]["HouseholdProfileResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveHouseholdProfileRequest"];
+                    "application/*+json": components["schemas"]["SaveHouseholdProfileRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["HouseholdProfileResponse"];
+                        "application/json": components["schemas"]["HouseholdProfileResponse"];
+                        "text/json": components["schemas"]["HouseholdProfileResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household-transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["HouseholdTransitionResponse"];
+                        "application/json": components["schemas"]["HouseholdTransitionResponse"];
+                        "text/json": components["schemas"]["HouseholdTransitionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmHouseholdTransitionRequest"];
+                    "application/*+json": components["schemas"]["ConfirmHouseholdTransitionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["HouseholdTransitionResponse"];
+                        "application/json": components["schemas"]["HouseholdTransitionResponse"];
+                        "text/json": components["schemas"]["HouseholdTransitionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/listing-analyses": {
         parameters: {
             query?: never;
@@ -793,10 +1159,700 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vehicle-cost-inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleCostInputSummary"][];
+                        "application/json": components["schemas"]["VehicleCostInputSummary"][];
+                        "text/json": components["schemas"]["VehicleCostInputSummary"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateVehicleCostInputRequest"];
+                    "application/*+json": components["schemas"]["CreateVehicleCostInputRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleCostInputResponse"];
+                        "application/json": components["schemas"]["VehicleCostInputResponse"];
+                        "text/json": components["schemas"]["VehicleCostInputResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicle-cost-inputs/{vehicleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleCostInputResponse"];
+                        "application/json": components["schemas"]["VehicleCostInputResponse"];
+                        "text/json": components["schemas"]["VehicleCostInputResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReplaceVehicleCostInputRequest"];
+                    "application/*+json": components["schemas"]["ReplaceVehicleCostInputRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleCostInputResponse"];
+                        "application/json": components["schemas"]["VehicleCostInputResponse"];
+                        "text/json": components["schemas"]["VehicleCostInputResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query: {
+                    expectedRevision: number;
+                };
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicle-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleDraftResponse"];
+                        "application/json": components["schemas"]["VehicleDraftResponse"];
+                        "text/json": components["schemas"]["VehicleDraftResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveVehicleDraftRequest"];
+                    "application/*+json": components["schemas"]["SaveVehicleDraftRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleDraftResponse"];
+                        "application/json": components["schemas"]["VehicleDraftResponse"];
+                        "text/json": components["schemas"]["VehicleDraftResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query: {
+                    expectedRevision: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleDraftResponse"];
+                        "application/json": components["schemas"]["VehicleDraftResponse"];
+                        "text/json": components["schemas"]["VehicleDraftResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicle-draft/adopt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AdoptVehicleDraftRequest"];
+                    "application/*+json": components["schemas"]["AdoptVehicleDraftRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleCostInputResponse"];
+                        "application/json": components["schemas"]["VehicleCostInputResponse"];
+                        "text/json": components["schemas"]["VehicleCostInputResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {unknown} */
+        AcquisitionType: "purchase" | "lease";
+        AdoptVehicleDraftRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+        };
         /** @enum {unknown} */
         BodyType: "sedan" | "hatchback" | "wagon" | "suv" | "coupe" | "convertible" | "minivan" | "pickup" | "van" | "other";
         CalculationCompleteness: {
@@ -804,6 +1860,12 @@ export interface components {
             isCashFlowComplete: boolean;
             isNetOwnershipCostAvailable: boolean;
             missingCategories: components["schemas"]["MissingCategory"][];
+        };
+        CalendarMonth: {
+            /** Format: int32 */
+            year: number;
+            /** Format: int32 */
+            month: number;
         };
         CashFlowResult: {
             /** Format: double */
@@ -832,6 +1894,27 @@ export interface components {
             averagePerYearSek: number;
             isComplete: boolean;
         };
+        ConfirmHouseholdTransitionRequest: {
+            profile: components["schemas"]["HouseholdProfileInput"];
+            /** Format: int64 */
+            expectedProfileRevision: number;
+            /** Format: int64 */
+            expectedTransitionRevision: number;
+            vehicles: components["schemas"]["VehicleTransitionWrite"][];
+        };
+        /** @enum {unknown} */
+        ConsumptionBasis: "wholeDistance" | "drivingMode" | null;
+        CostSectionResult: {
+            state: components["schemas"]["CostSectionState"];
+            /** Format: double */
+            knownSubtotalSek: null | number;
+            /** Format: double */
+            completeTotalSek: null | number;
+            missingComponents: string[];
+            errors: components["schemas"]["HouseholdInputError"][];
+        };
+        /** @enum {unknown} */
+        CostSectionState: "complete" | "partial" | "unavailable" | "invalid" | "notApplicable";
         CreateSavedCostScenarioRequest: {
             registrationNumber: string;
             scenario: components["schemas"]["ManualCalculationRequest"];
@@ -840,8 +1923,14 @@ export interface components {
             registrationNumber: string;
             listing: components["schemas"]["ReviewedListingInput"];
         };
+        CreateVehicleCostInputRequest: {
+            registrationNumber: string;
+            cost: components["schemas"]["VehicleCostWrite"];
+        };
         /** @enum {unknown} */
         Drivetrain: "frontWheelDrive" | "rearWheelDrive" | "allWheelDrive";
+        /** @enum {unknown} */
+        ElectricityBasis: "battery" | "metered" | null;
         EnergyBreakdownResult: {
             sources: components["schemas"]["EnergySourceResult"][];
             /** Format: double */
@@ -940,9 +2029,341 @@ export interface components {
             remainingPrincipalSek: number;
         };
         /** @enum {unknown} */
+        FinancingState: "complete" | "partial" | "unavailable" | "invalid";
+        /** @enum {unknown} */
         FuelType: "petrol" | "diesel" | "electricity" | "ethanol" | "biogas" | "naturalGas" | "liquefiedPetroleumGas" | "hydrogen" | "other";
+        HouseholdBudgetResult: {
+            /** Format: double */
+            limitSek: null | number;
+            status: components["schemas"]["HouseholdBudgetStatus"];
+            fundingRequired: components["schemas"]["CostSectionResult"];
+        };
+        /** @enum {unknown} */
+        HouseholdBudgetStatus: "notConfigured" | "withinLimit" | "exceeded" | "unknown" | "invalid";
+        HouseholdCashReconciliation: {
+            purchaseCash: components["schemas"]["CostSectionResult"];
+            principalRepaid: components["schemas"]["CostSectionResult"];
+            depreciation: components["schemas"]["CostSectionResult"];
+            accruedOperatingCosts: components["schemas"]["CostSectionResult"];
+            paidOperatingCosts: components["schemas"]["CostSectionResult"];
+            depositPaid: components["schemas"]["CostSectionResult"];
+            depositRefund: components["schemas"]["CostSectionResult"];
+            depositWithheld: components["schemas"]["CostSectionResult"];
+            repairAllowance: components["schemas"]["CostSectionResult"];
+            reconciledOwnershipCost: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdCategoryResult: {
+            isIncluded: boolean;
+            cost: components["schemas"]["CostSectionResult"];
+            items: components["schemas"]["HouseholdCostItemResult"][];
+        };
+        /** @enum {unknown} */
+        HouseholdCostCadence: "monthly" | "annual" | "once" | null;
+        HouseholdCostCategoryInput: {
+            isIncluded: boolean;
+            items: components["schemas"]["HouseholdCostItem"][];
+        };
+        HouseholdCostItem: {
+            key: string;
+            label: string;
+            amountSek?: null | components["schemas"]["SensitivityValue"];
+            cadence?: null | components["schemas"]["HouseholdCostCadence"];
+            /** Format: int32 */
+            monthOffset?: null | number;
+            /** Format: int32 */
+            dueMonthOfYear?: null | number;
+            evidenceNote?: null | string;
+            sourceUrl?: null | string;
+        };
+        HouseholdCostItemResult: {
+            key: string;
+            label: string;
+            cost: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdCostTotals: {
+            /** Format: double */
+            distanceKilometres: null | number;
+            ownershipCost: components["schemas"]["CostSectionResult"];
+            monthlyCost: components["schemas"]["CostSectionResult"];
+            costPerMil: components["schemas"]["CostSectionResult"];
+            endEquity: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdDepreciationResult: {
+            cost: components["schemas"]["CostSectionResult"];
+            /** Format: double */
+            residualValueSek: null | number;
+        };
+        HouseholdEnergyPrice: {
+            fuel: components["schemas"]["FuelType"];
+            unit: components["schemas"]["EnergyUnit"];
+            pricePerUnitSek?: null | components["schemas"]["SensitivityValue"];
+        };
+        HouseholdEnergyResult: {
+            cost: components["schemas"]["CostSectionResult"];
+            sources: components["schemas"]["HouseholdEnergySourceResult"][];
+            isIncluded: boolean;
+        };
+        HouseholdEnergySource: {
+            key: string;
+            fuel?: null | components["schemas"]["FuelType"];
+            unit?: null | components["schemas"]["EnergyUnit"];
+            consumptionPer100Kilometres?: null | components["schemas"]["SensitivityValue"];
+            consumptionBasis?: null | components["schemas"]["ConsumptionBasis"];
+            electricityBasis?: null | components["schemas"]["ElectricityBasis"];
+        };
+        HouseholdEnergySourceResult: {
+            key: string;
+            fuel: null | components["schemas"]["FuelType"];
+            unit: null | components["schemas"]["EnergyUnit"];
+            /** Format: double */
+            baseQuantity: null | number;
+            /** Format: double */
+            purchasedQuantity: null | number;
+            /** Format: double */
+            effectivePricePerUnitSek: null | number;
+            cost: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdInputError: {
+            path: string;
+            code: string;
+            message: string;
+        };
+        HouseholdLeaseCharge: {
+            key: string;
+            label: string;
+            amountSek?: null | components["schemas"]["SensitivityValue"];
+            /** Format: int32 */
+            monthOffset?: null | number;
+            evidenceNote?: null | string;
+            sourceUrl?: null | string;
+        };
+        HouseholdLeaseInput: {
+            /** Format: int32 */
+            termMonths?: null | number;
+            /** Format: double */
+            upfrontNonRefundableSek?: null | number;
+            /** Format: double */
+            refundableDepositSek?: null | number;
+            depositRefundSek?: null | components["schemas"]["SensitivityValue"];
+            /** Format: double */
+            includedDistanceKilometres?: null | number;
+            excessDistancePricePerKilometreSek?: null | components["schemas"]["SensitivityValue"];
+            priceBasis?: null | components["schemas"]["LeasePriceBasis"];
+            energyIncluded?: boolean;
+            monthlyPayments?: null | components["schemas"]["HouseholdLeasePayment"][];
+            endFees?: null | components["schemas"]["HouseholdLeaseCharge"][];
+            otherPayments?: null | components["schemas"]["HouseholdLeaseCharge"][];
+        };
+        HouseholdLeasePayment: {
+            /** Format: int32 */
+            monthOffset: number;
+            /** Format: double */
+            amountSek?: null | number;
+        };
+        HouseholdLeaseResult: {
+            cost: components["schemas"]["CostSectionResult"];
+            /** Format: int32 */
+            termMonths: null | number;
+            /** Format: int32 */
+            coveredMonths: null | number;
+            isEstimate: boolean;
+            /** Format: double */
+            excessDistanceKilometres: null | number;
+            depositWithheld: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdLoanCalculation: {
+            /** Format: int32 */
+            termMonths: number;
+            /** Format: double */
+            annualNominalInterestRatePercent: number;
+            /** Format: double */
+            monthlyInstallmentSek: number;
+            /** Format: double */
+            paymentsDuringPeriodSek: number;
+            /** Format: double */
+            principalRepaidSek: number;
+            /** Format: double */
+            interestPaidSek: number;
+            /** Format: double */
+            remainingPrincipalSek: number;
+            installments: components["schemas"]["LoanInstallment"][];
+        };
+        HouseholdLoanTerms: {
+            annualNominalInterestRatePercent?: null | components["schemas"]["SensitivityValue"];
+            /** Format: int32 */
+            termMonths?: null | number;
+            /** Format: double */
+            setupFeeSek?: null | number;
+            /** Format: double */
+            monthlyFeeSek?: null | number;
+        };
+        HouseholdPaymentCalendar: {
+            /** Format: int32 */
+            requestedMonths: null | number;
+            /** Format: int32 */
+            coveredMonths: null | number;
+            calendarStatus: components["schemas"]["CostSectionResult"];
+            months: components["schemas"]["HouseholdPaymentMonth"][];
+            sources: components["schemas"]["HouseholdPaymentSourceResult"][];
+            externalOutflow: components["schemas"]["CostSectionResult"];
+            externalInflow: components["schemas"]["CostSectionResult"];
+            netExternalCashFlow: components["schemas"]["CostSectionResult"];
+            internalSaving: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdPaymentCategoryResult: {
+            category: string;
+            direction: components["schemas"]["HouseholdPaymentDirection"];
+            amount: components["schemas"]["CostSectionResult"];
+        };
+        /** @enum {unknown} */
+        HouseholdPaymentDirection: "outflow" | "inflow" | "internalSaving";
+        HouseholdPaymentMonth: {
+            /** Format: int32 */
+            monthOffset: number;
+            calendarMonth: null | components["schemas"]["CalendarMonth"];
+            outflow: components["schemas"]["CostSectionResult"];
+            inflow: components["schemas"]["CostSectionResult"];
+            internalSaving: components["schemas"]["CostSectionResult"];
+            categories: components["schemas"]["HouseholdPaymentCategoryResult"][];
+        };
+        HouseholdPaymentSourceResult: {
+            key: string;
+            category: string;
+            label: string;
+            direction: components["schemas"]["HouseholdPaymentDirection"];
+            isEstimate: boolean;
+            monthOffsets: number[];
+            payments: components["schemas"]["CostSectionResult"];
+            unscheduledAmount: components["schemas"]["CostSectionResult"];
+        };
+        HouseholdPreviewCandidate: {
+            input: components["schemas"]["VehicleCostInput"];
+            registrationNumber?: null | string;
+            unresolvedLegacyItems: components["schemas"]["LegacyReviewInput"][];
+        };
+        HouseholdPreviewRequest: {
+            requestId: string;
+            profile: components["schemas"]["HouseholdProfileInput"];
+            vehicles: components["schemas"]["HouseholdPreviewCandidate"][];
+        };
+        HouseholdPreviewResponse: {
+            requestId: string;
+            profile: components["schemas"]["HouseholdProfileInput"];
+            currency: string;
+            /** Format: int32 */
+            calculationVersion: number;
+            /** Format: int32 */
+            resultSchemaVersion: number;
+            activeSensitivityMode: components["schemas"]["SensitivityMode"];
+            profileErrors: components["schemas"]["HouseholdInputError"][];
+            vehicles: components["schemas"]["HouseholdVehiclePreview"][];
+        };
+        HouseholdProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+            /** Format: uuid */
+            vehicleId?: null | string;
+            /** Format: int64 */
+            expectedRevision?: null | number;
+            /** Format: int64 */
+            actualRevision?: null | number;
+            recoveryRoute?: null | string;
+        };
+        HouseholdProfileInput: {
+            startMonth?: null | components["schemas"]["CalendarMonth"];
+            /** Format: int32 */
+            periodMonths?: null | number;
+            /** Format: double */
+            annualDistanceKilometres?: null | number;
+            /** Format: double */
+            purchaseCashSek?: null | number;
+            loanTerms?: null | components["schemas"]["HouseholdLoanTerms"];
+            energyPrices: components["schemas"]["HouseholdEnergyPrice"][];
+            electricDrivingSharePercent?: null | components["schemas"]["SensitivityValue"];
+            homeChargingSharePercent?: null | components["schemas"]["SensitivityValue"];
+            homeChargingPricePerKilowattHourSek?: null | components["schemas"]["SensitivityValue"];
+            publicChargingPricePerKilowattHourSek?: null | components["schemas"]["SensitivityValue"];
+            chargingLossPercent?: null | components["schemas"]["SensitivityValue"];
+            /** Format: double */
+            startupBudgetSek?: null | number;
+            /** Format: double */
+            monthlyBudgetSek?: null | number;
+            activeSensitivityMode?: components["schemas"]["SensitivityMode"];
+        };
+        HouseholdProfileResponse: {
+            input: null | components["schemas"]["HouseholdProfileInput"];
+            /** Format: int64 */
+            revision: number;
+        };
+        HouseholdResidualInput: {
+            mode: components["schemas"]["ResidualMode"];
+            value?: null | components["schemas"]["SensitivityValue"];
+            /** Format: int32 */
+            periodMonths?: null | number;
+        };
+        HouseholdTransitionResponse: {
+            /** Format: int64 */
+            revision: number;
+            profile: components["schemas"]["HouseholdProfileResponse"];
+            vehicles: components["schemas"]["VehicleCostInputResponse"][];
+        };
+        HouseholdValidationProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+            fieldErrors: components["schemas"]["HouseholdInputError"][];
+            errors?: {
+                [key: string]: string[];
+            };
+        };
+        HouseholdVehiclePreview: {
+            candidateKey: string;
+            registrationNumber: null | string;
+            input: components["schemas"]["VehicleCostInput"];
+            unresolvedLegacyItems: components["schemas"]["LegacyReviewResponse"][];
+            isCostComparable: boolean;
+            sections: components["schemas"]["VehicleCostResult"];
+        };
         IntegrationStatusResponse: {
             codexListingExtractionConfigured: boolean;
+        };
+        /** @enum {unknown} */
+        LeasePriceBasis: "quoted" | "estimated" | "unresolved" | null;
+        LegacyItemDecision: {
+            key: string;
+            disposition: components["schemas"]["LegacyItemDisposition"];
+            targetKey?: null | string;
+        };
+        /** @enum {unknown} */
+        LegacyItemDisposition: "keepForReview" | "map" | "discard";
+        /** @enum {unknown} */
+        LegacyItemKind: "tax" | "insurance" | "maintenance" | "energy" | "recurring" | "oneTime";
+        /** @enum {unknown} */
+        LegacyRecurringCostCadence: "monthly" | "annual" | null;
+        LegacyReviewInput: {
+            key: string;
+            kind: components["schemas"]["LegacyItemKind"];
+            label: string;
+            /** Format: double */
+            amountSek?: null | number;
+            cadence?: null | components["schemas"]["LegacyRecurringCostCadence"];
+            energyUnit?: null | components["schemas"]["EnergyUnit"];
+            /** Format: double */
+            consumptionPer100Kilometres?: null | number;
+        };
+        LegacyReviewResponse: {
+            input: components["schemas"]["LegacyReviewInput"];
+            reason: string;
+            affectedSections: string[];
         };
         ListingAnalysisProblemDetails: {
             type?: null | string;
@@ -1049,6 +2470,20 @@ export interface components {
         ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "locality" | "county" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
         /** @enum {unknown} */
         ListingLinkMode: "preserve" | "current";
+        LoanInstallment: {
+            /** Format: int32 */
+            monthOffset: number;
+            /** Format: double */
+            openingPrincipalSek: number;
+            /** Format: double */
+            interestSek: number;
+            /** Format: double */
+            principalRepaidSek: number;
+            /** Format: double */
+            paymentSek: number;
+            /** Format: double */
+            remainingPrincipalSek: number;
+        };
         ManualCalculationRequest: {
             vehicleLabel?: null | string;
             /** Format: int32 */
@@ -1118,6 +2553,39 @@ export interface components {
             /** Format: double */
             amountSek: number;
         };
+        PurchaseCashAllocation: {
+            /** Format: double */
+            cashAppliedSek: number;
+            /** Format: double */
+            principalSek: number;
+            /** Format: double */
+            unusedPurchaseCashSek: number;
+        };
+        PurchaseFinancingResult: {
+            candidateKey: string;
+            state: components["schemas"]["FinancingState"];
+            allocation: null | components["schemas"]["PurchaseCashAllocation"];
+            loan: null | components["schemas"]["HouseholdLoanCalculation"];
+            /** Format: double */
+            setupFeeSek: null | number;
+            /** Format: double */
+            monthlyFeesDuringPeriodSek: null | number;
+            /** Format: double */
+            financingCostDuringPeriodSek: null | number;
+            /** Format: double */
+            acquisitionCashOutflowSek: null | number;
+            missingComponents: string[];
+            errors: components["schemas"]["HouseholdInputError"][];
+        };
+        RecoveredLegacyResponse: {
+            input: components["schemas"]["ManualCalculationRequest"];
+            /** Format: int32 */
+            calculationVersion: number;
+            /** Format: int32 */
+            resultSchemaVersion: number;
+            suggestedInput: components["schemas"]["VehicleCostInput"];
+            items: components["schemas"]["LegacyReviewResponse"][];
+        };
         /** @enum {unknown} */
         RecurringCostCadence: "monthly" | "annual";
         RecurringCostInput: {
@@ -1144,6 +2612,13 @@ export interface components {
             expectedRevision: number;
             listing: components["schemas"]["ReviewedListingInput"];
         };
+        ReplaceVehicleCostInputRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            cost: components["schemas"]["VehicleCostWrite"];
+        };
+        /** @enum {unknown} */
+        ResidualMode: "fixedAmount" | "annualPercentage";
         ReviewedListingInput: {
             submittedUrl: string;
             /** Format: date-time */
@@ -1164,6 +2639,9 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
             code: string;
+            /** Format: uuid */
+            vehicleId?: null | string;
+            recoveryRoute?: null | string;
             /** Format: uuid */
             existingVehicleId?: null | string;
             /** Format: int64 */
@@ -1307,8 +2785,31 @@ export interface components {
             /** Format: date-time */
             updatedAtUtc: string;
         };
+        SaveHouseholdProfileRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            input: components["schemas"]["HouseholdProfileInput"];
+        };
+        SaveVehicleDraftRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            input: components["schemas"]["VehicleDraftInput"];
+            replaceExisting?: boolean;
+        };
         /** @enum {unknown} */
         SellerType: "private" | "dealer";
+        /** @enum {unknown} */
+        SensitivityMode: "baseline" | "favorable" | "cautious";
+        SensitivityValue: {
+            /** Format: double */
+            single?: null | number;
+            /** Format: double */
+            favorable?: null | number;
+            /** Format: double */
+            baseline?: null | number;
+            /** Format: double */
+            cautious?: null | number;
+        };
         SourcedCollectionInputOfEnergyConsumptionInput: {
             values: components["schemas"]["EnergyConsumptionInput"][];
             provenance: components["schemas"]["FieldProvenanceInput"];
@@ -1430,6 +2931,109 @@ export interface components {
             errors?: {
                 [key: string]: string[];
             };
+        };
+        VehicleCostInput: {
+            candidateKey: string;
+            acquisitionType?: components["schemas"]["AcquisitionType"];
+            /** Format: double */
+            priceSek?: null | number;
+            residual?: null | components["schemas"]["HouseholdResidualInput"];
+            lease?: null | components["schemas"]["HouseholdLeaseInput"];
+            energySources?: null | components["schemas"]["HouseholdEnergySource"][];
+            tax?: null | components["schemas"]["HouseholdCostCategoryInput"];
+            insurance?: null | components["schemas"]["HouseholdCostCategoryInput"];
+            service?: null | components["schemas"]["HouseholdCostCategoryInput"];
+            repairs?: null | components["schemas"]["HouseholdCostCategoryInput"];
+            additionalRepairAllowancePerMonthSek?: null | components["schemas"]["SensitivityValue"];
+            customCosts?: null | components["schemas"]["HouseholdCostCategoryInput"];
+        };
+        VehicleCostInputResponse: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            vehicleLabel: null | string;
+            /** Format: int64 */
+            revision: number;
+            state: components["schemas"]["VehicleInputState"];
+            input: null | components["schemas"]["VehicleCostInput"];
+            legacy: null | components["schemas"]["RecoveredLegacyResponse"];
+            unresolvedLegacyItems: components["schemas"]["LegacyReviewResponse"][];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+            /** Format: int64 */
+            currentListingVersion: null | number;
+            needsListingReview: boolean;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            updatedAtUtc: string;
+        };
+        VehicleCostInputSummary: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            vehicleLabel: null | string;
+            /** Format: int64 */
+            revision: number;
+            state: components["schemas"]["VehicleInputState"];
+            reviewItems: components["schemas"]["LegacyReviewResponse"][];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+            /** Format: int64 */
+            currentListingVersion: null | number;
+            needsListingReview: boolean;
+            /** Format: date-time */
+            updatedAtUtc: string;
+        };
+        VehicleCostResult: {
+            candidateKey: string;
+            financingDetails: null | components["schemas"]["PurchaseFinancingResult"];
+            financing: components["schemas"]["CostSectionResult"];
+            depreciation: components["schemas"]["HouseholdDepreciationResult"];
+            energy: components["schemas"]["HouseholdEnergyResult"];
+            tax: components["schemas"]["HouseholdCategoryResult"];
+            insurance: components["schemas"]["HouseholdCategoryResult"];
+            service: components["schemas"]["HouseholdCategoryResult"];
+            repairs: components["schemas"]["HouseholdCategoryResult"];
+            repairAllowance: components["schemas"]["CostSectionResult"];
+            customCosts: components["schemas"]["HouseholdCategoryResult"];
+            totals: components["schemas"]["HouseholdCostTotals"];
+            inputErrors: components["schemas"]["HouseholdInputError"][];
+            acquisitionType: components["schemas"]["AcquisitionType"];
+            lease: components["schemas"]["HouseholdLeaseResult"];
+            payments: components["schemas"]["HouseholdPaymentCalendar"];
+            startupBudget: components["schemas"]["HouseholdBudgetResult"];
+            monthlyBudget: components["schemas"]["HouseholdBudgetResult"];
+            reconciliation: components["schemas"]["HouseholdCashReconciliation"];
+        };
+        VehicleCostWrite: {
+            input: components["schemas"]["VehicleCostInput"];
+            vehicleLabel?: null | string;
+            listingLinkMode?: components["schemas"]["ListingLinkMode"];
+            legacyDecisions?: null | components["schemas"]["LegacyItemDecision"][];
+        };
+        VehicleDraftInput: {
+            registrationNumber: string;
+            cost?: null | components["schemas"]["VehicleCostWrite"];
+            listing?: null | components["schemas"]["ReviewedListingInput"];
+            /** Format: uuid */
+            baseVehicleId?: null | string;
+            /** Format: int64 */
+            baseVehicleRevision?: null | number;
+        };
+        VehicleDraftResponse: {
+            /** Format: int64 */
+            revision: number;
+            input: null | components["schemas"]["VehicleDraftInput"];
+        };
+        /** @enum {unknown} */
+        VehicleInputState: "listingOnly" | "legacyPending" | "current";
+        VehicleTransitionWrite: {
+            /** Format: uuid */
+            vehicleId: string;
+            /** Format: int64 */
+            expectedRevision: number;
+            cost: components["schemas"]["VehicleCostWrite"];
         };
         /** @enum {unknown} */
         VerificationStatus: "unverified" | "userConfirmed" | "registryVerified";
