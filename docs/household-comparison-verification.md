@@ -2,8 +2,9 @@
 
 ## Status
 
-Acceptance specification for planned stages 3A/3B, **not a record of executed
-feature tests**. Use the normative [calculation](household-calculations.md) and
+Acceptance specification for stages 3A/3B. The implementation notes below name
+automated coverage; the practical whole-stage #61 gate remains unexecuted.
+Use the normative [calculation](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications. Existing v1 tests
 remain required. Routine extraction tests use the existing synthetic fake;
 no real AI calls, provider purchases, or production-data experiments.
@@ -16,8 +17,8 @@ Issue #58 implements the persistence portions in PostgreSQL integration tests:
 and [seeded upgrade/rollback/reapply](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
 They exercise failures after partial in-transaction work, preserved empty-slot
 revisions, legacy result corruption and the 50+50 old cost collections. The
-UI recovery and practical household flow remain #60-#61 acceptance work;
-passing store or HTTP tests does not complete those gates.
+UI recovery is implemented in #60; practical household acceptance remains #61.
+Passing store or HTTP tests alone does not complete that gate.
 
 Issue #59 adds [preview contracts and independent completeness](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/HouseholdPreviewEndpointTests.cs),
 [PostgreSQL HTTP lifecycle and concurrency](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/HouseholdPersistenceEndpointTests.cs),
@@ -30,6 +31,21 @@ from the browser and exact/oversized 2 MiB bodies through Nginx, including chunk
 transfer. See the [implemented API contract](household-api.md).
 
 ## Required automated regression coverage
+
+Issue #60 adds the [Swedish workspace](household-workspace.md), focused frontend
+tests under `features/household`, and the real
+[household browser suite](../src/frontend/e2e/household-workspace.spec.ts).
+The frontend tests exercise lossless JSON and revisions, numeric form states,
+all sensitivity entries, exact mil conversion, two concurrent preview batches,
+four concurrent detail reads, 101/201 candidates, UTF-8 sizing, individual
+failures, reversed responses, editing during saves, shared drafts and review
+decisions. Browser tests cover separate saves, purchase/fixed residuals, lease
+coverage/deposits/budgets, electric/hybrid/kg fuels, navigation, shared listing
+drafts, two-browser conflicts, whole deletion, 50+50 legacy posts, database
+unavailability and keyboard/mobile behavior. Existing v1/URL regression coverage
+is retained at the new routes, with deletion assertions updated to require
+local cleanup. Playwright has one worker; explicit multiple-context tests cover
+concurrency without racing the singleton fixtures.
 
 | Area | Required cases and observable assertion |
 | --- | --- |

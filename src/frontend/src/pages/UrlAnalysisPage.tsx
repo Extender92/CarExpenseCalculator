@@ -45,6 +45,10 @@ import {
 import { textareaClassName } from "@/features/url-analysis/presentation";
 import { validateListingUrlList, type NormalizedListingUrl } from "@/features/url-analysis/urls";
 import { useSystemStatus } from "@/hooks/use-system-status";
+import { householdApi } from "@/features/household/api";
+import { vehicleStateLabels } from "@/features/household/labels";
+import { useOptionalWorkspace } from "@/features/household/use-workspace";
+import { readListingForHouseholdDraft } from "@/features/household/listing-read";
 
 type BatchMode = "analyze" | "manual";
 
@@ -94,6 +98,8 @@ let workspaceId = 0;
 
 export function UrlAnalysisPage() {
   const navigate = useNavigate();
+  const householdWorkspace = useOptionalWorkspace();
+  const [calculationStatuses, setCalculationStatuses] = useState<Record<string, string>>({});
   const systemStatus = useSystemStatus();
   const [urlInput, setUrlInput] = useState("");
   const [urlErrors, setUrlErrors] = useState<Record<string, string>>({});
@@ -105,6 +111,31 @@ export function UrlAnalysisPage() {
   const [pendingAttach, setPendingAttach] = useState<PendingAttach | null>(null);
   const [comparison, setComparison] = useState<ComparisonState | null>(null);
   const [savedListings, setSavedListings] = useState<SavedListingSummary[]>([]);
+  useEffect(() => {
+    if (!householdWorkspace) return;
+    let controller = new AbortController();
+    const read = () => {
+      controller.abort();
+      controller = new AbortController();
+      const signal = controller.signal;
+      void householdApi.list(signal).then(vehicles => {
+        if (!signal.aborted) {
+          setCalculationStatuses(Object.fromEntries(vehicles.map(vehicle => [
+            vehicle.vehicleId,
+            `${vehicleStateLabels[vehicle.state]}${vehicle.needsListingReview ? " · Annonsgranskning behövs" : ""}`,
+          ])));
+        }
+      }).catch(() => {
+        if (!signal.aborted) setCalculationStatuses({});
+      });
+    };
+    read();
+    window.addEventListener("focus", read);
+    return () => {
+      controller.abort();
+      window.removeEventListener("focus", read);
+    };
+  }, [householdWorkspace, savedListings]);
   const [savedListState, setSavedListState] = useState<SavedListingListState>("loading");
   const [savedListError, setSavedListError] = useState<string | null>(null);
   const [busyVehicleId, setBusyVehicleId] = useState<string | null>(null);
@@ -283,8 +314,9 @@ export function UrlAnalysisPage() {
     setBusyVehicleId(summary.vehicleId);
     setPageNotice(null);
     try {
-      const saved = await getSavedListing(summary.vehicleId);
-      const state = savedListingToReviewState(saved);
+      const state = householdWorkspace
+        ? await readListingForHouseholdDraft(summary.vehicleId)
+        : savedListingToReviewState(await getSavedListing(summary.vehicleId));
       if (openItem) {
         updateItem(openItem.id, (item) => ({
           ...item,
@@ -298,7 +330,16 @@ export function UrlAnalysisPage() {
         }));
         focusCard(openItem.id);
       } else {
-        const item = savedResponseToWorkspace(saved);
+        const item: ListingWorkspaceItem = {
+          id: `saved-${++workspaceId}`,
+          ...state,
+          dirty: false,
+          error: null,
+          persistenceNotice: null,
+          saving: false,
+          validationErrors: {},
+          controller: null,
+        };
         setItems((current) => [...current, item]);
         focusCard(item.id);
       }
@@ -551,7 +592,7 @@ export function UrlAnalysisPage() {
       await deleteSavedListing(pendingDelete.vehicleId, pendingDelete.expectedRevision);
       const open = items.find((item) => item.saved?.vehicleId === pendingDelete.vehicleId);
       if (open) {
-        convertToUnsavedDraft(open.id, "Bilen har raderats permanent. Uppgifterna ligger kvar här som ett osparat utkast.");
+        closeItem(open.id);
       }
       setPendingDelete(null);
       setPageNotice({ tone: "success", message: `Bilen ${pendingDelete.registrationNumber} har raderats permanent.` });
@@ -566,7 +607,7 @@ export function UrlAnalysisPage() {
         await refreshSavedListings();
       } else if (error instanceof SavedListingApiError && error.problem?.code === "savedListingNotFound") {
         const open = items.find((item) => item.saved?.vehicleId === pendingDelete.vehicleId);
-        if (open) convertToUnsavedDraft(open.id, "Den sparade bilen finns inte längre. Utkastet finns kvar lokalt.");
+        if (open) closeItem(open.id);
         setPageNotice({ tone: "error", message: "Bilen fanns inte längre. Listan har uppdaterats." });
         await refreshSavedListings();
       } else {
@@ -582,6 +623,7 @@ export function UrlAnalysisPage() {
     updateItem(itemId, (item) => ({
       ...item,
       ...state,
+      householdBaseRevision: undefined,
       dirty: false,
       error: null,
       persistenceNotice: { tone: "success", message },
@@ -665,6 +707,7 @@ export function UrlAnalysisPage() {
       <SavedListingsPanel
         state={savedListState}
         listings={savedListings}
+        calculationStatuses={householdWorkspace ? calculationStatuses : undefined}
         error={savedListError}
         openVehicleIds={openVehicleIds}
         busyVehicleId={busyVehicleId}
@@ -826,6 +869,7 @@ export function UrlAnalysisPage() {
               <div id={`workspace-${item.id}`} key={item.id} tabIndex={-1} className="scroll-mt-6 outline-none focus:ring-2 focus:ring-cyan-400/50">
                 <ListingReviewCard
                   item={item}
+                  calculationStatus={householdWorkspace && item.saved ? calculationStatuses[item.saved.vehicleId] ?? "Kalkylstatus kunde inte läsas" : undefined}
                   onChange={(draft, errors) => updateDraft(item.id, draft, errors)}
                   onRetry={() => retryItem(item)}
                   onSave={() => void saveItem(item)}
@@ -853,21 +897,6 @@ function createWorkspaceItem(url: NormalizedListingUrl, mode: BatchMode): Listin
     context: createManualReviewContext(),
     draft: createEmptyReviewDraft(),
     saved: null,
-    dirty: false,
-    error: null,
-    persistenceNotice: null,
-    saving: false,
-    validationErrors: {},
-    controller: null,
-  };
-}
-
-function savedResponseToWorkspace(saved: SavedListingResponse): ListingWorkspaceItem {
-  workspaceId += 1;
-  const state = savedListingToReviewState(saved);
-  return {
-    id: `listing-${workspaceId}`,
-    ...state,
     dirty: false,
     error: null,
     persistenceNotice: null,

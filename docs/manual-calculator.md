@@ -146,7 +146,9 @@ client cannot provide or override a trusted result snapshot.
 
 ### Saved-scenario user interface
 
-The Swedish `/manual` page lists saved vehicles above the calculator. A user
+The Swedish `/manual/legacy` page (**Äldre kalkyl**) lists unconverted saved
+vehicles above the v1 calculator. `/manual` now hosts the
+[household workspace](household-workspace.md). A user
 can save a valid form directly without first running an unsaved preview. Saving
 requires a supported registration number; preview calculations do not. Opening
 a saved vehicle restores its normalized inputs and stored result snapshot.
@@ -155,12 +157,13 @@ Registration numbers are read-only while a saved vehicle is open. Form changes
 are marked as unsaved until an explicit full replacement succeeds. Duplicate
 registration numbers require an explicit choice to replace or open the existing
 vehicle, and revision conflicts never retry automatically. Deleting the open
-vehicle permanently removes its database aggregate while retaining the current
-form and result in browser memory as an unsaved draft. No calculator state is
+vehicle permanently removes its database aggregate and clears its local
+form, result and listing context. No calculator state is
 written to local storage or session storage.
 
 A saved listing opens the page through
-`/manual?listingVehicleId=<uuid>`. A listing-only vehicle receives safe prefills
+`/manual/legacy?listingVehicleId=<uuid>`. The household entry keeps this legacy
+link available for unconverted data. In this v1 editor a listing-only vehicle receives safe prefills
 for its label, immutable registration, price, annual tax, and advertised energy
 label/unit/consumption. Annual distance and cost assumptions remain empty. An
 existing scenario opens its stored assumptions and result unchanged while

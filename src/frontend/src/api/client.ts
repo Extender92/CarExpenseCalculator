@@ -232,7 +232,10 @@ export async function deleteSavedListing(
     const { error, response } = await api.DELETE("/api/saved-listings/{vehicleId}", {
       params: { path: { vehicleId }, query: { expectedRevision } },
     });
-    if (response.status === 204) return;
+    if (response.status === 204) {
+      window.dispatchEvent(new CustomEvent("vehicle-deleted", { detail: vehicleId }));
+      return;
+    }
     throw createSavedListingError(response.status, error);
   });
 }
@@ -316,6 +319,7 @@ export async function deleteSavedCostScenario(
   });
 
   if (response.status === 204) {
+    window.dispatchEvent(new CustomEvent("vehicle-deleted", { detail: vehicleId }));
     return;
   }
 

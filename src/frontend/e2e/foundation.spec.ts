@@ -44,5 +44,7 @@ test("navigates to all three foundation routes", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Analysera URL:er" })).toBeVisible();
 
   await page.goto("/manual");
-  await expect(page.getByRole("heading", { name: "Manuell kalkyl" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hushållskalkyl", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Äldre kalkyl", exact: true })).toBeVisible();
 });

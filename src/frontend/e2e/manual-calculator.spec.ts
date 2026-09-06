@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Response } from "@playwright/test";
 
 test("calculates the documented manual ownership scenario through the single origin", async ({ page }) => {
-  await page.goto("/manual");
+  await page.goto("/manual/legacy");
   await fillDocumentedScenario(page);
 
   const responsePromise = page.waitForResponse((response) =>
@@ -21,7 +21,7 @@ test("calculates the documented manual ownership scenario through the single ori
 test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async ({ page }) => {
   const registrationNumber = randomRegistrationNumber();
   const vehicleName = `Volvo V70 E2E ${registrationNumber}`;
-  await page.goto("/manual");
+  await page.goto("/manual/legacy");
   await fillDocumentedScenario(page);
   await page.getByLabel("Bilens namn").fill(vehicleName);
   await page.getByLabel("Registreringsnummer").fill(registrationNumber);
@@ -66,8 +66,8 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
   expect(deleteResponse.status()).toBe(204);
   expectSameOrigin(page, deleteResponse);
 
-  await expect(page.getByText(/finns kvar som en osparad kalkyl/)).toBeVisible();
-  await expect(page.getByLabel(/Inköpspris/)).toHaveValue("21000");
+  await expect(page.getByText(/Bilens formulär och resultat har rensats/)).toBeVisible();
+  await expect(page.getByLabel(/Inköpspris/)).toHaveValue("");
   await expect(page.getByLabel("Registreringsnummer")).toBeEnabled();
   await expect(page.getByText(`${vehicleName} (${registrationNumber})`)).not.toBeVisible();
 });
@@ -89,8 +89,9 @@ test("links a saved listing, detects listing drift, and reviews the current vers
   await listingCard.getByRole("button", { name: "Spara bil" }).click();
   expect((await listingCreate).status()).toBe(201);
 
-  await listingCard.getByRole("button", { name: "Skapa kalkyl" }).click();
+  await listingCard.getByRole("button", { name: "Öppna hushållskalkyl" }).click();
   await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Annonsuppgifter för kalkylen" })).toBeVisible();
   await expect(page.getByLabel("Registreringsnummer")).toHaveValue(registrationNumber);
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("20000");
@@ -108,7 +109,7 @@ test("links a saved listing, detects listing drift, and reviews the current vers
 
   await page.goto("/analyze-urls");
   const summary = page.getByText(registrationNumber, { exact: true }).first().locator("xpath=ancestor::li");
-  await expect(summary.getByText("Kalkyl aktuell")).toBeVisible();
+  await expect(summary.getByText(/Äldre kalkyl – väntar på övergång/)).toBeVisible();
   await summary.getByRole("button", { name: "Öppna", exact: true }).click();
   const opened = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Volvo V70 2.4" });
   await opened.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
@@ -118,10 +119,11 @@ test("links a saved listing, detects listing drift, and reviews the current vers
   );
   await opened.getByRole("button", { name: "Spara ändringar" }).click();
   expect((await listingReplace).status()).toBe(200);
-  await expect(opened.getByText("Kalkyl inaktuell")).toBeVisible();
+  await expect(opened.getByText(/Annonsgranskning behövs/)).toBeVisible();
 
-  await opened.getByRole("button", { name: "Öppna kalkyl" }).click();
+  await opened.getByRole("button", { name: "Öppna hushållskalkyl" }).click();
   await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
   await expect(page.getByText("Tidigare kalkyl är inaktuell")).toBeVisible();
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("20000");
   const listingPanel = page.getByRole("heading", { name: "Annonsuppgifter för kalkylen" })

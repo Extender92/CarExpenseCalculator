@@ -107,6 +107,8 @@ export interface ListingWorkspaceItem {
   context: ListingReviewContext;
   draft: ListingReviewDraft;
   saved: OpenedSavedListing | null;
+  /** Exact origin revision for the shared household draft contract. */
+  householdBaseRevision?: string;
   dirty: boolean;
   error: string | null;
   persistenceNotice: PersistenceNotice | null;

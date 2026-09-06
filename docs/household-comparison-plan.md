@@ -9,8 +9,8 @@ are implemented in Core, together with leasing, calendar payments, cash/cost
 reconciliation and startup/average-month budgets. Infrastructure implements one
 shared profile, current purchase/lease inputs, explicit legacy transition and
 one revision-controlled registered draft (#58). Household HTTP contracts and
-generated frontend types (#59) are implemented. Household UI integration,
-practical stage acceptance and stage 3B are not implemented.
+generated frontend types (#59) and the [Swedish household workspace](household-workspace.md)
+(#60) are implemented. Practical stage acceptance (#61) and stage 3B remain.
 The implemented HTTP contracts are in [Household API](household-api.md),
 [Manual calculator](manual-calculator.md) and [URL analysis](url-analysis.md).
 

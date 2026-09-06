@@ -575,8 +575,9 @@ preselected. Retaining an old value records it as a user-confirmed manual value
 against the new listing URL. A scenario-only aggregate can receive its first
 listing through an explicitly confirmed replacement that preserves the scenario.
 Revision conflicts retain the complete edited draft and require comparison with
-the latest resource. Deleting an open vehicle clears its persisted identity but
-retains the card as an unsaved draft with an editable registration number.
+the latest resource. Deleting an open vehicle clears its card and pending
+requests and notifies the shared household workspace; it does not retain the
+deleted vehicle as a new draft.
 
 ## Persistence model
 
@@ -637,7 +638,15 @@ responses contain `savedCostScenarioSourceListingVersion` and
 - annual vehicle tax; and
 - each advertised energy-consumption value and unit.
 
-The action navigates to `/manual?listingVehicleId=<uuid>` and reloads current
+Since #60 the action navigates to the [household workspace](household-workspace.md)
+at `/manual?listingVehicleId=<uuid>`. That workspace uses the new input list for
+calculation status and requires explicit choices to use listing values or
+acknowledge a listing version. The URL editor can explicitly write a registered,
+reviewed listing into the same shared draft slot. Transient 1–10 URL cards remain
+separate and do not autosave.
+
+The older linkage behavior below remains at
+`/manual/legacy?listingVehicleId=<uuid>`, which reloads current
 server data, so it also works after a browser reload. Registration is locked to
 the existing aggregate. Annual distance, energy price/share, insurance,
 maintenance, financing, residual value, and custom costs remain empty. Existing

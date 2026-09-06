@@ -25,7 +25,7 @@ const modes = [
   },
   {
     title: "Manuell kalkyl",
-    description: "Fyll i bilens kostnader själv och räkna på ett scenario utan annonskälla.",
+    description: "Ändra hushållets gemensamma förutsättningar och se kostnader för köp och leasing.",
     to: "/manual",
     icon: Calculator,
     color: "violet",
