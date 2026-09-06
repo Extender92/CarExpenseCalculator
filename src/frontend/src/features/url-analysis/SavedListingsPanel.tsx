@@ -11,6 +11,7 @@ export type SavedListingListState = "loading" | "ready" | "error";
 interface SavedListingsPanelProps {
   state: SavedListingListState;
   listings: SavedListingSummary[];
+  calculationStatuses?: Record<string, string>;
   error: string | null;
   openVehicleIds: ReadonlySet<string>;
   busyVehicleId: string | null;
@@ -23,6 +24,7 @@ interface SavedListingsPanelProps {
 export function SavedListingsPanel({
   state,
   listings,
+  calculationStatuses,
   error,
   openVehicleIds,
   busyVehicleId,
@@ -99,7 +101,7 @@ export function SavedListingsPanel({
                         <Badge variant={listing.status === "complete" ? "success" : "warning"}>
                           {statusLabel(listing.status)}
                         </Badge>
-                        {listing.hasSavedCostScenario && (listing.savedCostScenarioOutdated
+                        {calculationStatuses ? <Badge variant="muted">{calculationStatuses[listing.vehicleId] ?? "Kalkylstatus kunde inte läsas"}</Badge> : listing.hasSavedCostScenario && (listing.savedCostScenarioOutdated
                           ? <Badge variant="warning">Kalkyl inaktuell</Badge>
                           : listing.savedCostScenarioSourceListingVersion !== null
                             ? <Badge variant="success">Kalkyl aktuell</Badge>
@@ -124,7 +126,7 @@ export function SavedListingsPanel({
                       {isOpen ? "Visa öppet kort" : "Öppna"}
                     </Button>
                     <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => onCalculate(listing)}>
-                      <Calculator size={16} /> {listing.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
+                      <Calculator size={16} /> {calculationStatuses ? "Öppna hushållskalkyl" : listing.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
                     </Button>
                     <Button
                       type="button"

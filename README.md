@@ -10,14 +10,14 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Rule-based comparison, automatic discovery, and advisory AI review are not implemented yet.
 
-The next planned work is split into household calculations (stage 3A) and
+The current work is split into household calculations (stage 3A) and
 comparison with configurable buying scores (stage 3B). A common editable
-household profile will drive dynamic cost tables for all cars, including
+household profile drives cost previews for all cars, including
 purchase financing from available cash and a separate leasing model. Current
 data remains registration-based with no calculation history. See the
 [Household calculations and comparison plan](docs/household-comparison-plan.md)
-for accepted decisions and normative target specifications; these features
-are not available in the current application.
+for accepted decisions and normative target specifications. Stage 3A has its
+Swedish workspace; practical stage acceptance and stage 3B remain upcoming.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
@@ -27,7 +27,8 @@ calendar payments, separate startup/average-month budgets and cost/cash
 reconciliation. Infrastructure now stores one shared profile, current purchase/
 lease inputs and one registered draft, with revision checks and explicit atomic
 transition from older calculations. Household HTTP routes and generated frontend
-types are implemented; the Swedish household workspace remains #60 work.
+types and the [Swedish household workspace](docs/household-workspace.md) are
+implemented. The whole-stage practical acceptance remains #61 work.
 See the [HTTP contract](docs/household-api.md).
 See the [persistence contract](docs/household-calculations.md#implemented-household-persistence)
 and the
@@ -65,9 +66,9 @@ docker compose up --detach api web
 
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
 
-Open **Manuell kalkyl** to calculate without saving. Valid edits refresh the unsaved preview automatically after a short delay, while **Beräkna nu** remains available for an immediate calculation. Add an ordinary Swedish registration number to save the scenario, then use **Sparade bilar** to reopen, replace, or permanently delete it. Preview calculations never persist changes.
+Open **Manuell kalkyl** (`/manual`) to edit the shared household profile and purchase/lease inputs. Previews refresh after 500 ms; **Beräkna nu** runs immediately. **Spara hushållsprofil**, **Spara bilunderlag**, and **Spara utkast** write separate resources explicitly. Ordinary Swedish registration identifies saved vehicles. **Granska äldre underlag** guides the atomic transition; **Äldre kalkyler** (`/manual/legacy`) retains the v1 editor for unconverted data. See the [workspace guide](docs/household-workspace.md).
 
-Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing. A saved listing can create or open its vehicle calculation through a reload-safe link. Safe advertised values are offered as explicit calculator inputs; a later listing replacement marks the saved calculation outdated without changing its assumptions or result. Unsaved drafts still disappear on reload. A missing Codex login disables automatic extraction without disabling manual drafts, saved-listing management, or the manual calculator.
+Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing or explicitly save it to the shared household draft slot. A saved listing opens the household workspace through a reload-safe link. Advertised values and listing-version review require explicit choices. Transient URL cards disappear on reload; the explicitly saved shared draft survives. A missing Codex login disables automatic extraction without disabling manual entry or saved data.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 

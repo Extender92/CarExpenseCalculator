@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-Normative target for stage 3A, agreed 2026-09-06; **Core, persistence and HTTP implemented**. The
+Normative target for stage 3A, agreed 2026-09-06; **Core, persistence, HTTP and Swedish UI implemented**. The
 [product plan](household-comparison-plan.md) sets scope. This document adds
 household contracts alongside the implemented [v1 API](manual-calculator.md).
 Core owns deterministic decimal calculation; API maps HTTP; Infrastructure owns current
@@ -15,7 +15,8 @@ Issue #55 implements `Households.HouseholdProfileInput`, `HouseholdLoanTerms`,
 `HouseholdFinancingCalculator`. The remaining sections describe the complete
 stage target. The ownership-cost subset added by #56 is documented below;
 leasing, payment calendars and budgets added by #57 are documented below.
-Persistence (#58) and HTTP (#59) are implemented; the Swedish UI remains #60 work.
+Persistence (#58), HTTP (#59) and the [Swedish workspace](household-workspace.md)
+(#60) are implemented. Practical whole-stage acceptance remains #61 work.
 
 The current pure operation is
 `Calculate(HouseholdProfileInput, IReadOnlyList<VehiclePurchaseInput>)`.

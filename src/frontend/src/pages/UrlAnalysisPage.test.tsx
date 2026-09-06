@@ -440,7 +440,7 @@ describe("Swedish URL analysis workspace", () => {
     expect(await screen.findByRole("alertdialog", { name: /ABC123 finns redan/ })).toBeInTheDocument();
   });
 
-  it("warns about whole-aggregate deletion and retains the open card as an unsaved draft", async () => {
+  it("warns about whole-aggregate deletion and clears the open card", async () => {
     const combinedSummary = { ...savedListingSummary, hasSavedCostScenario: true };
     const combinedResponse = { ...savedListingResponse, hasSavedCostScenario: true };
     vi.mocked(listSavedListings)
@@ -460,10 +460,9 @@ describe("Swedish URL analysis workspace", () => {
     await user.click(screen.getByRole("button", { name: "Radera bilen permanent" }));
 
     await waitFor(() => expect(deleteSavedListing).toHaveBeenCalledWith(savedListingResponse.vehicleId, 3));
-    expect(await screen.findByText(/ligger kvar här som ett osparat utkast/)).toBeInTheDocument();
-    expect(screen.getByText("Osparat utkast")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Granska och komplettera alla uppgifter" }));
-    expect(screen.getByLabelText("Registreringsnummer")).not.toHaveAttribute("readonly");
+    expect(await screen.findByText(/Bilen ABC123 har raderats permanent/)).toBeInTheDocument();
+    expect(screen.queryByText("Osparat utkast")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Registreringsnummer")).not.toBeInTheDocument();
   });
 });
 

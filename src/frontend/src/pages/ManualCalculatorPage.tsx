@@ -19,7 +19,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   calculateManualScenario,
   createSavedCostScenario,
@@ -624,10 +624,10 @@ export function ManualCalculatorPage() {
     try {
       await deleteSavedCostScenario(scenario.vehicleId, expectedRevision);
       if (deletingCurrent) {
-        keepCurrentAsUnsavedDraft();
+        resetToNewDraft();
         setPersistenceNotice({
           tone: "success",
-          message: "Bilen har tagits bort permanent. Formuläret och resultatet finns kvar som en osparad kalkyl.",
+          message: "Bilen har tagits bort permanent. Bilens formulär och resultat har rensats.",
         });
       } else {
         setPersistenceNotice({ tone: "success", message: "Bilen har tagits bort permanent." });
@@ -637,11 +637,11 @@ export function ManualCalculatorPage() {
     } catch (error) {
       if (isSavedProblem(error, "savedCostScenarioNotFound")) {
         if (deletingCurrent) {
-          keepCurrentAsUnsavedDraft();
+          resetToNewDraft();
         }
         setPersistenceNotice({
           tone: "warning",
-          message: "Bilen var redan borttagen. Listan har uppdaterats och dina formulärvärden har behållits.",
+          message: "Bilen var redan borttagen. Listan har uppdaterats och bilens lokala underlag har rensats.",
         });
         await refreshSavedScenarios();
       } else if (isSavedProblem(error, "revisionConflict")) {
@@ -753,7 +753,8 @@ export function ManualCalculatorPage() {
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
           <div>
             <Badge variant="success">Tillgänglig</Badge>
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Manuell kalkyl</h1>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Äldre kalkyl</h1>
+            <p className="mt-3 text-sm text-amber-200">För okonverterade kalkyler. <Link className="text-cyan-300 underline" to="/manual">Öppna hushållskalkylen</Link> eller <Link className="text-cyan-300 underline" to="/manual/transition">granska äldre underlag</Link>.</p>
             <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400">
               Räkna på bilens kassaflöde och ägandekostnad med dina egna antaganden. Förhandsvisning
               fungerar utan databasen, och färdiga bilscenarier kan sparas lokalt.

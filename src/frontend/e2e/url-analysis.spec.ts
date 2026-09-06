@@ -202,8 +202,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   const deleted = await deletePromise;
   expect(deleted.status()).toBe(204);
   expectSameOrigin(page, deleted);
-  await expect(updatedCard.getByText("Osparat utkast", { exact: true })).toBeVisible();
-  await expect(updatedCard.getByText(/ligger kvar här som ett osparat utkast/)).toBeVisible();
+  await expect(updatedCard).toHaveCount(0);
   const missing = await page.request.get("/api/saved-listings/by-registration/ABC123");
   expect(missing.status()).toBe(404);
 });
@@ -252,7 +251,7 @@ test("attaches a manual listing to a scenario-only vehicle and warns before dele
   const deletion = page.getByRole("alertdialog", { name: new RegExp(`Radera ${registrationNumber} permanent`) });
   await expect(deletion).toContainText("sparad kalkyl som raderas samtidigt");
   await deletion.getByRole("button", { name: "Radera bilen permanent" }).click();
-  await expect(draft.getByText("Osparat utkast", { exact: true })).toBeVisible();
+  await expect(draft).toHaveCount(0);
 });
 
 async function removeSavedListingIfPresent(page: import("@playwright/test").Page, registrationNumber: string) {

@@ -99,8 +99,8 @@ contains data or Codex authentication that must be retained.
 - Saving, reopening, comparing, replacing, and deleting listings uses explicit
   aggregate revisions. A stale write never overwrites current data.
 - Permanent deletion removes the complete vehicle aggregate. The UI warns when
-  a saved calculation is attached and retains the open card only as an unsaved
-  draft afterward.
+  a saved calculation is attached and clears the open card and pending requests
+  afterward. The household workspace is notified as well.
 - A saved listing can open the manual calculator through its vehicle UUID.
   Safe advertised values are suggestions; assumptions are not invented. A
   listing replacement marks a linked calculation outdated without changing its

@@ -610,7 +610,7 @@ describe("ManualCalculatorPage", () => {
     await waitFor(() => expect(price).toHaveValue("22000"));
   });
 
-  it("deletes the active vehicle but retains its form and result as an unsaved draft", async () => {
+  it("deletes the active vehicle and clears its form, listing context and result", async () => {
     const user = userEvent.setup();
     const saved = {
       ...createSavedResponse(completeScenario(), 3),
@@ -624,15 +624,16 @@ describe("ManualCalculatorPage", () => {
     renderPage();
     await user.click(await screen.findByRole("button", { name: "Öppna" }));
     await screen.findByText("Sparad revision 3");
+    vi.mocked(listSavedCostScenarios).mockResolvedValue([]);
 
     await user.click(screen.getByRole("button", { name: /Ta bort Volvo V70/ }));
     expect(screen.getByText(/sparade kalkylen och den kopplade annonsen tas bort/)).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Ta bort permanent" }));
 
-    expect(await screen.findByText(/finns kvar som en osparad kalkyl/)).toBeVisible();
-    expect(screen.getByLabelText(/Inköpspris/)).toHaveValue("20000");
+    expect(await screen.findByText(/Bilens formulär och resultat har rensats/)).toBeVisible();
+    expect(screen.getByLabelText(/Inköpspris/)).toHaveValue("");
     expect(screen.getByLabelText("Registreringsnummer")).toBeEnabled();
-    expect(screen.getAllByText(/64\s000,00\s*kr/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/64\s000,00\s*kr/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Spara bil" })).toBeEnabled();
   });
 

@@ -38,6 +38,16 @@ The production browser sees one HTTP origin. Nginx serves the React build and pr
 - Tailwind CSS defines design tokens and shadcn/ui provides accessible component patterns.
 - User-visible copy is Swedish.
 
+The [household workspace](household-workspace.md) owns `/manual`, with v1 at
+`/manual/legacy` and atomic legacy review at `/manual/transition`. A provider
+above lazy routes keeps saved baselines/revisions separate from dirty profile,
+vehicle and transition editing. `lossless-json` preserves household JSON numbers;
+forms use exact numeric text and BigInt-based display/unit conversion. Preview
+generations debounce for 500 ms, cap detail reads at four, and cap calculation
+requests at two with both 100-candidate and 2-MiB UTF-8 batching. Old responses
+cannot replace newer generations or deleted vehicles. Result/budget authority
+remains entirely in the API/Core. Only explicit user actions write data.
+
 ## Domain concepts
 
 The implementation is introduced incrementally as each feature milestone begins:
@@ -133,8 +143,9 @@ legacy transition and shared draft. The
 [storage contract](household-calculations.md#implemented-household-persistence)
 defines the four store interfaces and typed conflict outcomes. The
 [household HTTP layer](household-api.md) exposes these stores and Core previews
-through API-owned DTOs and generated frontend types (#59). UI (#60), complete
-stage acceptance (#61), and score persistence remain later work.
+through API-owned DTOs and generated frontend types (#59). The Swedish workspace
+(#60) is implemented. Complete stage acceptance (#61) and score persistence
+remain later work.
 No new household result cache or historical tables are introduced.
 
 Core also implements explicit lease contracts, bounded payment calendars,

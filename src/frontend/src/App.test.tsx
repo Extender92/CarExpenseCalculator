@@ -59,7 +59,7 @@ describe("Bilverktyget", () => {
     const links = screen.getAllByRole("link", { name: /url-analys/i });
     await user.click(links[0]);
 
-    expect(screen.getByRole("heading", { name: "Analysera URL:er" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Analysera URL:er" })).toBeInTheDocument();
   });
 
   it("shows a degraded state without blocking the dashboard", async () => {

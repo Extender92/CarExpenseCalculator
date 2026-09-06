@@ -43,6 +43,7 @@ import {
   type ScalarFieldDefinition,
 } from "./presentation";
 import { normalizeScalarInput, parseLocalizedNumber, validateReviewDraft } from "./validation";
+import { ListingDraftAction } from "@/features/household/ListingDraftAction";
 
 interface ListingReviewCardProps {
   item: ListingWorkspaceItem;
@@ -50,6 +51,7 @@ interface ListingReviewCardProps {
   onRetry: () => void;
   onSave: () => void;
   onCalculate?: () => void;
+  calculationStatus?: string;
   onClose: () => void;
   onDelete?: () => void;
   onCompareLatest?: () => void;
@@ -71,6 +73,7 @@ export function ListingReviewCard({
   onRetry,
   onSave,
   onCalculate,
+  calculationStatus,
   onClose,
   onDelete,
   onCompareLatest,
@@ -160,7 +163,7 @@ export function ListingReviewCard({
               <Badge variant={item.saved && !item.dirty ? "success" : "warning"}>
                 {item.saved ? (item.dirty ? "Ändrad sedan sparning" : "Sparad") : "Osparat utkast"}
               </Badge>
-              {item.saved?.hasSavedCostScenario && (item.saved.savedCostScenarioOutdated
+              {calculationStatus ? <Badge variant="muted">{calculationStatus}</Badge> : item.saved?.hasSavedCostScenario && (item.saved.savedCostScenarioOutdated
                 ? <Badge variant="warning">Kalkyl inaktuell</Badge>
                 : item.saved.savedCostScenarioSourceListingVersion !== null
                   ? <Badge variant="success">Kalkyl aktuell</Badge>
@@ -201,9 +204,10 @@ export function ListingReviewCard({
             )}
             {!busy && item.saved && onCalculate && (
               <Button type="button" variant="secondary" size="sm" onClick={onCalculate}>
-                <Calculator size={15} /> {item.saved.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
+                <Calculator size={15} /> {calculationStatus ? "Öppna hushållskalkyl" : item.saved.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
               </Button>
             )}
+            <ListingDraftAction item={item} />
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               {item.saved ? <X size={15} /> : <Trash2 size={15} />}
               {item.saved ? "Stäng kort" : "Ta bort utkast"}

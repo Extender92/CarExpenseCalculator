@@ -44,7 +44,8 @@ energy, depreciation and sensitivity (#56), and leasing, calendar payments,
 cash/cost reconciliation and budgets (#57), are implemented in Core.
 Persistence, explicit legacy transition and the shared draft (#58) are implemented
 in Infrastructure. Household HTTP contracts and generated types (#59) are
-implemented. UI (#60) and practical stage acceptance (#61) remain subsequent work. See the
+implemented, together with the [Swedish household workspace](household-workspace.md)
+(#60). Practical stage acceptance (#61) remains subsequent work. See the
 [Core cost contract](household-calculations.md#implemented-core-ownership-costs).
 
 - Define one editable household profile for common use, available cash, loan

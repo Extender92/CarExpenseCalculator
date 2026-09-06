@@ -8,6 +8,8 @@ automatic unsaved previews, the PostgreSQL-backed saved-vehicle lifecycle, and
 saved-listing version linkage without requiring live marketplace access or a
 ChatGPT-authenticated Codex turn.
 
+Since #60 this v1 editor is at `/manual/legacy`; the household workspace and
+its verification are described in [Household workspace](household-workspace.md).
 The complete saved-listing extraction and calculator-linkage acceptance flow is
 documented separately in [URL analysis verification](url-analysis-verification.md).
 
@@ -90,8 +92,8 @@ solely for this verification and none of its saved vehicles need to be kept.
 - Replacement requires the current revision. A conflict never overwrites newer
   data automatically.
 - Permanent deletion removes the vehicle aggregate from PostgreSQL. When the
-  open vehicle is deleted in the interface, its current form and result remain
-  as an unsaved draft.
+  open vehicle is deleted in the interface, its local form, result and listing
+  context are cleared and the shared household workspace is notified.
 - A saved listing can create or open its calculation. Updating the listing marks
   a linked calculation outdated without altering its assumptions or snapshot;
   explicit review and save acknowledge the current listing version.
@@ -110,12 +112,12 @@ After following [Unraid deployment](deployment-unraid.md):
    the LAN for this application.
 3. Request `/api/health/live`, `/api/health/ready`, and `/api/system/status`
    through `http://extower.local:8088` or the configured web port.
-4. Open `/manual`, run the documented SEK 64,000/49,000 example, and confirm the
+4. Open `/manual/legacy`, run the documented SEK 64,000/49,000 example, and confirm the
    result is shown without saving.
 5. With a disposable registration number, save the vehicle, reload the page,
    open it, replace one value, and verify that its revision increases.
 6. Delete that disposable vehicle, confirm it disappears from the saved list,
-   and confirm the form remains available as an unsaved draft.
+   and confirm its local form and result are cleared.
 
 Do not use a real saved vehicle for the deletion smoke test. The delete is
 physical and cannot be restored by the application.
