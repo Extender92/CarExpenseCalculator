@@ -41,7 +41,7 @@ the later provider contract. Time-dependent rules use explicit `asOfDate`.
 | `towBar` | Known true/false; equality. Unknown is distinct from false. | Categorical |
 | `transmission` | Existing normalized gearbox fact, including manual/automatic; allowed set. | Categorical |
 | `seats` | Integer 1-100; inclusive min/max. | Numeric |
-| `modelYear` | Integer 1886-9999; inclusive min/max. No year inferred from registration. | Numeric |
+| `modelYear` | Integer 1886-2100, retaining the existing listing bound; inclusive min/max. No year inferred from registration. | Numeric |
 | `fuelTypes` | Existing normalized fuel set; intersects allowed set. | Categorical set match |
 | `bodyType` | Existing normalized body fact; allowed set. | Categorical |
 | `drivetrain` | Existing normalized drive fact; allowed set. | Categorical |
