@@ -318,15 +318,23 @@ describe("results and legacy review presentation", () => {
       />,
     );
     expect(screen.getAllByLabelText(/^Beslut för Post/)).toHaveLength(100);
-    fireEvent.change(screen.getByLabelText("Beslut för Post 0"), {
+    // Scope repeated label queries to their fieldset. Searching the entire
+    // 100-row jsdom tree for every label is quadratic on slower CI runners.
+    const firstRow = within(
+      screen.getByText("Post 0", { selector: "legend" }).closest("fieldset")!,
+    );
+    const lastRow = within(
+      screen.getByText("Post 99", { selector: "legend" }).closest("fieldset")!,
+    );
+    fireEvent.change(firstRow.getByLabelText("Beslut för Post 0"), {
       target: { value: "map" },
     });
-    fireEvent.change(screen.getByLabelText("Målpost för Post 0"), {
+    fireEvent.change(firstRow.getByLabelText("Målpost för Post 0"), {
       target: { value: "target" },
     });
     expect(remainingReviews(reviews, current.legacyDecisions)).toHaveLength(99);
     expect(current.input.customCosts?.items).toHaveLength(1);
-    fireEvent.change(screen.getByLabelText("Beslut för Post 99"), {
+    fireEvent.change(lastRow.getByLabelText("Beslut för Post 99"), {
       target: { value: "discard" },
     });
     expect(remainingReviews(reviews, current.legacyDecisions)).toHaveLength(98);
