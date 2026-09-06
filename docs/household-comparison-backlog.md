@@ -10,17 +10,21 @@ Features are not implemented by the planning PR. All implementation items are
 initially **status:blocked**, including A1, until the documentation PR is merged
 and their prerequisites are complete. Trackers are overviews, never assignments.
 
+Documentation gate: [PR #54](https://github.com/Extender92/CarExpenseCalculator/pull/54).
+
 ## Stage 3A - Household calculations
+
+Tracker: [#71](https://github.com/Extender92/CarExpenseCalculator/issues/71). Milestone: [3A](https://github.com/Extender92/CarExpenseCalculator/milestone/7).
 
 | Key | Issue | Deliverable | Prerequisite work |
 | --- | --- | --- | --- |
-| A1 | Pending publication | Implement shared household inputs and purchase financing | Documentation merge |
-| A2 | Pending publication | Implement partial ownership costs, energy, depreciation and sensitivity | A1 |
-| A3 | Pending publication | Implement leasing, payment calendars and average budget checks | A2 |
-| A4 | Pending publication | Persist household inputs, explicit legacy transition and one shared draft | A3 |
-| A5 | Pending publication | Expose household calculation and persistence APIs with generated frontend types | A4 |
-| A6 | Pending publication | Build Swedish household profile, current cost editing and draft recovery flows | A5 |
-| A7 | Pending publication | Verify the complete household calculation stage | A6 |
+| A1 | [#55](https://github.com/Extender92/CarExpenseCalculator/issues/55) | Implement shared household inputs and purchase financing | Documentation merge |
+| A2 | [#56](https://github.com/Extender92/CarExpenseCalculator/issues/56) | Implement partial ownership costs, energy, depreciation and sensitivity | A1 |
+| A3 | [#57](https://github.com/Extender92/CarExpenseCalculator/issues/57) | Implement leasing, payment calendars and average budget checks | A2 |
+| A4 | [#58](https://github.com/Extender92/CarExpenseCalculator/issues/58) | Persist household inputs, explicit legacy transition and one shared draft | A3 |
+| A5 | [#59](https://github.com/Extender92/CarExpenseCalculator/issues/59) | Expose household calculation and persistence APIs with generated frontend types | A4 |
+| A6 | [#60](https://github.com/Extender92/CarExpenseCalculator/issues/60) | Build Swedish household profile, current cost editing and draft recovery flows | A5 |
+| A7 | [#61](https://github.com/Extender92/CarExpenseCalculator/issues/61) | Verify the complete household calculation stage | A6 |
 
 ## Stage 3B - Comparison and buying scores
 
@@ -31,12 +35,12 @@ a tracker merely because its planning has been refined.
 
 | Key | Issue | Deliverable | Prerequisite work |
 | --- | --- | --- | --- |
-| B1 | Pending publication | Define extended vehicle facts and provenance for buying criteria | A7 |
-| B2 | Pending publication | Implement deterministic buying rules, weighted score intervals and ordering | B1 |
-| B3 | Pending publication | Persist current buying profiles and vehicle facts and expose comparison APIs | B2 |
-| B4 | Pending publication | Build shared comparison tables and editable buying priorities | B3 |
-| B5 | Pending publication | Export the current comparison as a printable PDF report | B4 |
-| B6 | Pending publication | Verify complete comparison, buying scores and PDF export | B5 |
+| B1 | [#62](https://github.com/Extender92/CarExpenseCalculator/issues/62) | Define extended vehicle facts and provenance for buying criteria | A7 |
+| B2 | [#63](https://github.com/Extender92/CarExpenseCalculator/issues/63) | Implement deterministic buying rules, weighted score intervals and ordering | B1 |
+| B3 | [#64](https://github.com/Extender92/CarExpenseCalculator/issues/64) | Persist current buying profiles and vehicle facts and expose comparison APIs | B2 |
+| B4 | [#65](https://github.com/Extender92/CarExpenseCalculator/issues/65) | Build shared comparison tables and editable buying priorities | B3 |
+| B5 | [#66](https://github.com/Extender92/CarExpenseCalculator/issues/66) | Export the current comparison as a printable PDF report | B4 |
+| B6 | [#67](https://github.com/Extender92/CarExpenseCalculator/issues/67) | Verify complete comparison, buying scores and PDF export | B5 |
 
 ## Independent later refinement
 
@@ -46,9 +50,9 @@ refined. AI assistance belongs to milestone 5 under tracker #14.
 
 | Key | Issue | Refinement | Prerequisite work |
 | --- | --- | --- | --- |
-| F1 | Pending publication | Refine permitted registry access and evidence freshness | Documentation merge |
-| F2 | Pending publication | Refine evidence-backed maintenance and repair AI suggestions | A7 |
-| F3 | Pending publication | Refine mileage-triggered service and tyre scheduling | A7 |
+| F1 | [#68](https://github.com/Extender92/CarExpenseCalculator/issues/68) | Refine permitted registry access and evidence freshness | Documentation merge |
+| F2 | [#69](https://github.com/Extender92/CarExpenseCalculator/issues/69) | Refine evidence-backed maintenance and repair AI suggestions | A7 |
+| F3 | [#70](https://github.com/Extender92/CarExpenseCalculator/issues/70) | Refine mileage-triggered service and tyre scheduling | A7 |
 
 Tracker [#14](https://github.com/Extender92/CarExpenseCalculator/issues/14) includes later evidence-backed
 maintenance/repair suggestions with explicit adoption.
