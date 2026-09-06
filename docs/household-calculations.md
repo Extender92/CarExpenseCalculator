@@ -2,11 +2,69 @@
 
 ## Status and scope
 
-Normative target for stage 3A, agreed 2026-09-06; **not implemented**. The
+Normative target for stage 3A, agreed 2026-09-06; **partially implemented in Core**. The
 [product plan](household-comparison-plan.md) sets scope. This document adds
 future contracts without changing the implemented [v1 API](manual-calculator.md).
 Core owns pure decimal calculation; API maps HTTP; Infrastructure owns current
 PostgreSQL data; React owns Swedish forms and request cancellation.
+
+## Implemented Core financing foundation
+
+Issue #55 implements `Households.HouseholdProfileInput`, `HouseholdLoanTerms`,
+`VehiclePurchaseInput`, `SensitivityValue`, `HouseholdInputValidator`, and
+`HouseholdFinancingCalculator`. The remaining sections describe the complete
+stage target; operating costs, residual, leasing, persistence, HTTP and UI are
+delivered by subsequent work items.
+
+The current pure operation is
+`Calculate(HouseholdProfileInput, IReadOnlyList<VehiclePurchaseInput>)`.
+The profile contains common use, financing, energy-price, charging and budget
+inputs; a purchase contains only its candidate key and price, with no household
+overrides. Energy/usage/budget inputs are validated but not calculated by #55.
+Profile energy prices reuse Core's fuel/unit enums and allow at most one entry
+per pair; the enum combinations bound that collection. The price collection is
+copied on construction. Calendar months use explicit year/month values.
+
+`SensitivityValue.Constant(value)` and `.Scenarios(favorable, baseline, cautious)`
+are immutable, mutually exclusive constructions. Missing assumptions use null;
+there is no incomplete-trio fallback. Validation checks every supplied mode,
+without imposing a favorable-to-cautious ordering. Missing amounts are allowed
+as inputs; supplied out-of-range amounts have stable field errors. Required
+financing components are identified separately for each purchase.
+
+The result has currency, active mode, all profile validation errors, and one
+purchase result per input in order. Candidate keys are trimmed, ordinal-unique
+and 1-120 characters; a batch accepts 0-100 purchases. Malformed keys, duplicate
+keys, null entries, unsupported enums and oversized collections throw
+`HouseholdInputValidationException`. Numeric errors instead invalidate only
+dependent financing results. Core paths start with `profile` or `vehicles[i]`;
+future HTTP mappings must preserve the associated field meaning.
+
+Each purchase result exposes state, cash allocation, optional loan/installments,
+setup/monthly fees, financing cost (interest plus fees), acquisition cash
+outflow, missing-component paths and applicable errors. Cash-only purchases
+have zero financing costs and no loan; missing horizon/loan terms are irrelevant
+to that financing section. For a financed purchase, missing fees do not hide a
+known loan schedule, but complete financing/cash totals remain null. Profile
+errors in unrelated driving/energy/budget fields remain visible without hiding
+valid financing. Missing price/cash prevents allocation; invalid values never
+become zero or reduce another candidate's results.
+
+Core results retain full decimal precision for later cost composition. Display
+rounding is a later boundary; callers must not sum prematurely rounded rows.
+Installment month offsets start at 1 and end at `min(horizon, loan term)`;
+calendar/budget mapping remains later work. Setup is charged once at month 0,
+and monthly fees end with installments. The annuity is evaluated as
+`principal / sum((1 + monthlyRate)^(-t), t=1..term)` using iterative decimal
+discounting, equivalent to the formula below but stable near zero interest.
+The last installment clears only decimal residue, preserving principal.
+
+Regression coverage is in
+[financing tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdFinancingCalculatorTests.cs)
+and [input tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdInputValidationTests.cs).
+It covers A1 and the financing portion of A2, independent high-precision
+nonzero-rate references, horizon/fee limits, missing/invalid inputs, explicit
+mode selection and precision. Existing v1 calculations and contracts are unchanged.
 
 ## Inputs and units
 

@@ -56,6 +56,11 @@ independent extraction outcomes through manual review, saved-listing lifecycle,
 and listing-linked calculation versioning. Rule-based search and comparison,
 automatic discovery, advisory AI review, and image review remain future work.
 
+Stage 3A has its first Core foundation: shared household assumptions and
+purchase-financing calculations, with independent validation and loan fee
+timing. Its HTTP, saved household profile, and Swedish interface remain later
+work; the current application continues to use the implemented v1 calculator.
+
 ## Planned household calculation and comparison direction
 
 The next work is split into two separate stages: household calculations (3A),

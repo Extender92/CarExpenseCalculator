@@ -115,8 +115,12 @@ Stages 3A and 3B are defined in the
 [Household calculations and comparison plan](household-comparison-plan.md),
 [household contract](household-calculations.md), and
 [comparison contract](comparison-and-buying-scores.md).
-They extend the implemented system; no household-profile, lease, score, or
-draft persistence model is implemented by this planning update.
+They extend the implemented system. Core now contains the shared-input and
+purchase-financing foundation described in the
+[Core financing contract](household-calculations.md#implemented-core-financing-foundation).
+It composes immutable household assumptions and car purchase inputs, with
+independent validation/missing results and unrounded decimal installments.
+No household-profile, lease, score, or draft persistence model is implemented.
 
 The planned household profile owns common driving and financing assumptions,
 purchase cash, energy prices, and separate startup/ongoing budget limits.
