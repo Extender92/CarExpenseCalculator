@@ -22,7 +22,9 @@ are not available in the current application.
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
 and other operating costs. It returns complete or partial totals, monthly and
-per-mil costs, and explicit sensitivity results. This foundation is not yet
+per-mil costs, and explicit sensitivity results. Core also implements leasing,
+calendar payments, separate startup/average-month budgets and cost/cash
+reconciliation. This foundation is not yet
 wired to HTTP, persistence, or the UI. See the
 [Core cost contract](docs/household-calculations.md#implemented-core-ownership-costs).
 

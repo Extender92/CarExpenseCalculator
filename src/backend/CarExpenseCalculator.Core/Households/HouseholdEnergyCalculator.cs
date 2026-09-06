@@ -6,19 +6,23 @@ namespace CarExpenseCalculator.Core.Households;
 internal static class HouseholdEnergyCalculator
 {
     public static (CostSection Cost, HouseholdEnergyResult Result) Calculate(
-        IReadOnlyList<HouseholdEnergySource>? sources, string path, CostSection distance, HouseholdCostContext context)
+        IReadOnlyList<HouseholdEnergySource>? sources, string path, CostSection distance, HouseholdCostContext context,
+        out IReadOnlyList<CostSection> rawSources)
     {
         var total = new CostSection(path);
         var rows = new List<HouseholdEnergySourceResult>();
+        var costs = new List<CostSection>();
         if (distance.Complete == 0m)
         {
             total.Add(0m);
+            costs.Add(total);
             foreach (var source in sources ?? [])
                 rows.Add(new(source.Key.Trim(), source.Fuel, source.Unit, 0m, 0m, null, total.Result()));
         }
         else if (!context.Available(path, sources is { Count: > 0 }, total))
         {
             total.CopyProblems(distance);
+            costs.Add(total);
         }
         else
         {
@@ -26,10 +30,12 @@ internal static class HouseholdEnergyCalculator
             {
                 var (cost, row) = CalculateSource(sources, index, path, distance, context);
                 total.Merge(cost);
+                costs.Add(cost);
                 rows.Add(row);
             }
         }
 
+        rawSources = costs.AsReadOnly();
         return (total, new(total.Result(), rows.AsReadOnly()));
     }
 

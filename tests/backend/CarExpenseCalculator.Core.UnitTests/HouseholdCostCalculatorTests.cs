@@ -20,6 +20,7 @@ public sealed class HouseholdCostCalculatorTests
         var result = CostExamples.Calculate(car, profile);
         Assert.Equal(20_750m, result.Totals.OwnershipCost.CompleteTotalSek);
         Assert.Equal(1_729.17m, result.Totals.MonthlyCost.CompleteTotalSek);
+        Assert.NotNull(result.FinancingDetails);
         Assert.Equal(80_750m, result.FinancingDetails.AcquisitionCashOutflowSek);
         Assert.Equal(750m, result.Financing.CompleteTotalSek);
         Assert.Equal(60_000m, result.Totals.EndEquity.CompleteTotalSek);
@@ -246,8 +247,8 @@ public sealed class HouseholdCostCalculatorTests
         Assert.Equal((decimal)expectedB, result.Vehicles[1].Totals.OwnershipCost.CompleteTotalSek);
         Assert.Equal(mode, result.ActiveSensitivityMode);
         Assert.Equal("SEK", result.Currency);
-        Assert.Equal(1, result.CalculationVersion);
-        Assert.Equal(1, result.ResultSchemaVersion);
+        Assert.Equal(2, result.CalculationVersion);
+        Assert.Equal(2, result.ResultSchemaVersion);
     }
 }
 

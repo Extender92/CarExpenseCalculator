@@ -3,6 +3,8 @@ namespace CarExpenseCalculator.Core.Households;
 // Unrounded, calculation-local accumulator. Never compose display-rounded results.
 internal sealed class CostSection(string path)
 {
+    public static CostSection Zero(string path) { var result = new CostSection(path); result.Add(0m); return result; }
+    public static CostSectionResult NotApplicable() => new(CostSectionState.NotApplicable, 0m, null, [], []);
     public decimal? Known { get; private set; } = 0m;
     public bool HasKnown { get; private set; }
     public bool HasDetails { get; set; }
@@ -42,6 +44,12 @@ internal sealed class CostSection(string path)
         Errors.AddRange(section.Errors);
     }
 
+    public void Subtract(CostSection section)
+    {
+        CopyProblems(section);
+        AddTransformed(section, value => -value);
+    }
+
     public void AddCalculated(Func<decimal> operation)
     {
         var value = Arithmetic(operation);
@@ -71,6 +79,7 @@ internal sealed class HouseholdCostContext(
     IReadOnlyList<HouseholdInputError> vehicleErrors)
 {
     public HouseholdProfileInput Profile => profile;
+    public CostSection? Coverage { get; set; }
 
     public bool Available(string path, bool supplied, CostSection section)
     {
@@ -86,6 +95,14 @@ internal sealed class HouseholdCostContext(
     public decimal? Value(SensitivityValue? value, string path, CostSection section) =>
         Available(path, value is not null, section) ? value!.GetValue(profile.ActiveSensitivityMode) : null;
 
-    public int? Period(CostSection section) => Available("profile.periodMonths", profile.PeriodMonths is not null, section)
+    public int? RequestedPeriod(CostSection section) => Available("profile.periodMonths", profile.PeriodMonths is not null, section)
         ? profile.PeriodMonths : null;
+
+    public int? Period(CostSection section)
+    {
+        var requested = RequestedPeriod(section);
+        if (Coverage is null) return requested;
+        section.CopyProblems(Coverage);
+        return Coverage.Complete is { } covered ? (int)covered : null;
+    }
 }

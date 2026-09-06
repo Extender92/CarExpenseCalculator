@@ -5,8 +5,8 @@ namespace CarExpenseCalculator.Core.Households;
 
 public static class HouseholdCalculationVersions
 {
-    public const int Calculation = 1;
-    public const int ResultSchema = 1;
+    public const int Calculation = 2;
+    public const int ResultSchema = 2;
 }
 
 public enum CostSectionState { Complete, Partial, Unavailable, Invalid, NotApplicable }
@@ -29,7 +29,7 @@ public sealed record HouseholdCostPreview(
 
 public sealed record VehicleCostResult(
     string CandidateKey,
-    PurchaseFinancingResult FinancingDetails,
+    PurchaseFinancingResult? FinancingDetails,
     CostSectionResult Financing,
     HouseholdDepreciationResult Depreciation,
     HouseholdEnergyResult Energy,
@@ -40,10 +40,16 @@ public sealed record VehicleCostResult(
     CostSectionResult RepairAllowance,
     HouseholdCategoryResult CustomCosts,
     HouseholdCostTotals Totals,
-    IReadOnlyList<HouseholdInputError> InputErrors);
+    IReadOnlyList<HouseholdInputError> InputErrors,
+    AcquisitionType AcquisitionType,
+    HouseholdLeaseResult Lease,
+    HouseholdPaymentCalendar Payments,
+    HouseholdBudgetResult StartupBudget,
+    HouseholdBudgetResult MonthlyBudget,
+    HouseholdCashReconciliation Reconciliation);
 
 public sealed record HouseholdDepreciationResult(CostSectionResult Cost, decimal? ResidualValueSek);
-public sealed record HouseholdEnergyResult(CostSectionResult Cost, IReadOnlyList<HouseholdEnergySourceResult> Sources);
+public sealed record HouseholdEnergyResult(CostSectionResult Cost, IReadOnlyList<HouseholdEnergySourceResult> Sources, bool IsIncluded = false);
 public sealed record HouseholdEnergySourceResult(
     string Key,
     FuelType? Fuel,

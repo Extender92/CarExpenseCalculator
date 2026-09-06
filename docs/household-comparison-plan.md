@@ -5,8 +5,9 @@
 These decisions were agreed on 2026-09-06. Stages **3A, Household calculations**,
 and **3B, Comparison and buying scores**, are specified. Shared inputs, purchase
 financing and partial ownership costs with energy, depreciation and sensitivity
-are implemented in Core; lease/calendar/budget behavior, the remaining 3A
-integration and stage 3B are not implemented.
+are implemented in Core, together with leasing, calendar payments, cash/cost
+reconciliation and startup/average-month budgets. The remaining 3A integration
+and stage 3B are not implemented.
 The implemented HTTP contracts remain in [Manual calculator](manual-calculator.md)
 and [URL analysis](url-analysis.md).
 

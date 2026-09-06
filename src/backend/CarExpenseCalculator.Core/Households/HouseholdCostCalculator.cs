@@ -29,30 +29,60 @@ public sealed class HouseholdCostCalculator
         HouseholdCostContext context, IReadOnlyList<HouseholdInputError> inputErrors)
     {
         var path = $"vehicles[{index}]";
-        var finance = new CostSection($"{path}.financing");
-        finance.HasDetails = financing.Allocation is not null;
-        finance.Missing.AddRange(financing.MissingComponents);
-        finance.Errors.AddRange(financing.Errors);
-        if (financing.Loan is { } loan) finance.Add(loan.InterestPaidSek);
-        if (financing.SetupFeeSek is { } setup) finance.Add(setup);
-        if (financing.MonthlyFeesDuringPeriodSek is { } fees) finance.Add(fees);
+        var isLease = car.AcquisitionType == AcquisitionType.Lease;
+        if (isLease) context.Coverage = HouseholdLeaseCalculator.Coverage(car.Lease, $"{path}.lease", context);
+        var ledger = new HouseholdPaymentLedger(context, $"{path}.payments");
+        var finance = isLease ? CostSection.Zero($"{path}.financing") : new CostSection($"{path}.financing");
+        if (!isLease)
+        {
+            finance.HasDetails = financing.Allocation is not null;
+            finance.Missing.AddRange(financing.MissingComponents);
+            finance.Errors.AddRange(financing.Errors);
+            if (financing.Loan is { } loan) finance.Add(loan.InterestPaidSek);
+            if (financing.SetupFeeSek is { } setup) finance.Add(setup);
+            if (financing.MonthlyFeesDuringPeriodSek is { } fees) finance.Add(fees);
+            HouseholdPurchasePayments.Add(financing, context, ledger, path);
+        }
 
-        var distance = CalculateDistance(context);
-        var (depreciation, residual) = CalculateDepreciation(car, path, context);
-        var (energy, energyResult) = HouseholdEnergyCalculator.Calculate(car.EnergySources, $"{path}.energySources", distance, context);
+        var distance = CalculateDistance(context, true);
+        var (depreciation, residual) = isLease ? (CostSection.Zero($"{path}.residual"), (decimal?)null) : CalculateDepreciation(car, path, context);
+        var (energy, energyResult) = HouseholdEnergyCalculator.Calculate(car.EnergySources, $"{path}.energySources",
+            isLease ? CalculateDistance(context) : distance, context, out var rawEnergySources);
+        if (isLease && car.Lease?.EnergyIncluded == true)
+        {
+            energy = CostSection.Zero($"{path}.energySources");
+            energyResult = new(energy.Result(), Array.AsReadOnly(energyResult.Sources.Select(source => source with { Cost = energy.Result() }).ToArray()), true);
+            rawEnergySources = [energy];
+        }
+        for (var sourceIndex = 0; sourceIndex < rawEnergySources.Count; sourceIndex++)
+        {
+            var amount = new CostSection($"{path}.energySources[{sourceIndex}]");
+            amount.Merge(rawEnergySources[sourceIndex]);
+            var months = context.Period(amount);
+            ledger.Add($"{path}.energySources[{sourceIndex}]", "energy", "Estimated monthly energy", amount,
+                months is not null ? Enumerable.Range(1, months.Value).ToArray() : null, true, distribute: true);
+        }
         var categories = HouseholdCostInputValidator.Categories(car).Select(pair =>
-            CalculateCategory(pair.Category, $"{path}.{pair.Name}", context)).ToArray();
+            CalculateCategory(pair.Category, $"{path}.{pair.Name}", pair.Name, context, ledger)).ToArray();
         var allowance = new CostSection($"{path}.additionalRepairAllowancePerMonthSek");
         var allowanceAmount = context.Value(car.AdditionalRepairAllowancePerMonthSek, $"{path}.additionalRepairAllowancePerMonthSek", allowance);
         var allowancePeriod = context.Period(allowance);
         if (allowanceAmount is not null && allowancePeriod is not null) allowance.Add(allowanceAmount.Value * allowancePeriod.Value);
+        var saving = HouseholdLeaseCalculator.Scalar(car.AdditionalRepairAllowancePerMonthSek, $"{path}.additionalRepairAllowancePerMonthSek", context);
+        var savingPeriod = context.Period(saving);
+        ledger.Add($"{path}.additionalRepairAllowancePerMonthSek", "repairAllowance", "Additional repair saving", saving,
+            savingPeriod is not null ? Enumerable.Range(1, savingPeriod.Value).ToArray() : null, true, HouseholdPaymentDirection.InternalSaving);
+
+        var lease = isLease ? HouseholdLeaseCalculator.Calculate(car.Lease, $"{path}.lease", context, ledger)
+            : (Cost: CostSection.Zero($"{path}.lease"), Withheld: CostSection.Zero($"{path}.lease.depositWithheld"),
+                Result: new HouseholdLeaseResult(CostSection.NotApplicable(), null, null, false, null, CostSection.NotApplicable()));
 
         var total = new CostSection($"{path}.totals.ownershipCost");
-        foreach (var section in new[] { finance, depreciation, energy, allowance }.Concat(categories.Select(pair => pair.Section)))
+        foreach (var section in new[] { finance, depreciation, energy, allowance, lease.Cost }.Concat(categories.Select(pair => pair.Section)))
             total.Merge(section);
         var monthly = new CostSection($"{path}.totals.monthlyCost");
         monthly.CopyProblems(total);
-        var period = context.Period(monthly);
+        var period = context.RequestedPeriod(monthly);
         if (period is not null) monthly.AddTransformed(total, value => value / period.Value);
 
         var perMil = new CostSection($"{path}.totals.costPerMil");
@@ -61,21 +91,27 @@ public sealed class HouseholdCostCalculator
         if (distance.Complete == 0m) perMil.Missing.Add("zeroDistance");
         else if (distance.Complete is { } kilometres) perMil.AddTransformed(total, value => value / kilometres * 10m);
 
-        var equity = CalculateEquity(residual, depreciation, financing, path);
-        return new(car.CandidateKey.Trim(), financing, finance.Result(), new(depreciation.Result(), CostSection.Money(residual)),
+        var equity = isLease ? CostSection.Zero($"{path}.totals.endEquity") : CalculateEquity(residual, depreciation, financing, path);
+        var operating = CostSection.Zero($"{path}.operatingCosts");
+        operating.Merge(energy);
+        foreach (var category in categories) operating.Merge(category.Section);
+        var payments = ledger.Finish(operating, depreciation, allowance, lease.Withheld, total, isLease);
+        return new(car.CandidateKey.Trim(), isLease ? null : financing, isLease ? CostSection.NotApplicable() : finance.Result(),
+            new(isLease ? CostSection.NotApplicable() : depreciation.Result(), CostSection.Money(residual)),
             energyResult, categories[0].Result, categories[1].Result, categories[2].Result, categories[3].Result,
             allowance.Result(), categories[4].Result,
-            new(CostSection.Quantity(distance.Complete), total.Result(), monthly.Result(), perMil.Result(), equity.Result()), inputErrors);
+            new(CostSection.Quantity(distance.Complete), total.Result(), monthly.Result(), perMil.Result(), isLease ? CostSection.NotApplicable() : equity.Result()),
+            inputErrors, car.AcquisitionType, lease.Result, payments.Calendar, payments.Startup, payments.Monthly, payments.Reconciliation);
     }
 
-    private static CostSection CalculateDistance(HouseholdCostContext context)
+    private static CostSection CalculateDistance(HouseholdCostContext context, bool requested = false)
     {
         var result = new CostSection("profile.annualDistanceKilometres");
         var annual = context.Value(context.Profile.AnnualDistanceKilometres, "profile.annualDistanceKilometres", result);
         if (annual == 0m) result.Add(0m);
         else
         {
-            var period = context.Period(result);
+            var period = requested ? context.RequestedPeriod(result) : context.Period(result);
             if (annual is not null && period is not null)
             {
                 var distance = annual.Value * period.Value / 12m;
@@ -133,11 +169,15 @@ public sealed class HouseholdCostCalculator
     }
 
     private static (CostSection Section, HouseholdCategoryResult Result) CalculateCategory(
-        HouseholdCostCategoryInput? category, string path, HouseholdCostContext context)
+        HouseholdCostCategoryInput? category, string path, string categoryName, HouseholdCostContext context, HouseholdPaymentLedger ledger)
     {
         var result = new CostSection(path);
         var items = new List<HouseholdCostItemResult>();
-        if (category is null) result.Missing.Add(path);
+        if (category is null)
+        {
+            result.Missing.Add(path);
+            ledger.AddMissingCategory(categoryName, path);
+        }
         else if (category.Items.Count == 0) result.Add(0m);
         else
         {
@@ -146,6 +186,7 @@ public sealed class HouseholdCostCalculator
                 var item = category.Items[index];
                 var itemPath = $"{path}.items[{index}]";
                 var cost = CalculateItem(item, itemPath, context);
+                ledger.AddCostItem(item, itemPath, categoryName);
                 result.Merge(cost);
                 items.Add(new(item.Key.Trim(), item.Label.Trim(), cost.Result()));
             }
