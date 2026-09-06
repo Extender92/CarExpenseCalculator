@@ -102,7 +102,7 @@ public static class HouseholdInputValidator
         return errors.AsReadOnly();
     }
 
-    private static void Sensitivity(
+    internal static void Sensitivity(
         SensitivityValue? value, decimal minimum, decimal maximum, string path,
         ICollection<HouseholdInputError> errors, bool maximumExclusive = false)
     {
@@ -122,7 +122,7 @@ public static class HouseholdInputValidator
         Range(value.Cautious, minimum, maximum, $"{path}.cautious", errors, maximumExclusive);
     }
 
-    private static void Range(
+    internal static void Range(
         decimal? value, decimal minimum, decimal maximum, string path,
         ICollection<HouseholdInputError> errors, bool maximumExclusive = false)
     {

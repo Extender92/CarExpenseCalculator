@@ -5,7 +5,7 @@
 Normative target for stage 3A, agreed 2026-09-06; **partially implemented in Core**. The
 [product plan](household-comparison-plan.md) sets scope. This document adds
 future contracts without changing the implemented [v1 API](manual-calculator.md).
-Core owns pure decimal calculation; API maps HTTP; Infrastructure owns current
+Core owns deterministic decimal calculation; API maps HTTP; Infrastructure owns current
 PostgreSQL data; React owns Swedish forms and request cancellation.
 
 ## Implemented Core financing foundation
@@ -13,8 +13,8 @@ PostgreSQL data; React owns Swedish forms and request cancellation.
 Issue #55 implements `Households.HouseholdProfileInput`, `HouseholdLoanTerms`,
 `VehiclePurchaseInput`, `SensitivityValue`, `HouseholdInputValidator`, and
 `HouseholdFinancingCalculator`. The remaining sections describe the complete
-stage target; operating costs, residual, leasing, persistence, HTTP and UI are
-delivered by subsequent work items.
+stage target. The ownership-cost subset added by #56 is documented below;
+leasing, payment calendars, budgets, persistence, HTTP and UI remain later work.
 
 The current pure operation is
 `Calculate(HouseholdProfileInput, IReadOnlyList<VehiclePurchaseInput>)`.
@@ -50,7 +50,7 @@ errors in unrelated driving/energy/budget fields remain visible without hiding
 valid financing. Missing price/cash prevents allocation; invalid values never
 become zero or reduce another candidate's results.
 
-Core results retain full decimal precision for later cost composition. Display
+These financing results retain full decimal precision for cost composition. Display
 rounding is a later boundary; callers must not sum prematurely rounded rows.
 Installment month offsets start at 1 and end at `min(horizon, loan term)`;
 calendar/budget mapping remains later work. Setup is charged once at month 0,
@@ -65,6 +65,77 @@ and [input tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/Household
 It covers A1 and the financing portion of A2, independent high-precision
 nonzero-rate references, horizon/fee limits, missing/invalid inputs, explicit
 mode selection and precision. Existing v1 calculations and contracts are unchanged.
+
+## Implemented Core ownership costs
+
+Issue #56 adds `HouseholdCostCalculator.Calculate(HouseholdProfileInput,
+IReadOnlyList<VehicleCostInput>) -> HouseholdCostPreview`. The preview contains
+SEK, the common active mode, calculation/result-schema versions (both initially
+1 in the separate household version family), profile errors and ordered car
+results. It has no persistence, HTTP, request-generation, clock or AI dependency.
+The public v1 calculator and its stored-version handling are unchanged.
+
+`VehicleCostInput` owns price, optional `HouseholdResidualInput`, at most two
+keyed energy sources, category inputs for tax/insurance/service/repairs/custom
+costs, and the additional monthly repair allowance. It reuses the profile and
+financing contracts from #55 with no per-car household overrides. Residual
+factories select either a fixed sensitivity amount plus horizon or an annual
+percentage sensitivity value. Source fuel, unit, consumption basis and
+electricity basis can be missing; supplied unknown enum values are structural
+errors. Electricity requires kWh. Two driving-mode sources require electricity
+and one other fuel; two non-electric fuels can use whole-distance consumption.
+
+`HouseholdCostCategoryInput.FromItems` snapshots the supplied collection;
+`KnownZero()` and `Included()` create distinct confirmed zero-cost categories.
+A null category is unknown. Each item has a key, label, amount, nullable
+monthly/annual/once cadence, optional month offset/due month, note and source
+URL. Keys are ordinal-unique after trimming across all cost categories, so an
+item cannot also appear in custom costs. Equal amounts with different keys are
+not automatically duplicates. Quoted tax/insurance amounts use constants;
+service/repair/custom amounts and the allowance also accept sensitivity trios.
+The bounds and evidence-URL validation below apply to every supplied value.
+
+Each result has independent cost sections, category item rows, energy source
+quantities/prices, residual, ownership/monthly/per-mil totals and end equity.
+`FinancingDetails` preserves the existing unrounded #55 contract; new cost
+sections and energy/residual display fields round only after full-precision
+composition. Internal accumulators are not composed from rounded result rows.
+An unknown price cannot erase known energy quantities or other priced sources;
+a partially known charging-price mix retains its known priced contribution.
+Non-electric fuel prices require an exact fuel/unit match. Electricity always
+uses the common home/public mix rather than a fallback energy-price entry.
+
+`CostSectionResult` uses the documented states, missing paths and field errors.
+Known monetary sums include only computable contributions; zero in an unknown
+section is an empty known sum, never confirmation of a zero complete cost.
+Known quantities or financing allocation can give a partial section even when
+no monetary contribution is known. Complete totals require all applicable
+purchase-cost sections and a valid residual. Missing or invalid due months and
+start months remain visible in input errors without invalidating known accrual;
+unknown one-time timing prevents that item's period cost. Out-of-period events
+contribute zero without requiring an unused amount.
+
+All supplied sensitivity values are validated, including inactive modes.
+Unrelated numeric errors stay in profile/car input errors without blocking
+independent sections; needed invalid inputs invalidate dependent sections.
+Malformed keys/enums/collections/labels/evidence throw the structural validation
+exception. Additional calculation codes are `energyBasisMismatch`,
+`unsupportedDrivingModes`, `invalidEnergyUnit`, `residualHorizonMismatch`, and
+`calculationOutOfRange`; `zeroDistance` is a per-mil unavailability reason.
+Decimal overflow or loss of a positive distance/energy/weighted-price value
+below representable precision produces a dependent calculation error. An
+unrepresentable known monetary sum is null, retaining its individual section
+or source rows; it is never saturated or reported as zero. A per-mil overflow
+does not invalidate a representable period/monthly cost.
+
+Regression tests cover the A2 ownership total, A3-A6, A7 accrual and A8 estimated
+cost, independent 70-digit residual references, near-total depreciation,
+source/aggregate/per-mil overflow, partial inputs, collection validation and
+sensitivity across candidates. See [cost tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdCostCalculatorTests.cs),
+[energy tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdEnergyCalculatorTests.cs)
+and [validation tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdCostInputValidationTests.cs).
+Actual payment/funding reconciliation belongs to #57; saved/legacy-input
+integration and the practical whole-stage acceptance remain later issues.
 
 ## Inputs and units
 
@@ -155,8 +226,12 @@ estimatedEndEquity = R - balance[k]
 
 Use decimal arithmetic throughout, including fractional-year depreciation.
 A deterministic implementation takes a decimal twelfth root of `(1-r)` by
-bounded bisection on [0,1], stopping when the bracket is at most `1e-24` wide or
-no representable progress remains, then raises its midpoint to integer `M`.
+bounded bisection on [0,1], with at most 96 iterations, stopping when the bracket
+is at most `1e-24` wide or no representable progress remains, then raises its
+midpoint to integer `M`. The bisection compares twelfth powers exactly using
+scaled base-ten `BigInteger` coefficients; ordinary decimal multiplication can
+lose significant digits near 100 percent depreciation. Money, root brackets
+and final powers remain decimal; no external mathematics package is needed.
 Use exact branches for `r=0`, `r=1`, and whole-year powers. Test this algorithm
 in Core; do not introduce `double`/`Math.Pow` monetary authority. Money outputs
 round to 2 places, other calculated quantities to 3, midpoint away from zero,
@@ -302,7 +377,8 @@ Persisting supplied invalid values returns 400; missing values are permitted.
 Each result contains `sections` for financing, depreciation, energy, tax,
 insurance, service, repairs, allowance, custom costs, lease, payment calendar,
 budgets, and totals. A section exposes `state: complete | partial | unavailable |
-invalid | notApplicable`, `knownSubtotalSek`, nullable `completeTotalSek`,
+invalid | notApplicable`, `knownSubtotalSek` (null only if the known sum cannot
+be represented), nullable `completeTotalSek`,
 `missingComponents`, and `errors` with stable code and JSON input path. Keep
 known energy quantities separate from unknown money. Global errors invalidate
 only dependent sections. A missing start month need not hide distance or cost

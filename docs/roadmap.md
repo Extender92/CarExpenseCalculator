@@ -39,10 +39,11 @@ This is a separate delivery stage before rules and comparison. The accepted
 direction and normative specifications are in the
 [Household calculations and comparison plan](household-comparison-plan.md).
 The existing manual-calculator milestone remains complete for its version 1
-scope. The shared-input and purchase-financing Core foundation from #55 is
-implemented; operating/lease calculations, persistence, HTTP and UI remain
+scope. Shared inputs and purchase financing (#55), plus partial ownership costs,
+energy, depreciation and sensitivity (#56), are implemented in Core.
+Lease/calendar/budget calculations (#57), persistence, HTTP and UI remain
 subsequent work. See the
-[Core financing contract](household-calculations.md#implemented-core-financing-foundation).
+[Core cost contract](household-calculations.md#implemented-core-ownership-costs).
 
 - Define one editable household profile for common use, available cash, loan
   assumptions, energy prices, and optional budget limits across all cars.
