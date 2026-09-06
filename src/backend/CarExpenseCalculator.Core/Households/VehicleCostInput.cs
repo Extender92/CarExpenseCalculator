@@ -13,6 +13,8 @@ public sealed record VehicleCostInput
     }
 
     public string CandidateKey { get; init; }
+    public AcquisitionType AcquisitionType { get; init; }
+    public HouseholdLeaseInput? Lease { get; init; }
     public decimal? PriceSek { get; init; }
     public HouseholdResidualInput? Residual { get; init; }
     public IReadOnlyList<HouseholdEnergySource>? EnergySources { get; }
@@ -22,7 +24,13 @@ public sealed record VehicleCostInput
     public HouseholdCostCategoryInput? Repairs { get; init; }
     public SensitivityValue? AdditionalRepairAllowancePerMonthSek { get; init; }
     public HouseholdCostCategoryInput? CustomCosts { get; init; }
+
+    public static VehicleCostInput ForLease(string candidateKey, HouseholdLeaseInput? lease,
+        IEnumerable<HouseholdEnergySource>? energySources = null) =>
+        new(candidateKey, null, energySources) { AcquisitionType = AcquisitionType.Lease, Lease = lease };
 }
+
+public enum AcquisitionType { Purchase, Lease }
 
 public enum ResidualMode { FixedAmount, AnnualPercentage }
 
@@ -81,6 +89,12 @@ public sealed record HouseholdCostCategoryInput
     public IReadOnlyList<HouseholdCostItem> Items { get; }
 
     public static HouseholdCostCategoryInput Included() => new(true, []);
+    // Every supplied item is explicitly outside the included base service.
+    public static HouseholdCostCategoryInput Included(IEnumerable<HouseholdCostItem> extras)
+    {
+        ArgumentNullException.ThrowIfNull(extras);
+        return new(true, extras);
+    }
     public static HouseholdCostCategoryInput KnownZero() => new(false, []);
     public static HouseholdCostCategoryInput FromItems(IEnumerable<HouseholdCostItem> items)
     {

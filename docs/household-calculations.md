@@ -14,7 +14,8 @@ Issue #55 implements `Households.HouseholdProfileInput`, `HouseholdLoanTerms`,
 `VehiclePurchaseInput`, `SensitivityValue`, `HouseholdInputValidator`, and
 `HouseholdFinancingCalculator`. The remaining sections describe the complete
 stage target. The ownership-cost subset added by #56 is documented below;
-leasing, payment calendars, budgets, persistence, HTTP and UI remain later work.
+leasing, payment calendars and budgets added by #57 are documented below.
+Persistence, HTTP and UI remain later work.
 
 The current pure operation is
 `Calculate(HouseholdProfileInput, IReadOnlyList<VehiclePurchaseInput>)`.
@@ -53,7 +54,7 @@ become zero or reduce another candidate's results.
 These financing results retain full decimal precision for cost composition. Display
 rounding is a later boundary; callers must not sum prematurely rounded rows.
 Installment month offsets start at 1 and end at `min(horizon, loan term)`;
-calendar/budget mapping remains later work. Setup is charged once at month 0,
+calendar/budget mapping is now composed by #57. Setup is charged once at month 0,
 and monthly fees end with installments. The annuity is evaluated as
 `principal / sum((1 + monthlyRate)^(-t), t=1..term)` using iterative decimal
 discounting, equivalent to the formula below but stable near zero interest.
@@ -71,7 +72,7 @@ mode selection and precision. Existing v1 calculations and contracts are unchang
 Issue #56 adds `HouseholdCostCalculator.Calculate(HouseholdProfileInput,
 IReadOnlyList<VehicleCostInput>) -> HouseholdCostPreview`. The preview contains
 SEK, the common active mode, calculation/result-schema versions (both initially
-1 in the separate household version family), profile errors and ordered car
+1 in the separate household version family, now 2 with #57), profile errors and ordered car
 results. It has no persistence, HTTP, request-generation, clock or AI dependency.
 The public v1 calculator and its stored-version handling are unchanged.
 
@@ -134,8 +135,108 @@ source/aggregate/per-mil overflow, partial inputs, collection validation and
 sensitivity across candidates. See [cost tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdCostCalculatorTests.cs),
 [energy tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdEnergyCalculatorTests.cs)
 and [validation tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdCostInputValidationTests.cs).
-Actual payment/funding reconciliation belongs to #57; saved/legacy-input
-integration and the practical whole-stage acceptance remain later issues.
+Actual payment/funding reconciliation is implemented by #57 as described below;
+saved/legacy-input integration and the practical whole-stage acceptance remain
+later issues.
+
+## Implemented Core leasing and payments
+
+Issue #57 extends the same `HouseholdCostCalculator.Calculate` operation. Both
+household calculation and result-schema versions are now **2**. Existing
+purchase constructors and the v1 application calculator remain supported.
+`VehicleCostInput.AcquisitionType` defaults to purchase; `ForLease` creates a
+lease candidate with no purchase price/residual. Mixed purchase/lease fields
+and unsupported discriminators are structural errors. Lease results have null
+`FinancingDetails` and `notApplicable` financing/depreciation/end-equity sections;
+purchases have a `notApplicable` lease section. These sections contribute no
+cost and require no assumptions.
+
+`HouseholdLeaseInput` snapshots keyed-month `MonthlyPayments`, `EndFees`, and
+`OtherPayments`. Missing/null payment amounts or absent contract months remain
+unknown; a zero payment is explicit. End/other fee collections use the same
+unknown-versus-confirmed-empty distinction as operating categories. End fees
+always fall at the contract end and reject an independent offset; other
+payments require an offset within the term. Their keys share the operating
+item namespace. Each fee collection accepts at most 50 items, monthly payments
+at most 120 unique months. Included contract distance is 0-10,000,000 km and
+excess distance price is 0-100,000 SEK/km; existing money/period bounds apply.
+
+`PriceBasis` is quoted, estimated, unresolved, or missing. Explicit estimated
+payment assumptions remain single values and are labeled in results. Missing
+or unresolved pricing preserves known quoted payments while preventing a
+complete cost or false budget pass. Additional charges, excess-distance rate
+and deposit-refund estimates accept the common sensitivity modes; every
+supplied mode is validated, including the refund limit against the deposit.
+No deposit needs no unused refund input; a positive deposit with unknown refund
+does not become a known expense. Known refunds remain separate inflows and
+cannot improve an expenditure-budget test.
+
+`HouseholdCostCategoryInput.Included(extras)` explicitly marks every supplied
+item as outside the included base service. `Included()` confirms no extra cost.
+Lease `EnergyIncluded` means the whole energy charge is included: additional
+energy cost is zero without requiring missing prices/consumption. Known usage
+quantities remain available. Explicit money extras can be entered separately;
+no partial energy allowance or invented consumption is inferred.
+
+`HouseholdLeaseResult` distinguishes term, covered months, estimated pricing,
+excess distance and withheld deposit from the contract-cost section. For
+`M!=N`, `leaseHorizonMismatch` blocks comparable totals. Only covered months
+`min(M,N)` contribute known lease, energy, operating and reserve values; no
+payments or saving are extended beyond the contract. Overall distance and
+monthly/per-mil denominators still refer to the requested common period.
+Longer horizons carry `payments.uncoveredMonths` in cash/funding completeness.
+Shorter horizons may have a complete selected-period expenditure budget while
+their ownership cost remains noncomparable. No separate full-term report is
+generated for mismatched periods.
+
+`HouseholdPaymentCalendar` exposes requested/covered months, calendar status,
+at most 121 relative month rows, source summaries, external outflow/inflow,
+net external cash flow, and internal saving. Month zero has no invented calendar
+date. Other rows use the explicit start month. Rows have category/direction
+totals; source summaries identify calculation/input paths, labels, applicable
+offsets, estimates, payment completeness, and known unscheduled amounts.
+Unscheduled quoted amounts are not added to period payment subtotals. Missing
+annual timing affects ongoing funding, whereas an undated one-time item may
+also affect startup funding. Missing calendar labels alone do not invalidate
+known relative monthly payments or their average.
+
+Energy is an explicitly estimated uniform monthly payment over the covered
+period. Each unrounded source amount is distributed independently, with only
+decimal residue assigned to its last month. Display-rounded rows are never
+summed to compute totals. Period/source errors remain local; representable
+monthly rows survive a period aggregate overflow. If the ongoing period sum
+overflows, the average is calculated from the independently representable
+source contributions before rounding, preserving source errors and missing
+evidence. Unrepresentable results retain `calculationOutOfRange` and null sums.
+
+`HouseholdBudgetResult` includes the optional limit, funding section and
+`notConfigured | withinLimit | exceeded | unknown | invalid` status. Compare
+unrounded funding with the limit; equality passes. A safe known subtotal above
+the limit can establish exceeded even with incomplete evidence. Invalid limits
+affect their own budget only; no configured limit is distinct from a zero limit.
+
+`HouseholdCashReconciliation` exposes purchase cash, repaid principal,
+depreciation, accrued/paid operating costs, paid/refunded/withheld deposit and
+repair allowance. The unrounded reconciliation is:
+
+```text
+cost = netExternalCashFlow - purchaseCash - principalRepaid + depreciation
+     + accruedOperatingCosts - paidOperatingCosts
+     - depositPaid + depositRefund + depositWithheld + repairAllowance
+```
+
+Nonapplicable terms contribute zero internally. The full reconciled result
+requires complete applicable inputs and a comparable ownership period; partial
+terms remain visible. Reserve saving is internal, never a workshop invoice.
+
+See [calendar tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdPaymentCalendarTests.cs),
+[lease tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdLeaseCalculatorTests.cs),
+[lease validation tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdLeaseValidationTests.cs),
+and [payment precision tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdPaymentPrecisionTests.cs).
+They cover A2/A7-A11, year boundaries, partial data, deposits/inclusions,
+bounded immutable inputs, sensitivity, local arithmetic errors and budget
+thresholds. Persistence/migration (#58), HTTP/types (#59), Swedish UI (#60),
+and the practical whole-stage acceptance (#61) remain later work.
 
 ## Inputs and units
 
@@ -308,7 +409,8 @@ energy partial. Keep energy quantities available when only prices are missing.
 
 Month 0 is acquisition immediately before month 1, the selected start calendar
 month. Month `t` (1..M) maps to `startMonth + t-1`. Monthly charges are paid in
-each applicable month. Annual recurring costs supply one `dueMonthOfYear`
+each applicable month. Energy is estimated evenly across covered months from
+the common annual driving and price assumptions. Annual recurring costs supply one `dueMonthOfYear`
 (1-12) and pay their full annual amount whenever that calendar month occurs;
 their economic accrual remains prorated. No guessed refund at period end or
 catch-up bill before the first entered due month. One-time events use an
@@ -354,6 +456,10 @@ N. Show coverage ending at N for longer horizons. Full-term obligations may be
 shown separately, explicitly labeled. Excess-distance charge is scheduled only
 at N based on full-term common use; it is zero when excess distance is zero
 even if an unused rate is missing.
+
+For a longer horizon, known operating costs, energy and repair saving also end
+with the contract. Subsequent months remain unknown and cannot produce a full
+budget pass; do not silently extend the car's use assumptions beyond coverage.
 
 Included categories contribute zero *additional* cost with an included label;
 prevent entry of the same service/insurance twice. Allow explicitly excluded

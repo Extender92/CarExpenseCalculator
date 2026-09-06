@@ -12,6 +12,12 @@ public static class HouseholdCostInputValidator
     {
         ArgumentNullException.ThrowIfNull(vehicle);
         var errors = HouseholdInputValidator.ValidatePurchase(new(vehicle.CandidateKey, vehicle.PriceSek), path).ToList();
+        if (!Enum.IsDefined(vehicle.AcquisitionType))
+            errors.Add(new($"{path}.acquisitionType", "unsupportedValue", "Acquisition type is not supported."));
+        if ((vehicle.AcquisitionType == AcquisitionType.Purchase && vehicle.Lease is not null)
+            || (vehicle.AcquisitionType == AcquisitionType.Lease && (vehicle.PriceSek is not null || vehicle.Residual is not null)))
+            errors.Add(new(path, "invalidStructure", "Purchase and lease inputs are mutually exclusive."));
+        ValidateLease(vehicle.Lease, $"{path}.lease", errors);
         if (vehicle.Residual is { } residual)
         {
             var maximum = residual.Mode == ResidualMode.AnnualPercentage ? 100m
@@ -25,7 +31,7 @@ public static class HouseholdCostInputValidator
         HouseholdInputValidator.Sensitivity(vehicle.AdditionalRepairAllowancePerMonthSek, 0m,
             HouseholdInputValidator.MaximumMoneySek, $"{path}.additionalRepairAllowancePerMonthSek", errors);
         var costKeys = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var (name, category) in Categories(vehicle))
+        foreach (var (name, category) in Categories(vehicle).Concat(LeaseCategories(vehicle.Lease)))
         {
             if (category is null) continue;
             var categoryPath = $"{path}.{name}";
@@ -63,6 +69,55 @@ public static class HouseholdCostInputValidator
 
     internal static bool IsStructural(HouseholdInputError error) => error.Code is not
         ("outOfRange" or "energyBasisMismatch" or "unsupportedDrivingModes" or "invalidEnergyUnit");
+
+    private static void ValidateLease(HouseholdLeaseInput? lease, string path, List<HouseholdInputError> errors)
+    {
+        if (lease is null) return;
+        EnumValue(lease.PriceBasis, $"{path}.priceBasis", errors);
+        HouseholdInputValidator.Range(lease.TermMonths, 1, 120, $"{path}.termMonths", errors);
+        HouseholdInputValidator.Range(lease.UpfrontNonRefundableSek, 0, HouseholdInputValidator.MaximumMoneySek, $"{path}.upfrontNonRefundableSek", errors);
+        HouseholdInputValidator.Range(lease.RefundableDepositSek, 0, HouseholdInputValidator.MaximumMoneySek, $"{path}.refundableDepositSek", errors);
+        var refundMaximum = lease.RefundableDepositSek is >= 0 and <= HouseholdInputValidator.MaximumMoneySek
+            ? lease.RefundableDepositSek.Value : HouseholdInputValidator.MaximumMoneySek;
+        HouseholdInputValidator.Sensitivity(lease.DepositRefundSek, 0, refundMaximum, $"{path}.depositRefundSek", errors);
+        HouseholdInputValidator.Range(lease.IncludedDistanceKilometres, 0, 10_000_000, $"{path}.includedDistanceKilometres", errors);
+        HouseholdInputValidator.Sensitivity(lease.ExcessDistancePricePerKilometreSek, 0, 100_000, $"{path}.excessDistancePricePerKilometreSek", errors);
+        if (lease.MonthlyPayments?.Count > 120)
+            errors.Add(new($"{path}.monthlyPayments", "tooManyItems", "At most 120 monthly payments are allowed."));
+        var months = new HashSet<int>();
+        foreach (var (payment, index) in (lease.MonthlyPayments ?? []).Take(120).Select((payment, index) => (payment, index)))
+        {
+            var itemPath = $"{path}.monthlyPayments[{index}]";
+            if (payment is null)
+            {
+                errors.Add(new(itemPath, "missingItem", "Payment cannot be null."));
+                continue;
+            }
+            if (!months.Add(payment.MonthOffset))
+                errors.Add(new($"{itemPath}.monthOffset", "duplicateKey", "Each contract month accepts one quoted payment."));
+            HouseholdInputValidator.Range(payment.MonthOffset, 1, lease.TermMonths is >= 1 and <= 120 ? lease.TermMonths.Value : 120,
+                $"{itemPath}.monthOffset", errors);
+            HouseholdInputValidator.Range(payment.AmountSek, 0, HouseholdInputValidator.MaximumMoneySek, $"{itemPath}.amountSek", errors);
+        }
+        foreach (var (charge, index) in (lease.EndFees ?? []).Take(50).Select((charge, index) => (charge, index)))
+            if (charge?.MonthOffset is not null)
+                errors.Add(new($"{path}.endFees.items[{index}].monthOffset", "invalidStructure", "End fees use the contract end month."));
+        foreach (var (charge, index) in (lease.OtherPayments ?? []).Take(50).Select((charge, index) => (charge, index)))
+            if (charge is not null && lease.TermMonths is >= 1 and <= 120)
+                HouseholdInputValidator.Range(charge.MonthOffset, 0, lease.TermMonths.Value, $"{path}.otherPayments.items[{index}].monthOffset", errors);
+    }
+
+    private static IEnumerable<(string Name, HouseholdCostCategoryInput? Category)> LeaseCategories(HouseholdLeaseInput? lease)
+    {
+        if (lease is null) yield break;
+        yield return ("lease.endFees", Adapt(lease.EndFees));
+        yield return ("lease.otherPayments", Adapt(lease.OtherPayments));
+
+        static HouseholdCostCategoryInput? Adapt(IReadOnlyList<HouseholdLeaseCharge>? charges) => charges is null ? null
+            : HouseholdCostCategoryInput.FromItems(charges.Select(charge => charge is null ? null! : new HouseholdCostItem(
+                charge.Key, charge.Label, charge.AmountSek, HouseholdCostCadence.Once, charge.MonthOffset,
+                EvidenceNote: charge.EvidenceNote, SourceUrl: charge.SourceUrl)));
+    }
 
     private static void ValidateEnergy(IReadOnlyList<HouseholdEnergySource>? sources, string path, List<HouseholdInputError> errors)
     {

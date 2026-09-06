@@ -40,9 +40,9 @@ direction and normative specifications are in the
 [Household calculations and comparison plan](household-comparison-plan.md).
 The existing manual-calculator milestone remains complete for its version 1
 scope. Shared inputs and purchase financing (#55), plus partial ownership costs,
-energy, depreciation and sensitivity (#56), are implemented in Core.
-Lease/calendar/budget calculations (#57), persistence, HTTP and UI remain
-subsequent work. See the
+energy, depreciation and sensitivity (#56), and leasing, calendar payments,
+cash/cost reconciliation and budgets (#57), are implemented in Core.
+Persistence (#58), HTTP and UI remain subsequent work. See the
 [Core cost contract](household-calculations.md#implemented-core-ownership-costs).
 
 - Define one editable household profile for common use, available cash, loan

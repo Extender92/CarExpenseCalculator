@@ -127,6 +127,14 @@ only after aggregation. Exact integer comparisons protect fractional-year
 depreciation from decimal underflow without introducing external packages.
 No household-profile, lease, score, or draft persistence model is implemented.
 
+Core also implements explicit lease contracts, bounded payment calendars,
+cash/cost reconciliation and separate startup/average-month funding checks.
+Purchase and lease candidates share the same profile; lease coverage limits
+known calculations without changing the requested household horizon. Internal
+decimal components feed costs and payments before display rounding. The
+[payment contract](household-calculations.md#implemented-core-leasing-and-payments)
+defines partial calendars, deposits, repair saving and budget evidence.
+
 The planned household profile owns common driving and financing assumptions,
 purchase cash, energy prices, and separate startup/ongoing budget limits.
 Current vehicle facts remain car-specific and registration-based. Core
