@@ -2,8 +2,8 @@
 
 ## Status and scope
 
-Normative target for stage 3B. The #62 Core fact foundation is implemented on
-its PR branch, pending approved merge; rules, scores, persistence and UI remain
+Normative target for stage 3B. The #62 Core fact foundation is merged through
+[PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80); rules, scores, persistence and UI remain
 **not implemented**. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
@@ -11,6 +11,9 @@ or explicitly reviewed registered candidates from all three product modes.
 No provider selection, automatic discovery, or AI is needed to compare them.
 See the [product plan](household-comparison-plan.md) and
 [acceptance procedure](household-comparison-verification.md).
+The [#63 preparation audit](buying-rules-implementation-preparation.md) records
+completed dependencies and the existing Core integration boundaries; it adds
+no new product behavior to this specification.
 
 ## Current facts and evidence
 
