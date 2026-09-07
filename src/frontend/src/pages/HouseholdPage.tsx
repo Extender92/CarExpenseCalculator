@@ -38,7 +38,11 @@ export function HouseholdPage() {
     workspace.onFocus();
   }, [workspace]);
   useEffect(() => {
-    if (!requested || opened.current === requested) return;
+    if (!requested) {
+      opened.current = null;
+      return;
+    }
+    if (opened.current === requested) return;
     opened.current = requested;
     if (state.active.vehicleId !== requested)
       void workspace.openVehicle(requested, params.has("listingVehicleId"));
@@ -92,7 +96,8 @@ export function HouseholdPage() {
             variant="secondary"
             onClick={() => {
               if (workspace.newVehicle()) {
-                opened.current = null;
+                // Keep the old URL consumed until navigation commits. The
+                // external workspace can render before the router transition.
                 setParams({});
               }
             }}
