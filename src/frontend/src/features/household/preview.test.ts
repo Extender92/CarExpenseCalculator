@@ -7,6 +7,30 @@ import { candidate, deferred, previewResponse } from "./test-fixtures";
 
 afterEach(() => vi.restoreAllMocks());
 describe("household preview batching", () => {
+  it("sends unknown amounts for independent server results without inventing sensitivity values", () => {
+    const car = candidate(1);
+    car.input.additionalRepairAllowancePerMonthSek = null;
+    car.input.tax = {
+      isIncluded: false,
+      items: [
+        {
+          key: "tax",
+          label: "Skatt",
+          cadence: "annual",
+          amountSek: null,
+        },
+      ],
+    };
+    const result = previewBatches(initialProfile(), [car], "missing-mode");
+    expect(result.errors).toEqual({});
+    expect(result.batches).toHaveLength(1);
+    expect(
+      result.batches[0].vehicles[0].input.additionalRepairAllowancePerMonthSek,
+    ).toBeNull();
+    expect(
+      result.batches[0].vehicles[0].input.tax?.items[0].amountSek,
+    ).toBeNull();
+  });
   it("never starts more than two concurrent preview requests", async () => {
     const pending = Array.from({ length: 3 }, () =>
       deferred<ReturnType<typeof previewResponse>>(),

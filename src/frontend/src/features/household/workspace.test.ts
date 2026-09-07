@@ -241,6 +241,31 @@ describe("household workspace generations and separate save baselines", () => {
 });
 
 describe("shared draft and deletion", () => {
+  it("refreshes the empty draft slot after vehicle deletion finishes its write epoch", async () => {
+    const car = savedVehicle();
+    vi.mocked(householdApi.list).mockResolvedValue([summary(car)]);
+    vi.spyOn(householdApi, "vehicle").mockResolvedValue(car);
+    vi.mocked(householdApi.draft).mockResolvedValue({
+      revision: n(4),
+      input: {
+        registrationNumber: car.registrationNumber,
+        baseVehicleId: car.vehicleId,
+        baseVehicleRevision: car.revision,
+        cost: { input: car.input! },
+      },
+    });
+    await workspace.refresh();
+    const cleared = deferred<DraftResponse>();
+    vi.mocked(householdApi.draft).mockReturnValue(cleared.promise);
+    vi.mocked(householdApi.list).mockResolvedValue([]);
+    vi.spyOn(householdApi, "delete").mockResolvedValue(undefined);
+    await workspace.deleteVehicle(summary(car));
+    cleared.resolve({ revision: n(5), input: null });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(workspace.state.loading).toBe(false);
+    expect(workspace.state.draft).toEqual({ revision: n(5), input: null });
+    expect(workspace.state.summaries).toEqual([]);
+  });
   it("saves an existing car origin with exact revisions and explicitly replaces a different registration", async () => {
     vi.mocked(householdApi.draft).mockResolvedValue({
       revision: n("9007199254740993"),

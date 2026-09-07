@@ -4,16 +4,18 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ProfileFields, VehicleFields } from "./Fields";
 import { Section, VehicleResults } from "./Results";
-import { LegacyReviewEditor } from "./Review";
+import { InputFacts, LegacyReviewEditor } from "./Review";
 import {
   initialProfile,
   initialVehicle,
   remainingReviews,
   validateVehicle,
   validateCostWrite,
+  validateFields,
+  profileFields,
   type FormErrors,
 } from "./form-model";
-import { n, stringifyExact } from "./numbers";
+import { n, parseExact, stringifyExact } from "./numbers";
 import { candidate, previewVehicle, section } from "./test-fixtures";
 import type {
   CostWrite,
@@ -68,6 +70,54 @@ function ProfileHarness({
 }
 
 describe("Swedish household form semantics", () => {
+  it("reads a stored sensitivity trio even when the API includes single: null", () => {
+    const input = parseExact<ProfileInput>(
+      '{"electricDrivingSharePercent":{"single":null,"favorable":70,"baseline":50,"cautious":30}}',
+    );
+    render(<ProfileHarness initial={input} />);
+    expect(
+      screen.getByLabelText("Typ av värde för Elandel av körsträckan (%)"),
+    ).toHaveValue("trio");
+    expect(
+      screen.getByLabelText("Elandel av körsträckan (%) – gynnsamt"),
+    ).toHaveValue("70");
+    expect(
+      screen.getByLabelText("Elandel av körsträckan (%) – normalt"),
+    ).toHaveValue("50");
+    expect(
+      screen.getByLabelText("Elandel av körsträckan (%) – försiktigt"),
+    ).toHaveValue("30");
+    expect(
+      validateFields(
+        { ...initialProfile(), ...input },
+        profileFields,
+        "profile",
+      ),
+    ).toEqual({});
+  });
+  it("names recovered legacy assumptions and cost collections in Swedish", () => {
+    render(
+      <InputFacts
+        value={{
+          calculationPeriodMonths: n(24),
+          expectedResidualValueSek: n(15000),
+          vehicleTax: null,
+          maintenanceAndRepairs: null,
+          otherRecurringCosts: [],
+          otherOneTimeCosts: [],
+        }}
+      />,
+    );
+    for (const label of [
+      "Äldre kalkylperiod (månader)",
+      "Äldre fast restvärde (kr)",
+      "Fordonsskatt",
+      "Kombinerat äldre underhåll",
+      "Äldre återkommande kostnader",
+      "Äldre engångskostnader",
+    ])
+      expect(screen.getByText(label, { exact: true })).toBeInTheDocument();
+  });
   it("starts without economic defaults and distinguishes zero from empty numeric input", () => {
     render(<ProfileHarness />);
     const cash = screen.getByLabelText("Kontanter till bilköpet (kr)");

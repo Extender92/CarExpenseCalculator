@@ -5,6 +5,7 @@ import {
   costFields,
   leaseFields,
   newCost,
+  isSingleSensitivity,
   profileFields,
   vehicleGroups,
   type Field,
@@ -100,7 +101,11 @@ function FieldControl({
   if (field.kind === "sensitivity") {
     const entry = value as Record<string, unknown> | null | undefined;
     const mode =
-      entry == null ? "unknown" : "single" in entry ? "single" : "trio";
+      entry == null
+        ? "unknown"
+        : isSingleSensitivity(entry)
+          ? "single"
+          : "trio";
     return (
       <fieldset className={panelClass}>
         <legend className="px-1 text-sm font-semibold">{field.label}</legend>

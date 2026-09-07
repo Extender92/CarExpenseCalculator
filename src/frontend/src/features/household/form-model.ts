@@ -115,6 +115,16 @@ const newCharge = () => ({
   sourceUrl: null,
 });
 
+// HTTP responses include null members for the unused representation. Presence
+// of the `single` key alone therefore does not identify a single-value input.
+export function isSingleSensitivity(value: Record<string, unknown>) {
+  return (
+    value.single != null ||
+    ("single" in value &&
+      ["favorable", "baseline", "cautious"].every((key) => value[key] == null))
+  );
+}
+
 export const profileFields: Field[] = [
   integer("periodMonths", "Ägandeperiod (månader, 1–120)"),
   { key: "startMonth", label: "Startmånad", kind: "month" },
@@ -386,14 +396,13 @@ export function validateFields(
           add(path, "Välj ett tillåtet alternativ.");
       } else if (field.kind === "sensitivity") {
         const trio = entry as Record<string, unknown>;
-        const definitions =
-          "single" in trio
-            ? [number("single", "Värde")]
-            : [
-                number("favorable", "Gynnsamt"),
-                number("baseline", "Normalt"),
-                number("cautious", "Försiktigt"),
-              ];
+        const definitions = isSingleSensitivity(trio)
+          ? [number("single", "Värde")]
+          : [
+              number("favorable", "Gynnsamt"),
+              number("baseline", "Normalt"),
+              number("cautious", "Försiktigt"),
+            ];
         visit(
           trio,
           definitions.map((item) => ({ ...item, required: true })),

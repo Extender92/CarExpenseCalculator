@@ -634,8 +634,12 @@ export class HouseholdWorkspace {
     return true;
   }
   private end() {
+    const refreshInvalidated = this.state.loading;
     this.writeEpoch++;
-    this.set({ busy: null });
+    this.set({ busy: null, loading: false });
+    // Reads started during a write cannot publish across its final epoch. In
+    // particular, deletion refreshes the cleared draft slot before reaching end.
+    if (refreshInvalidated) void this.refresh();
   }
   async saveProfile() {
     const errors = validateFields(
