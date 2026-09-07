@@ -67,7 +67,9 @@ node scripts/verify-url-analysis-acceptance.mjs
 
 The existing ordinary CI discovers the new tests without workflow changes.
 The acceptance PR must pass all four groups: backend, frontend, OpenAPI and
-Docker/browser. Published CI evidence is linked from #61 and the PR checks.
+Docker/browser. Published evidence is available in [PR #78 checks](https://github.com/Extender92/CarExpenseCalculator/pull/78/checks)
+and the [initial PR workflow run](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34108946950).
+The PR checks show the current head, including any subsequent report-only update.
 
 | Check | Passed | Failed | Skipped | Observation |
 | --- | ---: | ---: | ---: | --- |
@@ -177,7 +179,16 @@ limits do not substitute for or weaken the deterministic stage 3A acceptance.
 
 Temporary artifacts are restricted to the ignored `temp/issue61/` directory
 where supported; root `temp/` is also excluded from Docker build contexts.
-Delivery cleanup stops the OpenAPI process and isolated Compose stack, removes
-its disposable volumes, removes work-owned helper scripts/logs/screenshots/
-portable tooling and generated build/test output, and checks Windows Temp.
-The final PR/issue completion record states the actual cleanup result.
+The OpenAPI process, build servers, isolated Compose stack and task-started
+Docker Desktop session were stopped. Both disposable Compose volumes and the
+test networks were removed. Generated backend build directories, frontend
+build output and test caches were removed. Cleanup also removed the temporary
+helper scripts, logs, screenshots and portable Node installation under
+`temp/issue61/`, followed by the empty root `temp/` directory.
+
+Windows Temp was inventoried against the startup record. The task-started
+Docker/WSL diagnostic directory, updater download, plugin directory and 30
+temporary startup icons were removed; the runtime swap directory disappeared
+when that session stopped. No identified task-owned file remained inaccessible
+or undeleted. Unrelated or unattributed Windows Temp files were retained;
+ordinary project dependencies remain installed in `node_modules`.
