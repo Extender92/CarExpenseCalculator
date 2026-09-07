@@ -10,9 +10,12 @@ Stage 3B starts only after the approved acceptance PR is merged and its
 dependencies are audited.
 
 - Baseline: `8918f7e7fb04b1393e025b64de11945a2102934f` (merged #60 / PR #77).
-- Tested implementation and tests: `4d35813` on
-  `chore/61-household-stage-acceptance`. Subsequent report/status commits do not
-  change the tested product or tests.
+- Tested implementation and tests: `f8ea3c6` on
+  `chore/61-household-stage-acceptance`. The complete local Docker/visual run
+  used `4d35813`; the later navigation fix was reproduced by a failing page
+  regression, verified by the full local frontend suite, and included in the
+  final CI Docker/browser run. Subsequent report/status commits do not change
+  the tested product or tests.
 - Acceptance source: [3A practical procedure](household-comparison-verification.md#practical-stage-3a-acceptance)
   and [normative examples A1–A11](household-calculations.md#worked-examples-and-acceptance).
 - Public contracts are unchanged: calculation/result version 2, storage version
@@ -74,7 +77,7 @@ The PR checks show the current head, including any subsequent report-only update
 | Check | Passed | Failed | Skipped | Observation |
 | --- | ---: | ---: | ---: | --- |
 | Backend | 699 | 0 | 0 | Core 376; extractor 39; architecture 4; Infrastructure unit 16; Infrastructure PostgreSQL 96; API 168. |
-| Frontend | 194 | 0 | 0 | 19 files; baseline 190 plus four regression/contract checks. |
+| Frontend | 195 | 0 | 0 | 20 files; baseline 190 plus five regression/contract checks. |
 | Chromium | 33 | 0 | 0 | Baseline 24 plus nine complete-flow acceptance cases; one worker; no retries in the successful local run. |
 | Lint/build | Pass | 0 | 0 | Backend build: zero warnings/errors. Frontend lint/build succeeds. |
 | OpenAPI | Pass | 0 | 0 | No generated-schema diff. |
@@ -125,7 +128,7 @@ parts are not added together as an unrounded identity.
 | Shared draft recovery | SAA016–017: opening preserves revision; competing draft save conflicts; changed car base rejects adoption and preserves the saved draft after reload. Explicit replacement adopts another registered draft. Empty slot revision rejects a stale write. Deletion clears a matching saved draft. | New two-browser case; existing draft lifecycle/browser and store/API tests. |
 | Legacy transition | SAA018–019 use original annual distances 11,111 and 22,222, fixed residual 15,000 at 24 months, combined maintenance and energy. Both derived results are deliberately unreadable/version 999 in the disposable database. Original inputs remain visible. Profile is entered explicitly as 12,000 km. One atomic request contains both cars/revisions. | New browser case; `HouseholdTransitionStoreTests`, `HouseholdPersistenceEndpointTests`, migration and concurrency tests. |
 | Maximum legacy collections | SAA018 preserves 50 recurring posts as 50 mapped current posts (sum 1,275/month), retains 49 undated one-time posts and explicitly discards one. Maintenance and energy each remain one review item. Known annual custom cost is 15,300; full total remains unavailable. Old scenario endpoints return 404 after conversion. | New browser case plus existing 50+50 browser/API/store coverage and transactional rollback tests. |
-| Whole deletion and compatibility | Household deletion removes matching draft/current data and preserves profile. Existing v1 and URL browser flows still remove complete aggregates and clear local forms. Deleted cars cannot return through stale responses. | Acceptance/workspace browser suites; three-route API deletion tests; store cascade/retention tests. |
+| Whole deletion and compatibility | Household deletion removes matching draft/current data and preserves profile. Existing v1 and URL browser flows still remove complete aggregates and clear local forms. Deleted cars cannot return through stale responses. Starting a new car clears the previous URL without reopening it, and browser Back can restore that selection. | Acceptance/workspace browser suites; `HouseholdPage.test.tsx`; three-route API deletion tests; store cascade/retention tests. |
 | Limits and concurrent previews | Retained coverage exercises 101/201 candidates, 100-candidate batches, actual UTF-8 sizing, a single oversized candidate, two concurrent previews, four reads, reversed responses and failed batches. Exact/chunked 2 MiB requests are checked through Nginx. | Frontend `preview.test.ts`/`workspace.test.ts`; household API browser and endpoint suites. |
 | Isolation and failure | Unsaved preview still works without storage; household edits cause no extraction writes/calls. Failed writes preserve editing and do not retry automatically. | Existing workspace browser outage test; `HouseholdIsolationEndpointTests`; workspace tests; fake acceptance verifier. |
 | Accessibility and visual review | Keyboard errors focus the summary and relevant field. Desktop 1440×1000 and mobile 390×844 screenshots were inspected: clear complete/known-part amounts, separate budget categories and payment directions; no page-level mobile overflow. | Existing keyboard/mobile browser case plus the visual session described below. |
@@ -143,7 +146,7 @@ as stage 3A acceptance.
 
 ## Findings, limitations and cleanup
 
-Three bounded frontend defects were corrected:
+Four bounded frontend defects were corrected:
 
 1. A stored complete sensitivity trio also contains `single: null` in HTTP
    responses. The UI previously selected single-value mode by key presence and
@@ -156,6 +159,11 @@ Three bounded frontend defects were corrected:
 3. Legacy period, residual, tax and combined/custom cost collections lacked
    Swedish display names in the original-input review. They now have explicit
    labels without changing input classification or calculations.
+4. Choosing **Ny bil** cleared the consumed-URL marker before the router
+   transition committed. An intervening workspace render could reopen the old
+   vehicle, disabling registration editing or replacing the newly entered car.
+   The marker now resets when the empty URL commits. A page regression also
+   verifies that browser Back can reopen the former car.
 
 The first two defects were reproduced by failing unit regressions before their
 fixes and by browser acceptance failures; both now pass. Initial new-test runs
@@ -166,6 +174,12 @@ relaxed. A complete trio requires three values; an unknown amount uses a null
 sensitivity object. Original invalid/unfinished-input regression assertions
 remain in place. The final full suites passed without skipped tests or local
 retries; earlier failed development runs are not counted as successful evidence.
+The initial Linux CI browser runs failed the draft replacement case, including
+their two automatic retries, and exposed the navigation defect above. It was
+then reproduced locally by a failing page regression before correction. The
+added test initially also used an unsupported Testing Library option caught by
+TypeScript; that option was removed and the build passed. The final PR checks
+supersede those failed runs, which remain linked for transparency.
 
 Non-blocking tool output included npm's update notice, Git's Windows LF/CRLF
 notice, and Playwright's `NO_COLOR`/`FORCE_COLOR` warning. PowerShell required

@@ -151,6 +151,9 @@ visual observations, limits and stage approval gates.
 
 Acceptance fixed interpretation of stored sensitivity trios whose unused
 `single` member is null, recovery of the empty draft slot after vehicle deletion,
-and Swedish labels for original legacy inputs. Unknown amounts remain distinct
+Swedish labels for original legacy inputs, and a navigation race that could
+reopen the previous URL-linked car immediately after choosing **Ny bil**.
+The old URL remains consumed until navigation commits; browser Back can still
+reopen it. Unknown amounts remain distinct
 from incomplete sensitivity trios, which are structural form errors. No values
 are filled from another sensitivity mode and no HTTP contract changed.
