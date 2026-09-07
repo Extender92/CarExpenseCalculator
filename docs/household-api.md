@@ -7,7 +7,8 @@ and [persistence](household-calculations.md#implemented-household-persistence)
 contracts. Core calculation/result versions remain **2**, storage version **1**.
 There is no new migration, result cache, history, automatic save or AI invocation.
 The [Swedish household workspace](household-workspace.md) is implemented in #60;
-practical stage acceptance remains #61. Its exact JSON adapter preserves input
+practical stage acceptance is recorded in the [#61 report](household-stage-3a-verification-report.md).
+Its exact JSON adapter preserves input
 decimals/revisions without changing this HTTP contract or the generated schema.
 Existing manual-calculator and listing routes retain their contracts, with
 additive recovery metadata for v1 writes to converted vehicles.

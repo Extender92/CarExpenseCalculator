@@ -3,7 +3,9 @@
 ## Status
 
 Acceptance specification for stages 3A/3B. The implementation notes below name
-automated coverage; the practical whole-stage #61 gate remains unexecuted.
+automated coverage; the practical whole-stage #61 execution is recorded in the
+[stage 3A report](household-stage-3a-verification-report.md). Stage 3B acceptance
+remains future work. The report distinguishes tested branch evidence from merge.
 Use the normative [calculation](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications. Existing v1 tests
 remain required. Routine extraction tests use the existing synthetic fake;
@@ -17,7 +19,7 @@ Issue #58 implements the persistence portions in PostgreSQL integration tests:
 and [seeded upgrade/rollback/reapply](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
 They exercise failures after partial in-transaction work, preserved empty-slot
 revisions, legacy result corruption and the 50+50 old cost collections. The
-UI recovery is implemented in #60; practical household acceptance remains #61.
+UI recovery is implemented in #60 and exercised in the #61 acceptance report.
 Passing store or HTTP tests alone does not complete that gate.
 
 Issue #59 adds [preview contracts and independent completeness](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/HouseholdPreviewEndpointTests.cs),

@@ -144,8 +144,8 @@ legacy transition and shared draft. The
 defines the four store interfaces and typed conflict outcomes. The
 [household HTTP layer](household-api.md) exposes these stores and Core previews
 through API-owned DTOs and generated frontend types (#59). The Swedish workspace
-(#60) is implemented. Complete stage acceptance (#61) and score persistence
-remain later work.
+(#60) is implemented. [Stage acceptance evidence](household-stage-3a-verification-report.md)
+for #61 covers the complete flow. Score persistence remains stage 3B work.
 No new household result cache or historical tables are introduced.
 
 Core also implements explicit lease contracts, bounded payment calendars,

@@ -16,6 +16,10 @@ Documentation gate: [PR #54](https://github.com/Extender92/CarExpenseCalculator/
 
 Tracker: [#71](https://github.com/Extender92/CarExpenseCalculator/issues/71). Milestone: [3A](https://github.com/Extender92/CarExpenseCalculator/milestone/7).
 
+Issues #55–#60 are merged. The [#61 acceptance report](household-stage-3a-verification-report.md)
+records whole-stage verification on its identified branch. Issue/milestone closure
+and promotion of #62 follow separately approved merge and dependency review.
+
 | Key | Issue | Deliverable | Prerequisite work |
 | --- | --- | --- | --- |
 | A1 | [#55](https://github.com/Extender92/CarExpenseCalculator/issues/55) | Implement shared household inputs and purchase financing | Documentation merge |

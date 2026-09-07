@@ -5,7 +5,8 @@
 Issue #60 implements the Swedish stage 3A frontend over the existing
 [household API](household-api.md) and [calculation/persistence contracts](household-calculations.md).
 It adds no HTTP contracts or migrations. Calculation/result version remains 2;
-storage version remains 1. Stage acceptance is still issue #61. Cross-vehicle
+storage version remains 1. [Stage acceptance](household-stage-3a-verification-report.md)
+was executed for #61 on the report's identified commit. Cross-vehicle
 comparison tables, ranking, buying scores and PDF export remain stage 3B.
 
 | Route | Interface |
@@ -142,4 +143,14 @@ concurrency is exercised explicitly with separate browser contexts. New fixtures
 remove their vehicles and draft content in teardown even after assertion errors.
 The acceptance log verifier reads up to 32 MiB so the larger household suite's
 complete SQL/access log is inspected instead of hitting Node's 1-MiB default.
-These checks prepare, but do not substitute for, the practical #61 stage gate.
+The additional [stage acceptance suite](../src/frontend/e2e/household-acceptance.spec.ts)
+checks A1–A11 through HTTP and the UI, shared multi-car edits, two-browser
+profile/draft recovery and two-car legacy transition with corrupt results.
+The [report](household-stage-3a-verification-report.md) records practical and
+visual observations, limits and stage approval gates.
+
+Acceptance fixed interpretation of stored sensitivity trios whose unused
+`single` member is null, recovery of the empty draft slot after vehicle deletion,
+and Swedish labels for original legacy inputs. Unknown amounts remain distinct
+from incomplete sensitivity trios, which are structural form errors. No values
+are filled from another sensitivity mode and no HTTP contract changed.

@@ -33,7 +33,7 @@ linked-calculation versioning without consuming ChatGPT usage.
 - Verify the complete flow through a fake extractor, PostgreSQL, Compose, and
   browser tests without live Codex calls or ChatGPT usage.
 
-## 3A. Household calculations — in progress
+## 3A. Household calculations — acceptance verified
 
 This is a separate delivery stage before rules and comparison. The accepted
 direction and normative specifications are in the
@@ -45,7 +45,9 @@ cash/cost reconciliation and budgets (#57), are implemented in Core.
 Persistence, explicit legacy transition and the shared draft (#58) are implemented
 in Infrastructure. Household HTTP contracts and generated types (#59) are
 implemented, together with the [Swedish household workspace](household-workspace.md)
-(#60). Practical stage acceptance (#61) remains subsequent work. See the
+(#60). Practical stage acceptance (#61) has a
+[verification report](household-stage-3a-verification-report.md). The report
+identifies the tested branch; GitHub closure follows approved merge. See the
 [Core cost contract](household-calculations.md#implemented-core-ownership-costs).
 
 - Define one editable household profile for common use, available cash, loan
