@@ -4,10 +4,13 @@
 
 Stage 3A acceptance was executed on 2026-09-07 for
 [#61](https://github.com/Extender92/CarExpenseCalculator/issues/61).
-The automated and practical checks below pass. This is evidence for the
-acceptance branch, not authorization to merge or close the GitHub milestone.
-Stage 3B starts only after the approved acceptance PR is merged and its
-dependencies are audited.
+The automated and practical checks below pass. Following separate user
+approval, [PR #78](https://github.com/Extender92/CarExpenseCalculator/pull/78)
+was merged on 2026-09-07 as `15b281f793e2f51d4a01500ced32e9de2d0d411d`.
+[Merged-main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34111101486)
+passed all four check groups. All seven 3A implementation issues are closed;
+the stage is complete. The evidence below retains the original tested commits
+and execution limits. Stage 3B proceeds through its separately assigned issues.
 
 - Baseline: `8918f7e7fb04b1393e025b64de11945a2102934f` (merged #60 / PR #77).
 - Tested implementation and tests: `f8ea3c6` on
@@ -69,10 +72,12 @@ node scripts/verify-url-analysis-acceptance.mjs
 ```
 
 The existing ordinary CI discovers the new tests without workflow changes.
-The acceptance PR must pass all four groups: backend, frontend, OpenAPI and
-Docker/browser. Published evidence is available in [PR #78 checks](https://github.com/Extender92/CarExpenseCalculator/pull/78/checks)
-and the [initial PR workflow run](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34108946950).
-The PR checks show the current head, including any subsequent report-only update.
+The acceptance PR passed all four groups: backend, frontend, OpenAPI and
+Docker/browser. Published evidence is available in the
+[final PR workflow run](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34109881645)
+and the merged-main run linked above. The
+[initial failed PR workflow run](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34108946950)
+is retained as evidence for the navigation defect described below.
 
 | Check | Passed | Failed | Skipped | Observation |
 | --- | ---: | ---: | ---: | --- |

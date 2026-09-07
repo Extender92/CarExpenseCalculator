@@ -16,7 +16,8 @@ Issue #55 implements `Households.HouseholdProfileInput`, `HouseholdLoanTerms`,
 stage target. The ownership-cost subset added by #56 is documented below;
 leasing, payment calendars and budgets added by #57 are documented below.
 Persistence (#58), HTTP (#59) and the [Swedish workspace](household-workspace.md)
-(#60) are implemented. Practical whole-stage acceptance remains #61 work.
+(#60) are implemented. Practical whole-stage acceptance (#61) is complete and
+merged through PR #78; see the [verification report](household-stage-3a-verification-report.md).
 
 The current pure operation is
 `Calculate(HouseholdProfileInput, IReadOnlyList<VehiclePurchaseInput>)`.
@@ -237,7 +238,8 @@ and [payment precision tests](../tests/backend/CarExpenseCalculator.Core.UnitTes
 They cover A2/A7-A11, year boundaries, partial data, deposits/inclusions,
 bounded immutable inputs, sensitivity, local arithmetic errors and budget
 thresholds. Persistence/migration (#58) and HTTP/types (#59) are implemented.
-Swedish UI (#60) and practical whole-stage acceptance (#61) remain later work.
+Swedish UI (#60) and practical whole-stage acceptance (#61) are implemented,
+verified and merged.
 
 ## Implemented household persistence
 
@@ -354,8 +356,8 @@ Automated PostgreSQL coverage is in
 [draft tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/SharedVehicleDraftStoreTests.cs),
 [concurrency tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdConcurrencyTests.cs)
 and [migration tests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/HouseholdMigrationTests.cs).
-HTTP/generated types (#59) are implemented. Swedish flows (#60) and practical
-stage acceptance (#61) remain subsequent work.
+HTTP/generated types (#59), Swedish flows (#60) and practical stage acceptance
+(#61) are implemented, verified and merged.
 
 ## Inputs and units
 
@@ -593,7 +595,7 @@ and use assumptions remain quote-dependent; saving still requires registration.
 Issue #59 implements this boundary with API-owned DTOs and generated frontend
 types. See the [implemented HTTP contracts](household-api.md) for exact envelopes,
 review handling, status codes and examples. UI integration and practical whole-flow
-acceptance remain #60-#61 work. Calculation/result versions stay 2 and storage
+acceptance were delivered by #60-#61. Calculation/result versions stay 2 and storage
 version stays 1; no migration is introduced by the HTTP layer.
 
 `CalculateHousehold(profile, vehicles) -> HouseholdPreview` is pure. A preview

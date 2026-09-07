@@ -5,7 +5,8 @@
 Acceptance specification for stages 3A/3B. The implementation notes below name
 automated coverage; the practical whole-stage #61 execution is recorded in the
 [stage 3A report](household-stage-3a-verification-report.md). Stage 3B acceptance
-remains future work. The report distinguishes tested branch evidence from merge.
+remains future work. The report records both tested branch evidence and the
+approved PR #78 merge, including green merged-main CI.
 Use the normative [calculation](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications. Existing v1 tests
 remain required. Routine extraction tests use the existing synthetic fake;

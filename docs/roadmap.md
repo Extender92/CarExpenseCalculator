@@ -33,7 +33,7 @@ linked-calculation versioning without consuming ChatGPT usage.
 - Verify the complete flow through a fake extractor, PostgreSQL, Compose, and
   browser tests without live Codex calls or ChatGPT usage.
 
-## 3A. Household calculations — acceptance verified
+## 3A. Household calculations — complete
 
 This is a separate delivery stage before rules and comparison. The accepted
 direction and normative specifications are in the
@@ -47,7 +47,9 @@ in Infrastructure. Household HTTP contracts and generated types (#59) are
 implemented, together with the [Swedish household workspace](household-workspace.md)
 (#60). Practical stage acceptance (#61) has a
 [verification report](household-stage-3a-verification-report.md). The report
-identifies the tested branch; GitHub closure follows approved merge. See the
+identifies the tested commits and the approved merge through PR #78 on
+2026-09-07. All seven implementation issues are closed; merged-main CI is green.
+See the
 [Core cost contract](household-calculations.md#implemented-core-ownership-costs).
 
 - Define one editable household profile for common use, available cash, loan
@@ -76,6 +78,8 @@ identifies the tested branch; GitHub closure follows approved merge. See the
 This stage depends on 3A and is refined from the existing rules/comparison
 tracker #12. Stage labels 3A and 3B preserve later milestone numbering; the
 [delivery backlog](household-comparison-backlog.md) defines the ordered issues.
+The prerequisite acceptance is complete. The first item, #62, has a
+[Core vehicle-facts implementation plan](vehicle-facts-implementation-plan.md).
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,

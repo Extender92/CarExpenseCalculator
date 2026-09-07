@@ -6,19 +6,20 @@ The [product plan](household-comparison-plan.md), normative
 [household](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications, and
 [verification plan](household-comparison-verification.md) define this queue.
-Features are not implemented by the planning PR. All implementation items are
-initially **status:blocked**, including A1, until the documentation PR is merged
-and their prerequisites are complete. Trackers are overviews, never assignments.
+The original planning PR defined the queue without implementing its features.
+The documentation gate and stage 3A are now complete. Trackers are overviews,
+never implementation assignments.
 
-Documentation gate: [PR #54](https://github.com/Extender92/CarExpenseCalculator/pull/54).
+Completed documentation gate: [PR #54](https://github.com/Extender92/CarExpenseCalculator/pull/54).
 
 ## Stage 3A - Household calculations
 
 Tracker: [#71](https://github.com/Extender92/CarExpenseCalculator/issues/71). Milestone: [3A](https://github.com/Extender92/CarExpenseCalculator/milestone/7).
 
-Issues #55–#60 are merged. The [#61 acceptance report](household-stage-3a-verification-report.md)
-records whole-stage verification on its identified branch. Issue/milestone closure
-and promotion of #62 follow separately approved merge and dependency review.
+All seven issues #55–#61 are delivered through merged PRs #72–#78.
+The [acceptance report](household-stage-3a-verification-report.md) records the
+approved final merge `15b281f` and green merged-main CI: 699 backend,
+195 frontend and 33 Chromium tests. Stage 3A is complete.
 
 | Key | Issue | Deliverable | Prerequisite work |
 | --- | --- | --- | --- |
@@ -36,6 +37,13 @@ Tracker: [#12](https://github.com/Extender92/CarExpenseCalculator/issues/12). Ex
 renamed [3B - Comparison and buying scores](https://github.com/Extender92/CarExpenseCalculator/milestone/3).
 Every 3B item depends transitively on completed 3A acceptance, not on closing
 a tracker merely because its planning has been refined.
+
+The 2026-09-07 audit confirms that #62's prerequisites, planning PR #54 and
+acceptance #61 / PR #78, are merged on `main`. Existing specifications and Core
+listing contracts provide the implementation basis; #62 is `status:ready` and
+awaits assignment. See the [vehicle-facts implementation plan](vehicle-facts-implementation-plan.md).
+Items #63–#67 remain blocked by their immediate implementation prerequisites.
+No registry, AI or service-provider decision blocks this manual comparison stage.
 
 | Key | Issue | Deliverable | Prerequisite work |
 | --- | --- | --- | --- |
@@ -74,8 +82,9 @@ The implementation chain is A1 through A7, then B1 through B6. Trackers depend
 on their children; children never depend on their own tracker. Later work is
 not a prerequisite for the manual flow. This direction avoids dependency cycles.
 
-After separately approved merge, audit A1 first: documentation must be on main,
-no unresolved decisions/dependencies may remain, and no newer conflicting work
-may exist. Only then may the coordinator mark it status:ready. Subsequent issue
+After each separately approved merge, audit the next assigned preparation item:
+required specifications must be on main, no unresolved decisions/dependencies
+may remain, and no newer conflicting work may exist. Only then may the
+coordinator mark it status:ready. Subsequent issue
 completion does not automatically promote the next issue. Implementation still
 requires explicit assignment and its own focused issue branch/PR.

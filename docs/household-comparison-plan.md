@@ -11,7 +11,8 @@ shared profile, current purchase/lease inputs, explicit legacy transition and
 one revision-controlled registered draft (#58). Household HTTP contracts and
 generated frontend types (#59) and the [Swedish household workspace](household-workspace.md)
 (#60) are implemented. Practical stage acceptance (#61) is recorded in the
-[verification report](household-stage-3a-verification-report.md); stage 3B remains.
+[verification report](household-stage-3a-verification-report.md) and merged
+through PR #78. Stage 3A is complete; stage 3B remains.
 The implemented HTTP contracts are in [Household API](household-api.md),
 [Manual calculator](manual-calculator.md) and [URL analysis](url-analysis.md).
 
