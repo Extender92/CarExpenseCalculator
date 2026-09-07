@@ -78,6 +78,12 @@ These instructions apply to every agent working in this repository.
 
 ## While working
 
+- Keep agent-created temporary files in an issue-specific directory under the
+  ignored root `temp/` folder. Never put helper files in `.git` or commit them.
+  Direct process temporary output there where supported, without changing
+  machine-wide settings. Stop temporary processes and remove work-owned helpers,
+  logs, screenshots and caches before delivery; check for work-owned leftovers
+  in Windows Temp too. Preserve unrelated files and report any cleanup failures.
 - Keep work focused on the requested objective and its acceptance criteria.
 - Do not add unrelated cleanup merely because nearby files are open.
 - Distinguish documented target behavior from the current implementation. Do not

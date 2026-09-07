@@ -1,6 +1,7 @@
 .git
 .github
 .vs
+/temp/
 **/bin
 **/obj
 **/node_modules

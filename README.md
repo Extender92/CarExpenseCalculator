@@ -17,7 +17,8 @@ purchase financing from available cash and a separate leasing model. Current
 data remains registration-based with no calculation history. See the
 [Household calculations and comparison plan](docs/household-comparison-plan.md)
 for accepted decisions and normative target specifications. Stage 3A has its
-Swedish workspace; practical stage acceptance and stage 3B remain upcoming.
+Swedish workspace and a [stage acceptance report](docs/household-stage-3a-verification-report.md).
+Stage 3B remains upcoming; acceptance merge and milestone closure require review.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
@@ -28,7 +29,8 @@ reconciliation. Infrastructure now stores one shared profile, current purchase/
 lease inputs and one registered draft, with revision checks and explicit atomic
 transition from older calculations. Household HTTP routes and generated frontend
 types and the [Swedish household workspace](docs/household-workspace.md) are
-implemented. The whole-stage practical acceptance remains #61 work.
+implemented. The whole-stage practical acceptance for #61 is documented in the
+linked report, including tested commits, regression fixes and verification limits.
 See the [HTTP contract](docs/household-api.md).
 See the [persistence contract](docs/household-calculations.md#implemented-household-persistence)
 and the
@@ -205,6 +207,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 - [Household calculations specification](docs/household-calculations.md)
 - [Comparison and buying scores specification](docs/comparison-and-buying-scores.md)
 - [Household and comparison verification](docs/household-comparison-verification.md)
+- [Stage 3A acceptance report](docs/household-stage-3a-verification-report.md)
 - [Household and comparison delivery backlog](docs/household-comparison-backlog.md)
 - [URL analysis specification](docs/url-analysis.md)
 - [URL analysis verification](docs/url-analysis-verification.md)
