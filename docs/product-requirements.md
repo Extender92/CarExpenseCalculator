@@ -61,13 +61,16 @@ partial ownership costs, including energy, compound depreciation, separate
 service/repairs/allowance and explicit sensitivity modes. Core also supports
 leasing, calendar payments, cash/cost reconciliation and separate startup and
 average-month budgets. Shared input persistence and household HTTP contracts are
-implemented. The Swedish household interface remains #60 work; the current UI
-continues to use the implemented v1 calculator.
+implemented. The Swedish household interface (#60) owns `/manual`; the v1
+editor remains available at `/manual/legacy` for unconverted data. Whole-stage
+acceptance (#61) was merged through PR #78 with green CI. The
+[verification report](household-stage-3a-verification-report.md) records the
+tested implementation, results and limits. Stage 3A is complete.
 
 ## Planned household calculation and comparison direction
 
-The next work is split into two separate stages: household calculations (3A),
-then comparison and configurable buying scores (3B). The objective is to compare
+The work is split into household calculations (3A, complete), then comparison
+and configurable buying scores (3B, upcoming). The objective is to compare
 cars under the same household assumptions and determine estimated total cost
 after the chosen months or years, with a prominent monthly equivalent.
 
