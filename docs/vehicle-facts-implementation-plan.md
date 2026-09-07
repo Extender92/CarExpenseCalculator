@@ -2,9 +2,10 @@
 
 ## Readiness and scope
 
-Preparation for [#62](https://github.com/Extender92/CarExpenseCalculator/issues/62),
-the first implementation item in stage 3B. This document is an implementation
-plan; it does not add vehicle facts or scoring behavior to the application.
+Implementation record for [#62](https://github.com/Extender92/CarExpenseCalculator/issues/62),
+the first implementation item in stage 3B. The Core foundation described below
+is implemented and tested on `feature/62-vehicle-facts-provenance`, pending PR
+acceptance and separately approved merge. Rules and scores remain future work.
 
 Dependency audit on 2026-09-07:
 
@@ -21,9 +22,9 @@ Dependency audit on 2026-09-07:
   and [verification matrix](household-comparison-verification.md) are on `main`.
   There are no unresolved product decisions or provider dependencies for #62.
 
-The issue is ready for assignment. Its implementation branch will be
-`feature/62-vehicle-facts-provenance`. Only implementation start changes it
-from `status:ready` to `status:in-progress`.
+The user assigned implementation after preparation PR #79 was merged as
+`9994f7f8ae2d7330f6dcaa18146c6466f1fb0e9d`. The branch is
+`feature/62-vehicle-facts-provenance` and the issue is `status:in-progress`.
 
 The scope is dependency-free Core facts, normalization, validation, explicit
 mapping and tests. Rules and scores belong to #63; persistence/API to #64;
@@ -55,7 +56,14 @@ Household calculation/result version 2 and storage version 1 are unchanged.
   provide regression coverage for existing normalization, source boundaries,
   numeric limits and independent location fields.
 
-## Planned Core implementation
+## Implemented Core foundation
+
+The following agreed requirements are implemented by `VehicleComparisonFacts`,
+`VehicleFact<T>`, `ComparisonEvidence`, `ComparisonCriterionCatalog`,
+`VehicleFactsProcessor`, and `SwedishMil` in `Core.Comparisons`. The
+[normative Core contract](comparison-and-buying-scores.md#implemented-core-facts-62)
+documents operations, field paths, evidence boundaries and exact-conversion
+errors. The requirement list is retained for traceability:
 
 1. Add a `Comparisons` area for immutable current vehicle facts and typed
    evidence. Represent known, unknown, not applicable and conflicting current
@@ -118,6 +126,19 @@ to the design boundary, not additional implementation scope for #62:
 
 ## Verification and delivery
 
+Local implementation verification on 2026-09-07 used .NET SDK 10.0.400 and
+Docker 29.5.3 with disposable PostgreSQL 18 Testcontainers. Restore and Release
+build passed with zero build warnings/errors. All **760 backend tests** passed:
+437 Core (61 new), 4 architecture, 16 Infrastructure unit, 39 extractor unit,
+96 Infrastructure integration and 168 API integration; none failed or skipped.
+The first focused `--no-restore` invocation encountered absent assets after
+prior cleanup (`NETSDK1004`); restoring the solution resolved it before tests
+ran. No test assertion failed or required a rerun. Ordinary PR CI additionally
+verifies the unchanged 195 frontend and 33 Chromium regressions, generated
+OpenAPI and isolated fake-extractor/Docker behavior. The public API and
+extraction schema receive no intended changes. Live providers, Unraid data and
+stage 3B UI/PDF acceptance are outside this Core delivery.
+
 Automate observable Core behavior: every field's valid boundaries and invalid
 values; null/false/zero/not-applicable/conflict distinctions; exact km/mil;
 immutable collections; reviewed/manual mapping; preserved source metadata;
@@ -145,5 +166,5 @@ does not change public HTTP shapes, so generated OpenAPI must remain unchanged.
 Review the complete diff, links and temporary artifacts. Helpers belong in
 ignored `temp/issue62/` and are removed before delivery; use no production data.
 Commit/push a focused implementation PR with `Closes #62` only when its
-acceptance criteria are met. Merge requires separate user approval. Preparation
-does not authorize beginning #63 or close any 3B implementation issue.
+acceptance criteria are met. Merge requires separate user approval. This delivery
+does not start #63 or close the stage 3B milestone.

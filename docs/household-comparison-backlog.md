@@ -40,8 +40,9 @@ a tracker merely because its planning has been refined.
 
 The 2026-09-07 audit confirms that #62's prerequisites, planning PR #54 and
 acceptance #61 / PR #78, are merged on `main`. Existing specifications and Core
-listing contracts provide the implementation basis; #62 is `status:ready` and
-awaits assignment. See the [vehicle-facts implementation plan](vehicle-facts-implementation-plan.md).
+listing contracts provide the implementation basis. #62 is now assigned and
+`status:in-progress`; its Core implementation is verified on the PR branch,
+pending approved merge. See the [vehicle-facts implementation record](vehicle-facts-implementation-plan.md).
 Items #63–#67 remain blocked by their immediate implementation prerequisites.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 

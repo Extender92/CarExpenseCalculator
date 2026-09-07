@@ -78,8 +78,10 @@ See the
 This stage depends on 3A and is refined from the existing rules/comparison
 tracker #12. Stage labels 3A and 3B preserve later milestone numbering; the
 [delivery backlog](household-comparison-backlog.md) defines the ordered issues.
-The prerequisite acceptance is complete. The first item, #62, has a
-[Core vehicle-facts implementation plan](vehicle-facts-implementation-plan.md).
+The prerequisite acceptance is complete. The first item, #62, implements the
+[Core vehicle-facts foundation](vehicle-facts-implementation-plan.md) on its PR
+branch, pending approved merge. Rules/scoring (#63), storage/API (#64), UI (#65),
+PDF (#66) and whole-stage acceptance (#67) remain future work.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,

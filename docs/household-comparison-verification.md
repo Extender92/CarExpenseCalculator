@@ -35,6 +35,23 @@ transfer. See the [implemented API contract](household-api.md).
 
 ## Required automated regression coverage
 
+Issue #62 implements the fact portions of the rule-facts row on its PR branch,
+pending approved merge. [VehicleFactsProcessorTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/VehicleFactsProcessorTests.cs)
+cover the entire field catalogue, inclusive numeric bounds, enum/text errors,
+date domains, independent service facts, unknown/false/zero/empty/not-applicable,
+conflicts and immutable collections. [VehicleFactsEvidenceTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/VehicleFactsEvidenceTests.cs)
+cover explicit listing/manual mapping, source matching, preserved missing times,
+replacement/resolution and rejected registry promotion, plus no inferred service,
+inspection, geography, equipment or registration-year facts.
+[SwedishMilTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/SwedishMilTests.cs)
+cover the B7 conversion, precise decimal round trips, domain errors and
+unrepresentable conversion without silent rounding. These 61 new cases do not
+implement B7 hard-rule evaluation or B1-B8 score/order behavior; those remain #63.
+
+The #62 implementation uses the ordinary backend/CI groups below. Full-stage
+3B browser/PDF acceptance remains #67; existing household and URL regressions
+are retained without new product routes or external provider calls.
+
 Issue #60 adds the [Swedish workspace](household-workspace.md), focused frontend
 tests under `features/household`, and the real
 [household browser suite](../src/frontend/e2e/household-workspace.spec.ts).
