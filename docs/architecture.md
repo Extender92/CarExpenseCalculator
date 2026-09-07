@@ -122,7 +122,7 @@ retain a general location value or street address and does not infer counties
 or resolve geographic data. Listing persistence uses separate typed nullable
 columns for these current facts.
 
-## Planned household calculations and comparison
+## Household calculations and comparison
 
 Stages 3A and 3B are defined in the
 [Household calculations and comparison plan](household-comparison-plan.md),
@@ -147,6 +147,21 @@ through API-owned DTOs and generated frontend types (#59). The Swedish workspace
 (#60) is implemented. [Stage acceptance evidence](household-stage-3a-verification-report.md)
 for #61 covers the complete flow. Score persistence remains stage 3B work.
 No new household result cache or historical tables are introduced.
+
+The #62 PR adds the dependency-free `Core.Comparisons` fact foundation. Its
+`VehicleComparisonFacts` value object belongs to the existing vehicle aggregate;
+it does not introduce another UUID/registration identity. `VehicleFact<T>` keeps
+known, unknown, not-applicable and conflicting current observations distinct.
+Supported values and copied collections are immutable. `ComparisonEvidence`
+extends the listing semantics with nullable source URL and explicit observation/
+confirmation times without changing listing or extraction contracts.
+`VehicleFactsProcessor` validates supplied facts and maps reviewed listings
+through the existing source boundary. Manual replacement discards previous
+verification; client registry claims are rejected. The criterion catalogue
+identifies 3A cost/budget sources without accepting duplicate calculated values.
+See the [implemented Core contract](comparison-and-buying-scores.md#implemented-core-facts-62).
+This foundation is verified on the PR branch pending approved merge; rule
+evaluation (#63), fact persistence/API (#64), and comparison UI (#65) are separate.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

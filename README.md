@@ -19,8 +19,12 @@ data remains registration-based with no calculation history. See the
 for accepted decisions and normative target specifications. Stage 3A has its
 Swedish workspace and a [stage acceptance report](docs/household-stage-3a-verification-report.md).
 Stage 3A acceptance was merged through [PR #78](https://github.com/Extender92/CarExpenseCalculator/pull/78)
-with green CI. Stage 3B is the next stage; its first work item is
-[#62, vehicle facts and evidence](docs/vehicle-facts-implementation-plan.md).
+with green CI. Stage 3B's
+[#62 vehicle facts and evidence](docs/vehicle-facts-implementation-plan.md)
+foundation is implemented on its PR branch: immutable typed facts, explicit
+source/confirmation metadata, validation and reviewed-listing mapping in Core.
+Rules/scoring (#63) and fact persistence/API/UI (#64-#65) remain future work;
+the #62 delivery still requires an approved merge.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

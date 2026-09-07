@@ -2,7 +2,9 @@
 
 ## Status and scope
 
-Normative target for stage 3B, **not implemented**. This stage depends on
+Normative target for stage 3B. The #62 Core fact foundation is implemented on
+its PR branch, pending approved merge; rules, scores, persistence and UI remain
+**not implemented**. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
@@ -65,6 +67,87 @@ enabled hard requirement and yield `needsVerification` with `notApplicable`.
 They also cannot earn a preference advantage through a smaller denominator.
 The user may disable an unsuitable criterion for the whole comparison. Fuel
 types are treated equally; no implicit fuel-specific bonus or penalty exists.
+
+## Implemented Core facts (#62)
+
+`Core.Comparisons` provides the following dependency-free contracts. These are
+Core inputs/value objects, not new HTTP or storage DTOs. Household calculation/
+result version 2 and storage version 1 remain unchanged.
+
+| Contract | Behavior |
+| --- | --- |
+| `VehicleComparisonFacts` | Current typed source facts, with no duplicate identity or editable derived totals. A nullable field input normalizes to `Unknown`. |
+| `VehicleFact<T>` / `FactObservation<T>` | Read-only state and copied current observation collection; each observation binds an immutable supported value to its evidence. `Known` requires exactly one observation; `Unknown`/`NotApplicable` require none; `Conflicting` requires at least two different normalized values. Known does not mean verified. |
+| `ComparisonEvidence` | Existing origin, extraction method and verification enums; optional `ListingUrl`, `DateTimeOffset? ObservedAt`, and `DateTimeOffset? ConfirmedAt`. No invented timestamps or automatic freshness expiry. |
+| `FuelTypeSet` | Copies its input; every existing fuel enum is supported. Explicit empty is known empty, not missing. Invalid enum members and duplicates are rejected. Equality for conflicts compares sets, not their ordering. |
+| `ComparisonCriterionCatalog.All` | Read-only metadata for all 20 criteria: key, kind, unit, bounds and applicability. Fifteen are vehicle facts, three consume complete comparable 3A costs, two consume 3A budget status. It does not calculate scores. |
+| `VehicleFactsProcessor.Normalize(input, acquisitionType)` | Normalizes all supplied fields and aggregates typed errors. Purchase is the default category. A lease with unknown purchase price becomes `NotApplicable`; an explicitly supplied price, including zero, is retained. |
+| `VehicleFactsProcessor.FromReviewedListing(submittedUrl, returnedSources, input, acquisitionType)` | Validates supplied comparison values, reuses `ListingDraftProcessor.ProcessReviewed` source matching, and explicitly maps the supported fields. Import does not confirm advertised data. |
+| `ReplaceWithManual(value, confirmedAt, observedAt?)` | Produces one user/manual/userConfirmed observation with the supplied times; discards old observations, source verification and old timestamps. |
+| `ResolveWithManual(value, confirmedAt, observedAt?)` | Requires an existing conflict, then explicitly replaces it using the same manual operation. No source wins automatically and no historical observations are retained. |
+| `SwedishMil.FromKilometres` / `ToKilometres` | Decimal division/multiplication by exactly 10 within the odometer domain. Reversibility is checked; an unrepresentable conversion raises `conversionNotExact` rather than rounding. |
+
+Construction preserves supplied input errors for validation; it is not evidence
+authentication. Call `Normalize` before accepting a fact set. For an edit to
+an existing value, use the explicit replacement/resolution operations rather
+than pairing the new value with old evidence. Future application adapters must
+enforce that editing boundary when comparing current and submitted data.
+Public normalization accepts only listing/ai/unverified (with a source URL) and
+user/manual/userConfirmed (URL optional). Registry origin, registry verification,
+and unsupported combinations are rejected. Unverified evidence cannot carry a
+confirmation time. Legacy manually confirmed listing values may have null
+confirmation times because that contract never recorded them. New explicit
+manual operations require the caller's confirmation time and never read a clock.
+
+All current source fields permit missing, explicitly not-applicable and
+conflicting input states; none is a measured zero or automatically passes a
+rule. The price/odometer limits are 0-100,000,000 SEK and 0-10,000,000 km;
+owner count is 0-10,000, seats 1-100, model year 1886-2100 and braked towing
+capacity 0-100,000 kg. All numeric endpoints are inclusive. Locality/county
+trim and normalize Unicode Form C with the existing 100-character limit.
+Conflicting location values are compared ordinally ignoring case after that
+normalization. Unsupported enum values never become the first enum member.
+
+Service documentation uses `ServiceDocumentationStatus.Documented`, `Partial`,
+or `Absent`. Supporting `lastServiceDate`, `lastServiceOdometerKilometres` and
+`serviceNotes` are independent facts with their own evidence; they never infer
+documentation completeness. Service odometer uses the same decimal km bounds;
+notes trim/normalize with a 1,000-character bound. Inspection and service dates
+accept the full `DateOnly` range, including past dates. Expiry and remaining days
+belong to the #63 evaluator with explicit `asOfDate`.
+
+The mapping retains price, odometer, owners, tow bar, transmission, model year,
+fuels, body, drivetrain, locality and county. It never maps last/next inspection
+to explicit inspection validity, free-text equipment to seats/towing/tow bar,
+condition claims to service facts, locality to county, or first registration to
+model year. Publication/update dates are not observation timestamps. New typed
+facts require explicit manual input until a supported source is implemented.
+Invalid supplied comparison values are rejected before the existing listing
+processor's best-effort treatment of AI values; unmatched AI sources still
+become unknown through the established source boundary.
+
+`VehicleFactsValidationException.Errors` is a copied, read-only list of
+`Path`, `Code`, and English technical `Message`. Paths identify the field,
+observation, value/collection index, or evidence property, for example
+`seats.observations[0].value` and
+`fuelTypes.observations[0].value.values[1]`. Stable codes are `required`,
+`outOfRange`, `invalidEnum`, `tooLong`, `invalidText`, `duplicateValue`,
+`invalidState`, `invalidConflict`, `unsupportedEvidence`, `invalidEvidence`,
+`invalidListing`, and `conversionNotExact`. Listing-boundary errors retain their
+existing listing paths with `invalidListing`. Invalid supplied input throws;
+it is not silently relabeled as missing. Ordinary null top-level arguments use
+`ArgumentNullException`. Later API/error mapping remains #64 work.
+
+```csharp
+var processor = new VehicleFactsProcessor();
+var facts = processor.Normalize(new VehicleComparisonFacts());
+var edited = facts with
+{
+    Seats = facts.Seats!.ReplaceWithManual(5, confirmedAt), // caller-supplied time
+};
+var accepted = processor.Normalize(edited);
+var displayedMil = SwedishMil.FromKilometres(200_000m); // exactly 20_000
+```
 
 ## Hard rules and explanations
 
