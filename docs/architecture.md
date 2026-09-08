@@ -178,8 +178,8 @@ complete costs/budget passes while preserving known parts and safe exceedance.
 application boundaries; Core does not reference its storage/HTTP DTOs. Rule and
 comparison-result versions are 1, separate from household/storage versions.
 See the [implemented evaluation contract](comparison-and-buying-scores.md#implemented-core-evaluation-63).
-Issue #64 implements [comparison persistence and HTTP](comparison-api.md) on
-`feature/64-comparison-persistence-api`, pending approved PR merge. Infrastructure
+Issue #64 delivered [comparison persistence and HTTP](comparison-api.md) through
+approved PR #83. Infrastructure
 owns typed version-1 JSONB in `rule_profile` and `vehicle_comparison_facts` and
 uses the existing household transaction lock and vehicle identity/revision.
 One RepeatableRead snapshot backs stored comparison revision checks. Manual
@@ -189,6 +189,13 @@ Per-observation listing versions remain separate from the reviewed version.
 The shared cost writer invalidates input confirmations through Core structural
 equality, including draft adoption. Both shared profiles survive car deletion.
 UI (#65), PDF (#66) and acceptance (#67) remain separate; no feature flag changes.
+The [workspace preparation](comparison-workspace-preparation.md) identifies
+reusable frontend state and the per-request boundary of server ordering.
+The accepted [#85 prerequisite](all-vehicle-comparison-preparation.md) will add
+complete-set server reads and global evaluation before #65. Internal processing
+groups and bounded transfers must not impose a total saved-car count limit.
+That extension must retain coherent revisions, exact ordering authority and
+the explicit manual mode without persisted preview sessions or result history.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

@@ -53,8 +53,11 @@ extraction, Docker deployment, tests, CI, and documentation.
 
 The complete URL flow is covered by fake-only automated acceptance from
 independent extraction outcomes through manual review, saved-listing lifecycle,
-and listing-linked calculation versioning. Rule-based search and comparison,
-automatic discovery, advisory AI review, and image review remain future work.
+and listing-linked calculation versioning. Stage 3B facts, the deterministic
+rule/score engine and comparison persistence/API (#62–#64) are merged through
+PRs #80, #82 and #83. The comparison interface (#65), PDF (#66), whole-stage
+acceptance (#67), automatic discovery, advisory AI review and image review
+remain future work.
 
 Stage 3A Core supports shared household assumptions, purchase financing and
 partial ownership costs, including energy, compound depreciation, separate
@@ -70,7 +73,7 @@ tested implementation, results and limits. Stage 3A is complete.
 ## Planned household calculation and comparison direction
 
 The work is split into household calculations (3A, complete), then comparison
-and configurable buying scores (3B, upcoming). The objective is to compare
+and configurable buying scores (3B, in progress). The objective is to compare
 cars under the same household assumptions and determine estimated total cost
 after the chosen months or years, with a prominent monthly equivalent.
 
@@ -83,9 +86,11 @@ after the chosen months or years, with a prominent monthly equivalent.
   explicit **Spara**. Monthly budget checks use average funding, not peak months.
 - Each car retains its own current facts and costs. There are no independently
   named saved scenarios per car and no superseded calculation history.
-- The comparison workspace contains a main total-cost table and multiple
-  breakdown tables. Incomplete candidates stay visible with explicit missing
-  calculations and partial totals.
+- The comparison workspace compares all current saved cars without a fixed
+  maximum vehicle count. Internal batches/transfers do not restrict membership;
+  #85 adds the required complete-set backend before #65. The UI contains a main
+  total-cost table and multiple breakdown tables. Incomplete candidates stay
+  visible with explicit missing calculations and partial totals.
 - User-defined favorable, baseline, and cautious sensitivity views operate on
   current data. They do not create historical or separately saved scenarios.
 - Buying priorities and weights are editable and produce current explainable

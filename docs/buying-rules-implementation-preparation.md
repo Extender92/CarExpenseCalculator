@@ -8,8 +8,9 @@ then explicitly assigned implementation on `feature/63-buying-rules-scores`.
 #63 is closed through approved PR #82, merged as
 `7e5514c376311863084c0c3201e9c263a0bcd884`. Core contracts, independent rule
 evaluation, weighted score intervals, ordering, Swedish signals and tests are
-on main. Issue #64 now implements [trusted storage/API composition](comparison-api.md)
-on its PR branch, pending separate merge approval. See the
+on main. Issue #64 delivered [trusted storage/API composition](comparison-api.md)
+through approved PR #83. The next [workspace preparation](comparison-workspace-preparation.md)
+records #65's current handoff. See the
 [implemented contract](comparison-and-buying-scores.md#implemented-core-evaluation-63).
 
 The user confirmed one price clarification: current purchase cost input owns

@@ -87,11 +87,13 @@ tests. This Core record does not claim an end-to-end comparison UI delivery.
 
 ### Issue #64 persistence and HTTP evidence
 
-Implemented on `feature/64-comparison-persistence-api`, pending separate approved
-PR merge. See the [wire and storage contract](comparison-api.md). The merged
-baseline is 874 backend, 195 frontend and 33 Chromium tests; the new verification
-adds 64 backend cases and four browser/proxy cases. Final command and CI outcomes
-are recorded in the issue's implementation PR.
+Delivered through approved [PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83),
+merged as `77939ff2c013dc6e1b3db01059aeb50f0be0b3dd` with
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34221394540).
+See the [wire and storage contract](comparison-api.md). The #64 verification
+added 64 backend cases and four browser/proxy cases to the #63 baseline;
+the current baseline is **938 backend, 195 frontend and 37 Chromium tests**.
+The implementation PR records command outcomes, development reruns and warnings.
 
 | Acceptance / boundary | Automated evidence |
 | --- | --- |
@@ -148,6 +150,42 @@ concurrency without racing the singleton fixtures.
 | React state | Latest valid request wins across tables/batches; pending save cannot replace subsequent edits; failure keeps drafts; changes preview without implicit saves/AI; explicit draft replacement choice. |
 | HTTP/schema | Documented success, validation, conflict, missing resource, and storage failure cases; 100-candidate/2-MiB limits; no client-trusted results/verification; generated OpenAPI types agree. |
 | Report | Snapshot during concurrent edits, partial inputs, long tables over multiple pages, Swedish text, repeated headings, no clipped columns, dirty labels, complete assumptions/weights/sources, no persisted export. |
+
+### Issue #85 complete-set comparison handoff
+
+The user confirmed that all current saved cars must be compared without a fixed
+total count. [#85's backend handoff](all-vehicle-comparison-preparation.md#verification-and-readiness-evidence)
+is a prerequisite for #65 and specifies future tests, not executed evidence.
+Verify 0/1/100/101/250 cars, full membership, grouping-independent exact order,
+global ties/overlaps/winners, more than 2 MiB of aggregate saved input, bounded
+transport errors, coherent membership/revisions across concurrent changes,
+all sensitivity views and explicit database-independent manual comparisons.
+Dropped groups must never yield a whole-set winner. Retain all #62–#64/3A
+evidence tests and the existing 938/195/37 baseline until implementation adds
+verified cases. New HTTP/generated types are delivered through #85's own PR.
+
+### Issue #65 workspace handoff
+
+The [workspace preparation](comparison-workspace-preparation.md) audits the
+merged #64 contract and planned frontend flows. The following is a future-test
+handoff, not executed #65 evidence. Baseline: 938 backend, 195 frontend and
+37 Chromium cases. Preserve all existing suites.
+
+| Acceptance / boundary | Existing authority and required new evidence |
+| --- | --- |
+| Main and all detail tables share inputs and registration identity | 3A A1–A11 backend/browser references; new comparison UI assertions for period/month/mil, purchase/lease, energy, payments, reserves, budgets and all sensitivity views. |
+| Complete/partial/rejected order and honest recommendation | B5–B7 Core/HTTP cases; new UI tests for server order, equal displayed values with different raw order, insufficient evidence, unknown totals and overlapping intervals. |
+| Editable common priorities without saves | B1–B4/B8 Core/HTTP references; UI tests for all criteria, weights 0–5, anchors, empty profile, common denominator, evidence requirements and no hidden save/AI calls. |
+| Exact transport and independent errors | Existing household numeric/preview tests; comparison cases for decimal text, large revisions, invalid rules versus independent candidate fields, and stable paths after selection changes. |
+| Latest generation across requests | Reversed responses, edits during active/three-sensitivity requests, cancellation, request failure and navigation; never combine generations or preserve a winner after omitting a failed intended candidate. |
+| Comparison-size boundary | Consume the delivered #85 complete-set contract. Regress 101/250 cars, aggregate inputs over 2 MiB, explicit transport errors and no selection cap/truncation; global server winners must survive display pagination and include every saved candidate. |
+| Explicit fact, listing and cost adoption | HTTP lifecycle references plus UI tests for source versions, user edits, conflicts, no registry claims, separate cost confirmation and 40,000 → 35,000/missing-price behavior. |
+| Saving, refresh and deletion | Separate rule/fact/profile/cost saves; two browser contexts, dirty editing during saves, rejected revision retries, source refresh, full deletion from all three routes and stale-response protection. |
+| Manual versus stored comparison | Explicit mode selection, no database dependency in manual mode, no inherited evidence, no automatic fallback after a stored request fails, registration-required transient candidates. |
+| Accepted UI choices and accessibility | **Jämförelse** at `/search`, initial cost order, expandable detail tables/**Öppna alla**, cost-editor deep links with retained edits, explicit today-initialized date, keyboard/focus, linked field errors, semantic headers, 390-pixel width and precise feature-status copy. |
+
+PDF layout/export remains #66, and the cross-stage practical report remains #67.
+The preparation PR only verifies documentation and existing prerequisite CI.
 
 ## Verification commands by work area
 

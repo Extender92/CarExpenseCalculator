@@ -44,10 +44,17 @@ listing contracts provide the implementation basis. #62 is closed through
 approved PR #80, merged as `60d2b49ab910ba17352637cc94b6649df06b117b` with green
 merged-main CI. See the [vehicle-facts implementation record](vehicle-facts-implementation-plan.md).
 The [#63 preparation audit](buying-rules-implementation-preparation.md) verifies
-all its prerequisites; #63 is closed through approved PR #82. Following explicit
-assignment, #64 is `status:in-progress` on `feature/64-comparison-persistence-api`.
-Its [storage/API contract](comparison-api.md) is implemented on the PR branch;
-items #65–#67 remain blocked by their immediate implementation prerequisites.
+all its prerequisites; #63 is closed through approved PR #82. #64 is closed
+through approved PR #83, merged as `77939ff2c013dc6e1b3db01059aeb50f0be0b3dd`
+with [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34221394540).
+Its [storage/API contract](comparison-api.md) is on main. The user confirmed
+comparison of all saved cars without a fixed total count on 2026-09-08. The new
+[#85 backend handoff](all-vehicle-comparison-preparation.md) precedes #65.
+Three of the seven current stage 3B implementation items are delivered.
+The [#65 workspace preparation](comparison-workspace-preparation.md) records
+all six accepted choices. #85 is `status:blocked` pending preparation PR #84
+merge; #65 is `status:blocked` pending that preparation and #85 delivery.
+#66–#67 retain their immediate implementation dependencies.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 
 | Key | Issue | Deliverable | Prerequisite work |
@@ -55,7 +62,8 @@ No registry, AI or service-provider decision blocks this manual comparison stage
 | B1 | [#62](https://github.com/Extender92/CarExpenseCalculator/issues/62) | Define extended vehicle facts and provenance for buying criteria | A7 |
 | B2 | [#63](https://github.com/Extender92/CarExpenseCalculator/issues/63) | Implement deterministic buying rules, weighted score intervals and ordering | B1 |
 | B3 | [#64](https://github.com/Extender92/CarExpenseCalculator/issues/64) | Persist current buying profiles and vehicle facts and expose comparison APIs | B2 |
-| B4 | [#65](https://github.com/Extender92/CarExpenseCalculator/issues/65) | Build shared comparison tables and editable buying priorities | B3 |
+| B3a | [#85](https://github.com/Extender92/CarExpenseCalculator/issues/85) | Compare all current vehicles with coherent server-side ordering | B3 and preparation PR #84 |
+| B4 | [#65](https://github.com/Extender92/CarExpenseCalculator/issues/65) | Build shared comparison tables and editable buying priorities | B3a and preparation PR #84 |
 | B5 | [#66](https://github.com/Extender92/CarExpenseCalculator/issues/66) | Export the current comparison as a printable PDF report | B4 |
 | B6 | [#67](https://github.com/Extender92/CarExpenseCalculator/issues/67) | Verify complete comparison, buying scores and PDF export | B5 |
 
@@ -83,7 +91,7 @@ authorized by creating this queue.
 Every issue body includes scope/exclusions, published document links, contracts,
 explicit blocking issues, observable acceptance and relevant existing commands.
 All issues depend on the planning PR merge; table prerequisites are additional.
-The implementation chain is A1 through A7, then B1 through B6. Trackers depend
+The implementation chain is A1 through A7, then B1, B2, B3, B3a and B4 through B6. Trackers depend
 on their children; children never depend on their own tracker. Later work is
 not a prerequisite for the manual flow. This direction avoids dependency cycles.
 

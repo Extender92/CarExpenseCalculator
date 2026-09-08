@@ -28,13 +28,17 @@ reviewed-listing mapping in Core. Issue #63, merged through PR #82, implements
 in Core. The engine
 uses common goals/weights, independent evidence-aware hard results and unrounded
 household cost measures. Current purchase inputs own the evaluated purchase price;
-changing it cannot inherit an older price's confirmation. Issue #64 implements
-[comparison storage and HTTP](docs/comparison-api.md) on
-`feature/64-comparison-persistence-api`, pending separately approved PR merge:
+changing it cannot inherit an older price's confirmation. Issue #64 delivered
+[comparison storage and HTTP](docs/comparison-api.md) through approved
+[PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83):
 current rule/fact storage, explicit evidence actions, cost confirmation and
 revision-checked stored previews alongside independent manual previews.
 Comparison UI (#65), PDF (#66) and stage acceptance (#67) remain future work;
-no comparison screen or feature flag is enabled.
+no comparison screen or feature flag is enabled. The
+[#65 workspace preparation](docs/comparison-workspace-preparation.md) records
+the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
+all saved cars must be compared together without a fixed total vehicle-count
+limit. #85 precedes #65; the new complete-set flow is not implemented yet.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

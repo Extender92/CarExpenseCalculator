@@ -2,10 +2,19 @@
 
 ## Delivery status
 
-Implemented for issue #64 on `feature/64-comparison-persistence-api`, pending
-separately approved PR merge. Core facts (#62 / PR #80) and evaluation (#63 /
+Implemented for issue #64 through approved
+[PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83), merged as
+`77939ff2c013dc6e1b3db01059aeb50f0be0b3dd` on 2026-09-08 with
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34221394540).
+Core facts (#62 / PR #80) and evaluation (#63 /
 PR #82) are already merged. UI #65, PDF #66 and whole-stage acceptance #67
 remain separate deliveries. No comparison screen or feature flag is enabled.
+
+The [#65 preparation](comparison-workspace-preparation.md) distinguishes these
+implemented contracts from the accepted complete-set workspace. Its
+[#85 backend prerequisite](all-vehicle-comparison-preparation.md) must add the
+all-saved comparison path; the limits and shapes documented below describe #64,
+not that future extension.
 
 The [normative comparison specification](comparison-and-buying-scores.md) owns
 criteria, evidence, exact scoring and ordering. The API composes those Core

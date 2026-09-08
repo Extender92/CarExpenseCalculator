@@ -4,9 +4,10 @@
 
 Normative target for stage 3B. The #62 Core fact foundation is merged through
 [PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80). Core rules,
-scores and ordering (#63) are merged through PR #82. Issue #64 implements
-[fact/rule persistence and HTTP](comparison-api.md) on
-`feature/64-comparison-persistence-api`, pending separately approved PR merge.
+scores and ordering (#63) are merged through PR #82. Issue #64 delivered
+[fact/rule persistence and HTTP](comparison-api.md) through approved PR #83.
+The [#65 preparation](comparison-workspace-preparation.md) records the accepted
+UI choices and the [#85 complete-set backend prerequisite](all-vehicle-comparison-preparation.md).
 Comparison UI, PDF and stage acceptance remain #65–#67. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
@@ -366,14 +367,25 @@ tables for monthly/mil costs, financing, energy, tax, insurance, service, known
 repairs/allowance, calendar payments/budgets, and all three sensitivity views.
 Each row/column uses registration identity. Missing parts are named with links
 to the relevant editor; distinguish included, known zero, not applicable,
-invalid, and unavailable. Let users sort by cost or preferences explicitly.
+invalid, and unavailable. Start with cost ordering and let users choose
+preference ordering explicitly. The main table is immediately visible; detail
+tables expand below it with an **Öppna alla** action.
 
-Keep the `/manual`, `/analyze-urls`, and `/search` modes. `/search` becomes the
-manual/reviewed-candidate rule/comparison workspace; it must not imply automatic
-discovery. Saved candidate selection is local current data. Dashboard/status
+Keep the `/manual`, `/analyze-urls`, and `/search` modes. `/search` becomes
+**Jämförelse**, the manual/reviewed-candidate rule/comparison workspace; it must
+not imply automatic discovery. All current saved cars participate in one
+comparison, without a fixed total count. The #85 backend prerequisite provides
+complete-set membership, coherent revisions and global unrounded ordering;
+current 100-candidate request limits do not define a product selection limit.
+Selecting a car for editing or displaying one table page does not exclude
+other cars. Dashboard/status
 copy and feature flags change only when corresponding behavior is delivered
 and tested. Stage 3A already supplies profile/vehicle editing; do not duplicate
-household overrides in this workspace.
+household overrides in this workspace. Facts and sources are edited in the
+comparison page; economic edits open the existing household editor at the right
+car/section while preserving dirty state. A new workspace initializes its
+explicit evaluation date from today's local calendar date and shows an editable
+field. Keep that date until explicit change/update, including across navigation.
 
 All tables publish one coherent preview generation. Edits debounce 500 ms and
 cancel obsolete requests; multi-batch requests use one captured input set and
