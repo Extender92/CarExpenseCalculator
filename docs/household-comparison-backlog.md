@@ -44,10 +44,15 @@ listing contracts provide the implementation basis. #62 is closed through
 approved PR #80, merged as `60d2b49ab910ba17352637cc94b6649df06b117b` with green
 merged-main CI. See the [vehicle-facts implementation record](vehicle-facts-implementation-plan.md).
 The [#63 preparation audit](buying-rules-implementation-preparation.md) verifies
-all its prerequisites; #63 is closed through approved PR #82. Following explicit
-assignment, #64 is `status:in-progress` on `feature/64-comparison-persistence-api`.
-Its [storage/API contract](comparison-api.md) is implemented on the PR branch;
-items #65–#67 remain blocked by their immediate implementation prerequisites.
+all its prerequisites; #63 is closed through approved PR #82. #64 is closed
+through approved PR #83, merged as `77939ff2c013dc6e1b3db01059aeb50f0be0b3dd`
+with [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34221394540).
+Its [storage/API contract](comparison-api.md) is on main. Three of the six
+original stage 3B implementation items are delivered. The
+[#65 workspace preparation](comparison-workspace-preparation.md) records its
+handoff and comparison-size decision gate. #65 is `status:needs-refinement`
+while that choice is open; resolved but unmerged prerequisites then use
+`status:blocked`. #66–#67 retain their immediate implementation dependencies.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 
 | Key | Issue | Deliverable | Prerequisite work |

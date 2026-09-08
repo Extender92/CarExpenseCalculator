@@ -4,8 +4,9 @@
 
 Issue #63, merged through PR #82, implements deterministic Core buying rules,
 weighted score intervals, source-labelled signals and separate cost/preference
-ordering. Issue #64 adds [storage and HTTP](comparison-api.md) on its PR branch,
-pending separate merge approval. Comparison UI remains #65 work. Stage 3B follows
+ordering. Issue #64 delivered [storage and HTTP](comparison-api.md) through
+approved PR #83. Comparison UI remains #65 work, with its
+[preparation handoff](comparison-workspace-preparation.md). Stage 3B follows
 the shared household calculations in 3A.
 The example semantics below remain an optional starting profile, never active
 defaults. The accepted catalogue, formulas, evidence,

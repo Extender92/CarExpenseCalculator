@@ -228,7 +228,8 @@ target. See the [implemented storage/transition contract](household-calculations
 
 ### Comparison storage migration and rollback
 
-Issue #64 adds `20260908103211_AddComparisonPersistence` on its PR branch.
+Issue #64 delivered `20260908103211_AddComparisonPersistence` through approved
+[PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83).
 Run the existing explicit migration command before deploying the matching API;
 API startup never migrates. It creates an empty revision-0 rule singleton and
 current per-vehicle comparison facts without importing advertisements or

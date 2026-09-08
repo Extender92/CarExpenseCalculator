@@ -4,9 +4,10 @@
 
 Normative target for stage 3B. The #62 Core fact foundation is merged through
 [PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80). Core rules,
-scores and ordering (#63) are merged through PR #82. Issue #64 implements
-[fact/rule persistence and HTTP](comparison-api.md) on
-`feature/64-comparison-persistence-api`, pending separately approved PR merge.
+scores and ordering (#63) are merged through PR #82. Issue #64 delivered
+[fact/rule persistence and HTTP](comparison-api.md) through approved PR #83.
+The [#65 preparation](comparison-workspace-preparation.md) records the UI
+handoff and the comparison-size decision gate.
 Comparison UI, PDF and stage acceptance remain #65–#67. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered

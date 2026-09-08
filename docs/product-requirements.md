@@ -53,8 +53,11 @@ extraction, Docker deployment, tests, CI, and documentation.
 
 The complete URL flow is covered by fake-only automated acceptance from
 independent extraction outcomes through manual review, saved-listing lifecycle,
-and listing-linked calculation versioning. Rule-based search and comparison,
-automatic discovery, advisory AI review, and image review remain future work.
+and listing-linked calculation versioning. Stage 3B facts, the deterministic
+rule/score engine and comparison persistence/API (#62–#64) are merged through
+PRs #80, #82 and #83. The comparison interface (#65), PDF (#66), whole-stage
+acceptance (#67), automatic discovery, advisory AI review and image review
+remain future work.
 
 Stage 3A Core supports shared household assumptions, purchase financing and
 partial ownership costs, including energy, compound depreciation, separate
@@ -70,7 +73,7 @@ tested implementation, results and limits. Stage 3A is complete.
 ## Planned household calculation and comparison direction
 
 The work is split into household calculations (3A, complete), then comparison
-and configurable buying scores (3B, upcoming). The objective is to compare
+and configurable buying scores (3B, in progress). The objective is to compare
 cars under the same household assumptions and determine estimated total cost
 after the chosen months or years, with a prominent monthly equivalent.
 
