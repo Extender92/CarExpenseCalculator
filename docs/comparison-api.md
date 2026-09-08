@@ -11,7 +11,10 @@ PR #82) are already merged. UI #65, PDF #66 and whole-stage acceptance #67
 remain separate deliveries. No comparison screen or feature flag is enabled.
 
 The [#65 preparation](comparison-workspace-preparation.md) distinguishes these
-implemented contracts from the pending workspace and its readiness gate.
+implemented contracts from the accepted complete-set workspace. Its
+[#85 backend prerequisite](all-vehicle-comparison-preparation.md) must add the
+all-saved comparison path; the limits and shapes documented below describe #64,
+not that future extension.
 
 The [normative comparison specification](comparison-and-buying-scores.md) owns
 criteria, evidence, exact scoring and ordering. The API composes those Core

@@ -151,6 +151,19 @@ concurrency without racing the singleton fixtures.
 | HTTP/schema | Documented success, validation, conflict, missing resource, and storage failure cases; 100-candidate/2-MiB limits; no client-trusted results/verification; generated OpenAPI types agree. |
 | Report | Snapshot during concurrent edits, partial inputs, long tables over multiple pages, Swedish text, repeated headings, no clipped columns, dirty labels, complete assumptions/weights/sources, no persisted export. |
 
+### Issue #85 complete-set comparison handoff
+
+The user confirmed that all current saved cars must be compared without a fixed
+total count. [#85's backend handoff](all-vehicle-comparison-preparation.md#verification-and-readiness-evidence)
+is a prerequisite for #65 and specifies future tests, not executed evidence.
+Verify 0/1/100/101/250 cars, full membership, grouping-independent exact order,
+global ties/overlaps/winners, more than 2 MiB of aggregate saved input, bounded
+transport errors, coherent membership/revisions across concurrent changes,
+all sensitivity views and explicit database-independent manual comparisons.
+Dropped groups must never yield a whole-set winner. Retain all #62–#64/3A
+evidence tests and the existing 938/195/37 baseline until implementation adds
+verified cases. New HTTP/generated types are delivered through #85's own PR.
+
 ### Issue #65 workspace handoff
 
 The [workspace preparation](comparison-workspace-preparation.md) audits the
@@ -165,11 +178,11 @@ handoff, not executed #65 evidence. Baseline: 938 backend, 195 frontend and
 | Editable common priorities without saves | B1–B4/B8 Core/HTTP references; UI tests for all criteria, weights 0–5, anchors, empty profile, common denominator, evidence requirements and no hidden save/AI calls. |
 | Exact transport and independent errors | Existing household numeric/preview tests; comparison cases for decimal text, large revisions, invalid rules versus independent candidate fields, and stable paths after selection changes. |
 | Latest generation across requests | Reversed responses, edits during active/three-sensitivity requests, cancellation, request failure and navigation; never combine generations or preserve a winner after omitting a failed intended candidate. |
-| Comparison-size boundary | Resolve the preparation decision first. Regress 100/101 candidates, actual UTF-8 bytes at/over 2 MiB and no silent truncation; a local batch winner must never become a global winner. |
+| Comparison-size boundary | Consume the delivered #85 complete-set contract. Regress 101/250 cars, aggregate inputs over 2 MiB, explicit transport errors and no selection cap/truncation; global server winners must survive display pagination and include every saved candidate. |
 | Explicit fact, listing and cost adoption | HTTP lifecycle references plus UI tests for source versions, user edits, conflicts, no registry claims, separate cost confirmation and 40,000 → 35,000/missing-price behavior. |
 | Saving, refresh and deletion | Separate rule/fact/profile/cost saves; two browser contexts, dirty editing during saves, rejected revision retries, source refresh, full deletion from all three routes and stale-response protection. |
 | Manual versus stored comparison | Explicit mode selection, no database dependency in manual mode, no inherited evidence, no automatic fallback after a stored request fails, registration-required transient candidates. |
-| Accessibility and compatibility | Keyboard/focus, linked field errors, semantic table headers, 390-pixel width, Swedish unknown/zero/included/stale states, existing household/URL/legacy navigation and precise feature-status copy. |
+| Accepted UI choices and accessibility | **Jämförelse** at `/search`, initial cost order, expandable detail tables/**Öppna alla**, cost-editor deep links with retained edits, explicit today-initialized date, keyboard/focus, linked field errors, semantic headers, 390-pixel width and precise feature-status copy. |
 
 PDF layout/export remains #66, and the cross-stage practical report remains #67.
 The preparation PR only verifies documentation and existing prerequisite CI.

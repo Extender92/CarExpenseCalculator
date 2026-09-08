@@ -83,10 +83,12 @@ The prerequisite acceptance is complete. The first item, #62, delivered the
 approved PR #80. The [#63 preparation audit](buying-rules-implementation-preparation.md)
 confirmed its prerequisites. #63 Core rules/scoring and ordering is merged
 through PR #82. #64 delivered [storage/API](comparison-api.md) through approved
-PR #83 with green main CI. Three of the six original implementation items are
-complete. The [#65 preparation](comparison-workspace-preparation.md) audits
-the UI handoff and its readiness gate. UI (#65), PDF (#66) and whole-stage
-acceptance (#67) remain future work.
+PR #83 with green main CI. The user subsequently confirmed comparison of all
+saved cars without a fixed total count. The new [#85 backend prerequisite](all-vehicle-comparison-preparation.md)
+precedes #65; three of the seven current implementation items are complete.
+The [#65 preparation](comparison-workspace-preparation.md) records the accepted
+UI choices. #85, UI (#65), PDF (#66) and whole-stage acceptance (#67) remain
+future work, with their respective merge/readiness gates.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,

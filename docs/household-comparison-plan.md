@@ -44,7 +44,7 @@ outside this scope.
 | Payments | Explicit start month, due months, and one-time events. Loan fees stop with the loan. Ongoing-budget warnings use monthly average funding including repair saving and excluding startup expenses. |
 | Leasing | Own contract model. Fully comparable only when horizon equals term; otherwise retain known payments and a mismatch reason. No guessed renewal or termination. |
 | Energy | Separate whole-distance and mode-specific consumption, driving shares, charging-price mix, and charging losses. |
-| Tables | Main total table plus monthly/per-mil, financing, energy, tax, insurance, service, repairs, payments, and sensitivity tables. Missing components stay visible. |
+| Tables | All current saved cars participate, without a fixed total count. Main total table plus expandable monthly/per-mil, financing, energy, tax, insurance, service, repairs, payments, and sensitivity tables. Missing components stay visible. |
 | Cost order | Complete comparable alternatives first, cheapest first; incomplete alternatives below. Hard failures remain visible as **Bortvald**, below other candidates. |
 | Buying requirements | Price, mileage, owner count, tow bar, transmission, seats, model year, fuel, body type, drivetrain, locality/county, towing capacity, inspection, and service information. |
 | Scores | User goals define 0-100 numeric scales and categorical preferences. Weights 0-5; zero disables. Changing priorities recalculates contributions. |
@@ -107,6 +107,13 @@ existing score. Explanations show actual values, source, required evidence,
 contributions, weights, and missing reasons. PDF generation captures the same
 consistent inputs as the tables. Downloaded copies are outside application
 deletion; the application keeps no report archive.
+
+The 2026-09-08 [workspace decisions](comparison-workspace-preparation.md#accepted-user-decisions)
+confirm all saved cars, the **Jämförelse** label at `/search`, expandable detail
+tables, initial cost ordering, reuse of economic editing and an explicit date
+initialized to today. The [#85 complete-set backend prerequisite](all-vehicle-comparison-preparation.md)
+precedes #65 so per-request/internal group limits do not cap total membership
+or produce incorrect global recommendations.
 
 ## Later refinement boundaries
 

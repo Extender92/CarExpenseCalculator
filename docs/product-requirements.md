@@ -86,9 +86,11 @@ after the chosen months or years, with a prominent monthly equivalent.
   explicit **Spara**. Monthly budget checks use average funding, not peak months.
 - Each car retains its own current facts and costs. There are no independently
   named saved scenarios per car and no superseded calculation history.
-- The comparison workspace contains a main total-cost table and multiple
-  breakdown tables. Incomplete candidates stay visible with explicit missing
-  calculations and partial totals.
+- The comparison workspace compares all current saved cars without a fixed
+  maximum vehicle count. Internal batches/transfers do not restrict membership;
+  #85 adds the required complete-set backend before #65. The UI contains a main
+  total-cost table and multiple breakdown tables. Incomplete candidates stay
+  visible with explicit missing calculations and partial totals.
 - User-defined favorable, baseline, and cautious sensitivity views operate on
   current data. They do not create historical or separately saved scenarios.
 - Buying priorities and weights are editable and produce current explainable

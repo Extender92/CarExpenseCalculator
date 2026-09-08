@@ -191,6 +191,11 @@ equality, including draft adoption. Both shared profiles survive car deletion.
 UI (#65), PDF (#66) and acceptance (#67) remain separate; no feature flag changes.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
 reusable frontend state and the per-request boundary of server ordering.
+The accepted [#85 prerequisite](all-vehicle-comparison-preparation.md) will add
+complete-set server reads and global evaluation before #65. Internal processing
+groups and bounded transfers must not impose a total saved-car count limit.
+That extension must retain coherent revisions, exact ordering authority and
+the explicit manual mode without persisted preview sessions or result history.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

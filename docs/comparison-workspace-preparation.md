@@ -5,7 +5,8 @@
 Preparation for [#65](https://github.com/Extender92/CarExpenseCalculator/issues/65),
 authorized on 2026-09-08. This is a documentation and backlog handoff, not an
 implementation assignment. The branch is `docs/65-comparison-workspace-preparation`.
-Its PR requires separate merge approval and must not close #65.
+[Preparation PR #84](https://github.com/Extender92/CarExpenseCalculator/pull/84)
+requires separate merge approval and must not close #65 or #85.
 
 The [product plan](household-comparison-plan.md),
 [comparison specification](comparison-and-buying-scores.md),
@@ -32,13 +33,26 @@ verification. Its PR records development reruns and the benign Playwright
 `NO_COLOR`/`FORCE_COLOR` warning. Preparation does not claim new UI test coverage.
 The audited worktree was clean and there were no open competing PRs.
 
-The original implementation dependencies are complete. The comparison-size
-decision below must be resolved and published before #65 becomes `status:ready`.
-Keep #65 `status:needs-refinement` while the comparison-size decision is open,
-then `status:blocked` while the resolved preparation awaits merge or a newly
-agreed implementation prerequisite remains unfinished.
-An approved preparation merge is followed by a fresh dependency audit, then
-readiness; detailed implementation planning and assignment remain separate.
+The original implementation dependencies are complete. The user resolved all
+six preparation questions on 2026-09-08, including comparison of every saved
+car without a fixed total count. This requires the separate
+[#85 backend prerequisite](https://github.com/Extender92/CarExpenseCalculator/issues/85).
+#85 is `status:blocked` pending this preparation's merge. #65 is
+`status:blocked` pending both preparation and #85 delivery. It no longer has
+an open product-choice gate. After the preparation merge, audit #85 before
+readiness and detailed implementation planning; after its approved implementation
+merge, audit #65. Each implementation still requires explicit assignment.
+
+## Accepted user decisions
+
+| Question | Decision confirmed on 2026-09-08 |
+| --- | --- |
+| Comparison membership | All current saved cars are compared together, with no fixed total vehicle-count limit. Separate backend delivery #85 precedes #65. |
+| Navigation | **Jämförelse** replaces **Regelsökning** in visible navigation; `/search` remains the route. |
+| Table layout | Main table visible immediately; expandable detail tables below it, with **Öppna alla**. |
+| Initial ordering | Start with cost ordering and offer explicit preference ordering. Existing incomplete/rejected/evidence rules apply. |
+| Editing | Facts and source review live in comparison; economic inputs open the existing household editor at the right car/section. Dirty editing survives navigation. |
+| Evaluation date | Initialize a new workspace with the browser's current local calendar date, show an editable date field, and retain that date until explicit change/update. |
 
 ## Inspected implementation
 
@@ -52,7 +66,7 @@ readiness; detailed implementation planning and assignment remain separate.
 | [Core evaluator](../src/backend/CarExpenseCalculator.Core/Comparisons/ComparisonEvaluator.cs) | A maximum of 100 candidates per evaluation; raw values determine ordering/winners, while response amounts and score ranges are rounded for presentation. |
 | [System status](../src/backend/CarExpenseCalculator.Api/Controllers/SystemController.cs) | `RuleBasedSearch` is currently false. #65 may switch this existing flag only with the delivered rule/comparison workspace and matching status tests; no new schema is needed and automatic discovery remains disabled. |
 
-## Comparison-size decision gate
+## Complete-set comparison prerequisite
 
 The existing API accepts at most 100 candidates and 2 MiB UTF-8 per request.
 It returns `costOrder`, `scoreOrder` and winner flags for exactly that request's
@@ -72,11 +86,21 @@ orders would not satisfy the accepted ordering/evidence rules. For example:
 - A failed/missing batch must not make a remaining candidate look like a winner
   over the entire intended selection.
 
-The user has been asked to choose between a separate backend prerequisite for
-complete comparisons over multiple requests and an explicitly selected comparison
-that fits one existing request. Neither choice is assumed by this preparation.
+The user chose the complete-set solution. A per-transfer limit or an internal
+batch size is a technical processing boundary, not a limit on which saved cars
+are compared. #65 must not require selecting a subset to fit those boundaries.
 Do not silently truncate candidates, merge local winner flags or recompute costs,
-scores, budgets or recommendations from displayed values.
+scores, budgets or recommendations from displayed values. A display page or
+collapsed panel does not narrow the evaluated set.
+
+The [#85 handoff](all-vehicle-comparison-preparation.md) defines required backend
+behavior and regression evidence. The server reads all current saved vehicles,
+evaluates manageable groups through the same engine, and decides ordering and
+recommendations across the entire set using unrounded measures. The client
+does not resend unchanged saved fact/cost payloads merely to include a car.
+Membership, revisions, unsaved overlays and all sensitivity views must belong
+to one coherent generation. The explicit transport extension and resource
+handling are part of #85's implementation plan, not functionality added here.
 
 ## Workspace and editing handoff
 
@@ -91,14 +115,16 @@ The page flow is:
 1. Show the comparison mode, explicit evaluation date, current shared household
    assumptions and save/stale indicators. Reuse the profile editor and its
    separate **Spara hushållsprofil** operation.
-2. Show registered alternatives with identity, cost/fact/listing review state
-   and comparison selection. List all saved summaries; never silently discard
-   incomplete or hard-rejected cars. Selection and sorting are different actions.
+2. Show every registered alternative with identity and cost/fact/listing review
+   state. Never silently discard incomplete or hard-rejected cars. Selecting
+   one car for editing does not remove other cars from the comparison.
 3. Edit one shared rule profile: hard requirements, required evidence,
    preferences, numeric 0/100 anchors, categorical wishes and weights 0–5.
    Include selectable explanatory signals and their explicit date thresholds.
-4. Show the main table, criterion contributions/evidence, and expandable detail
-   tables. Missing fields lead to the relevant fact or household editor.
+4. Show the main table immediately, criterion contributions/evidence, and
+   expandable detail tables with **Öppna alla**. Start with cost ordering and
+   expose an explicit score-order control. Missing fields lead to the relevant
+   fact or household editor.
 5. Edit the selected car's facts and review its sources. Cost editing remains in
    the existing shared household editor; navigation preserves dirty state.
 
@@ -114,8 +140,10 @@ Use **Spara köpkrav och prioriteringar** only for the rule profile. Editing wei
 goals, dates or shared assumptions triggers previews after 500 ms and never
 writes data or calls AI. **Beräkna nu** captures an immediate generation.
 Give numeric fields Swedish labels, comma/point input, linked error text and
-focusable error summaries. The browser supplies an explicit editable date to
-the API; no date is inferred in Core or silently rolled forward at midnight.
+focusable error summaries. A newly initialized workspace uses today's local
+calendar date; internal navigation retains its edited date. The browser supplies
+that explicit editable date to the API. **Använd dagens datum** updates it by
+user choice; no date is inferred in Core or silently rolled forward at midnight.
 
 ## Fact review, modes and saving
 
@@ -129,11 +157,13 @@ the API; no date is inferred in Core or silently rolled forward at midnight.
 | Confirm cost assumptions | **Bekräfta kostnadsunderlag** is a separate action for the current exact cost input. Save dirty cost input before confirming the persisted input. A preview-only confirmation must be explicitly chosen and labelled unsaved. |
 | Effective price | Show that a purchase cost input owns its price, including a missing price. Link to that editor; changing an advertised fact cannot change the calculated purchase price or inherit its confirmation. |
 | Concurrent save | A completed save advances the saved baseline/revision without overwriting edits made afterward. Do not automatically retry a conflict or silently adopt a newer revision. |
-| Refresh/focus/return | Read current server baselines with at most four detail reads in flight. Preserve dirty forms and selection; offer explicit review of differences. All existing shared vehicle-change notifications invalidate affected comparison results. |
-| Whole-car deletion | Use existing explicit confirmation and full deletion API. Remove selection, facts, pending actions and stale results; retain both shared profiles. Stale requests cannot resurrect the car. |
+| Refresh/focus/return | Read current server baselines with at most four detail reads in flight. Preserve dirty forms and the active editor; offer explicit review of differences. All existing shared vehicle-change notifications invalidate affected comparison results. |
+| Whole-car deletion | Use existing explicit confirmation and full deletion API. Remove the car's editor, facts, pending actions and stale results; retain both shared profiles. Stale requests cannot resurrect the car. |
 
-Stored mode starts from saved facts/costs/review items and sends all required
-base revisions, current listing versions and explicit unsaved overrides. Reuse
+Stored mode uses #85's complete-set contract, with server-read membership,
+saved facts/costs/review items, revision/change detection and explicit unsaved
+overrides. The existing #64 selected-request contract remains documented for
+compatibility and is not the all-cars workflow. Reuse
 the existing legacy-decision editor and send only valid decisions; omitted
 reviews cannot manufacture complete costs. A listing-only or legacy candidate
 can still have useful independently assessed facts while costs are incomplete.
@@ -150,19 +180,20 @@ effect of facts saving or previewing.
 
 ## Results, generations and accessibility
 
-Every generation captures mode, profile, rules, date, selected identities, all
-base revisions, effective car edits and review decisions. Use one immutable
+Every generation captures mode, profile, rules, date, complete membership, all
+source revisions, effective car edits and review decisions. Use one immutable
 captured set for the active sensitivity and the favorable/normal/cautious detail
 views. Each view differs only in its explicit sensitivity mode; missing values
 are not filled from another mode. Limit preview transports to two in flight.
-The comparison-size decision controls whether candidate splitting is available.
+Use #85's coherent transport contract; candidate chunks must never be treated
+as separate comparisons or independent winners.
 
 Cancel obsolete transports and ignore their replies even if cancellation fails.
 Publish the generation together after its required calls settle; old results
 stay visibly stale until then. A failed view shows a specific current error and
 cannot borrow an old view. Numerical domain errors that the API can interpret
 retain independent results. Locally unserializable candidate text stays visible
-as an error and suppresses any whole-selection recommendation that would
+as an error and suppresses any complete-set recommendation that would
 otherwise ignore the candidate. Invalid shared rules block that generation.
 
 | Table or panel | Content and authority |
@@ -205,12 +236,16 @@ This preparation runs documentation/link/diff checks only; ordinary PR CI still
 applies. It does not enable a route, change an endpoint, add a migration, update
 generated types or implement PDF. The future implementation branch is
 `feature/65-comparison-workspace` after readiness and explicit assignment.
-PDF remains #66 and full practical acceptance remains #67.
+The prerequisite implementation branch is
+`feature/85-all-vehicle-comparison`; PDF remains #66 and full practical acceptance
+remains #67. Existing contracts and version metadata are unchanged in this
+preparation; #65 consumes the separately reviewed/generated #85 extension.
 
 Publish the preparation PR without `Closes #65`. Link immutable published docs
-from #65 and update tracker #12 to record #64 delivered. Keep exactly one status
-label per issue. Promote #65 only after every actual readiness gate is satisfied;
-publishing an unmerged specification does not satisfy it.
+from #85/#65 and update tracker #12 to record #64 delivered and #85 before #65.
+Keep exactly one status label per issue. Promote #85 only after this preparation
+is merged, and #65 only after #85 is also delivered. Publishing an unmerged
+specification does not satisfy either gate.
 
 ## Deferred cleanup inventory
 

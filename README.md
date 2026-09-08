@@ -36,7 +36,9 @@ revision-checked stored previews alongside independent manual previews.
 Comparison UI (#65), PDF (#66) and stage acceptance (#67) remain future work;
 no comparison screen or feature flag is enabled. The
 [#65 workspace preparation](docs/comparison-workspace-preparation.md) records
-the dependency audit, UI handoff and comparison-size decision gate.
+the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
+all saved cars must be compared together without a fixed total vehicle-count
+limit. #85 precedes #65; the new complete-set flow is not implemented yet.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
