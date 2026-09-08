@@ -10,11 +10,19 @@ const verificationEnvironment = {
   POSTGRES_USER: "car_expense_app",
   POSTGRES_PASSWORD: "compose-boundary-verification-only",
   CODEX_HOME_PATH: "/tmp/car-expense-codex-boundary-verification",
+  COMPARISON_MAX_REQUEST_BYTES: "41943040",
 };
 
 const local = resolveCompose("compose.yaml");
 const unraid = resolveCompose("compose.unraid.yaml");
 const e2e = resolveCompose("compose.yaml", "compose.e2e.yaml");
+
+for (const config of [local, unraid, e2e]) {
+  for (const service of ["api", "web"]) {
+    assert(String(config.services[service].environment.COMPARISON_MAX_REQUEST_BYTES) === "41943040",
+      `${service} must use the shared configurable complete-comparison byte limit.`);
+  }
+}
 
 verifyPublishedPorts(local, "local Compose");
 verifySharedNetwork(local, ["api", "codex-extractor", "postgres", "web"], "app-network", "local Compose");

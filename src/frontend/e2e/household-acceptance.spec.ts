@@ -960,6 +960,9 @@ test("atomic two-car legacy review recovers corrupt results and preserves every 
         ),
       ).toHaveLength(1);
       await open(page, current);
+      // Vehicle detail and the shared profile load independently after navigation.
+      await expect(page.getByLabel("Ägandeperiod (månader, 1–120)")).toHaveValue("12");
+      await expect(page.getByLabel("Årlig körsträcka (mil)")).toHaveValue("1200");
       const s = sections(await calculate(page), current);
       expect(s.totals.ownershipCost.completeTotalSek).toBeNull();
       expect(s.customCosts.cost.knownSubtotalSek).toBe(15300);
@@ -1012,7 +1015,12 @@ async function clearDraft(request: APIRequestContext) {
 }
 async function open(page: Page, car: SavedVehicle) {
   page.on("dialog", (dialog) => void dialog.accept());
+  const profileRead = page.waitForResponse(response =>
+    response.url().endsWith("/api/household-profile") && response.request().method() === "GET");
   await page.goto(`/manual?vehicleId=${car.vehicleId}`);
+  const loadedProfile = await (await profileRead).json();
+  await expect(page.getByLabel("Ägandeperiod (månader, 1–120)"))
+    .toHaveValue(String(loadedProfile.input.periodMonths ?? ""));
   await expect(
     page.getByRole("heading", {
       name: `Redigera ${car.registrationNumber}`,

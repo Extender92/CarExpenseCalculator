@@ -38,7 +38,11 @@ no comparison screen or feature flag is enabled. The
 [#65 workspace preparation](docs/comparison-workspace-preparation.md) records
 the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
 all saved cars must be compared together without a fixed total vehicle-count
-limit. #85 precedes #65; the new complete-set flow is not implemented yet.
+limit. #85 implements the [complete-set HTTP flow](docs/comparison-api.md#complete-set-comparison-85)
+on `feature/85-all-vehicle-comparison`, pending separate PR merge approval:
+stateless baseline checks, compact saved-car overrides, independent manual input
+and three sensitivity views with global exact ordering. #65 remains next after
+that approved merge; no comparison UI is added here.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
@@ -135,6 +139,7 @@ Vite runs at [http://localhost:5173](http://localhost:5173) and proxies `/api` t
 | `POSTGRES_USER` | Dedicated application role | `car_expense_app` |
 | `POSTGRES_PASSWORD` | Local/Unraid role password | development fallback locally; required on Unraid |
 | `ConnectionStrings__Postgres` | Direct API connection override | composed internally |
+| `COMPARISON_MAX_REQUEST_BYTES` | UTF-8 request limit for complete comparisons, shared by API/Nginx | `33554432` (32 MiB); existing routes keep 2 MiB |
 
 The internal URL-extraction runtime uses `CODEX_MODEL`,
 `CODEX_REASONING_EFFORT`, and a dedicated persistent `CODEX_HOME_PATH` on
@@ -163,6 +168,8 @@ for the private runtime and one-time login procedure.
 - `PUT /api/saved-cost-scenarios/{vehicleId}` – fully replace a scenario using its expected revision and explicitly preserve or acknowledge the current listing version
 - `DELETE /api/saved-cost-scenarios/{vehicleId}?expectedRevision={revision}` – permanently delete an aggregate using its expected revision
 - `GET /api/openapi/v1.json` – OpenAPI document used to generate frontend types
+- `GET /api/comparisons/baseline` – shared profiles, revisions and a token for all saved cars
+- `POST /api/comparisons/preview-all` – complete stored/manual comparison with three sensitivity views and global ordering
 
 Regenerate the committed TypeScript API contract while the API is running on port 5090:
 
@@ -174,6 +181,12 @@ npm run api:generate
 CI fails if regeneration changes `src/frontend/src/api/schema.d.ts`.
 
 ## Verification
+
+Complete comparisons use GET `/api/comparisons/baseline` and POST
+`/api/comparisons/preview-all`; see the [request and response contract](docs/comparison-api.md#complete-set-comparison-85).
+The original `/api/comparisons/preview` retains its compatibility limits.
+The [#85 evidence matrix](docs/household-comparison-verification.md#issue-85-complete-set-evidence)
+records full-set, precision, concurrent-snapshot and real Kestrel/Nginx checks.
 
 GitHub Actions runs the `Build, test and verify` workflow. Pull requests to `main` must pass these checks:
 

@@ -169,6 +169,58 @@ public sealed class VehicleFactsStore(CarExpenseDbContext db, TimeProvider timeP
 
 public sealed class ComparisonSnapshotStore(CarExpenseDbContext db) : IComparisonSnapshotStore
 {
+    public Task<ComparisonBaseline> ReadBaselineAsync(CancellationToken cancellationToken = default) =>
+        HouseholdStoreData.ReadAsync(db, async () => (await ReadManifest(cancellationToken)).Baseline, cancellationToken);
+
+    public Task<CompleteComparisonSnapshot> ReadAllAsync(string expectedBaselineToken, CancellationToken cancellationToken = default) =>
+        HouseholdStoreData.ReadAsync(db, async () =>
+        {
+            var manifest = await ReadManifest(cancellationToken);
+            if (!string.Equals(expectedBaselineToken, manifest.Baseline.BaselineToken, StringComparison.Ordinal))
+                throw new ComparisonStoreException("comparisonBaselineConflict", "The saved comparison inputs have changed.",
+                    actualBaselineToken: manifest.Baseline.BaselineToken);
+            var result = new List<ComparisonStoredVehicle>(manifest.Vehicles.Length);
+            foreach (var group in manifest.Vehicles.Chunk(100))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var ids = group.Select(x => x.Id).ToArray();
+                var vehicles = await HouseholdStoreData.Vehicles(db, false).Where(x => ids.Contains(x.Id)).ToListAsync(cancellationToken);
+                var byId = vehicles.ToDictionary(x => x.Id);
+                foreach (var entry in group)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!byId.TryGetValue(entry.Id, out var vehicle))
+                        throw new InvalidDataException("A comparison snapshot is incomplete.");
+                    result.Add(new(VehicleFactsStore.Read(vehicle), HouseholdStoreData.Vehicle(vehicle)));
+                }
+            }
+            return new CompleteComparisonSnapshot(manifest.Baseline,
+                new(manifest.Baseline.Profile, manifest.Baseline.Rules, result.AsReadOnly()));
+        }, cancellationToken);
+
+    private async Task<(ComparisonBaseline Baseline, ManifestVehicle[] Vehicles)> ReadManifest(CancellationToken ct)
+    {
+        var profile = HouseholdStoreData.Profile(await db.Set<HouseholdStateEntity>().AsNoTracking().SingleAsync(ct));
+        var rules = RuleProfileStore.Read(await db.Set<RuleProfileEntity>().AsNoTracking().SingleAsync(ct));
+        var entries = await db.Vehicles.AsNoTracking().Select(x => new ManifestVehicle(x.Id, x.RegistrationNumber,
+            x.Revision, x.Listing == null ? null : (long?)x.Listing.ListingVersion)).ToArrayAsync(ct);
+        var ordered = entries.OrderBy(x => x.RegistrationNumber, StringComparer.Ordinal).ToArray();
+        using var hash = System.Security.Cryptography.IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
+        void Add(string value) => hash.AppendData(System.Text.Encoding.UTF8.GetBytes(value));
+        // Explicit delimiters, invariant numbers, UUID N format and normalized registrations.
+        Add(FormattableString.Invariant($"v1\n{profile.Revision}\n{rules.Revision}\n{ordered.Length}\n"));
+        foreach (var x in ordered)
+        {
+            ct.ThrowIfCancellationRequested();
+            Add(FormattableString.Invariant($"{x.Id:N}|{x.RegistrationNumber}|{x.Revision}|"));
+            Add(x.ListingVersion?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null");
+            Add("\n");
+        }
+        return (new(profile, rules, ordered.Length, "v1:" + Convert.ToHexStringLower(hash.GetHashAndReset())), ordered);
+    }
+
+    private sealed record ManifestVehicle(Guid Id, string RegistrationNumber, long Revision, long? ListingVersion);
+
     public Task<ComparisonSnapshot> ReadAsync(IReadOnlyList<Guid> vehicleIds, CancellationToken cancellationToken = default) =>
         HouseholdStoreData.ReadAsync(db, async () =>
         {

@@ -72,6 +72,9 @@ public sealed record SavedVehicleFacts(Guid VehicleId, RegistrationNumber Regist
 public sealed record ComparisonStoredVehicle(SavedVehicleFacts Facts, SavedVehicleCostInput Cost);
 public sealed record ComparisonSnapshot(SavedHouseholdProfile Profile, SavedRuleProfile Rules,
     IReadOnlyList<ComparisonStoredVehicle> Vehicles);
+public sealed record ComparisonBaseline(SavedHouseholdProfile Profile, SavedRuleProfile Rules,
+    int CandidateCount, string BaselineToken);
+public sealed record CompleteComparisonSnapshot(ComparisonBaseline Baseline, ComparisonSnapshot Snapshot);
 
 public interface IRuleProfileStore
 {
@@ -86,12 +89,15 @@ public interface IVehicleFactsStore
 public interface IComparisonSnapshotStore
 {
     Task<ComparisonSnapshot> ReadAsync(IReadOnlyList<Guid> vehicleIds, CancellationToken cancellationToken = default);
+    Task<ComparisonBaseline> ReadBaselineAsync(CancellationToken cancellationToken = default);
+    Task<CompleteComparisonSnapshot> ReadAllAsync(string expectedBaselineToken, CancellationToken cancellationToken = default);
 }
 public sealed class ComparisonStoreException(string code, string message, Guid? vehicleId = null,
-    long? expectedRevision = null, long? actualRevision = null) : Exception(message)
+    long? expectedRevision = null, long? actualRevision = null, string? actualBaselineToken = null) : Exception(message)
 {
     public string Code { get; } = code;
     public Guid? VehicleId { get; } = vehicleId;
     public long? ExpectedRevision { get; } = expectedRevision;
     public long? ActualRevision { get; } = actualRevision;
+    public string? ActualBaselineToken { get; } = actualBaselineToken;
 }

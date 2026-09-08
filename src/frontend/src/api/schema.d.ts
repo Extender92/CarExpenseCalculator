@@ -4,6 +4,175 @@
  */
 
 export interface paths {
+    "/api/comparisons/baseline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ComparisonBaselineResponse"];
+                        "application/json": components["schemas"]["ComparisonBaselineResponse"];
+                        "text/json": components["schemas"]["ComparisonBaselineResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comparisons/preview-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CompleteComparisonRequest"];
+                    "application/*+json": components["schemas"]["CompleteComparisonRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CompleteComparisonResponse"];
+                        "application/json": components["schemas"]["CompleteComparisonResponse"];
+                        "text/json": components["schemas"]["CompleteComparisonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/comparisons/preview": {
         parameters: {
             query?: never;
@@ -2293,6 +2462,22 @@ export interface components {
             averagePerYearSek: number;
             isComplete: boolean;
         };
+        ComparisonBaselineResponse: {
+            profile: null | components["schemas"]["HouseholdProfileInput"];
+            /** Format: int64 */
+            householdProfileRevision: number;
+            rules: null | components["schemas"]["RuleProfileInput"];
+            /** Format: int64 */
+            ruleProfileRevision: number;
+            /** Format: int32 */
+            candidateCount: number;
+            baselineToken: string;
+            /**
+             * Format: int32
+             * @default 1
+             */
+            transportVersion: number;
+        };
         ComparisonCandidateRequest: {
             /** Format: uuid */
             vehicleId: string;
@@ -2421,6 +2606,9 @@ export interface components {
             expectedRevision?: null | number;
             /** Format: int64 */
             actualRevision?: null | number;
+            actualBaselineToken?: null | string;
+            /** Format: int64 */
+            maximumRequestBytes?: null | number;
         };
         ComparisonSignal: {
             key: components["schemas"]["ComparisonSignalKey"];
@@ -2475,6 +2663,45 @@ export interface components {
             /** Format: int64 */
             vehicleRevision: number;
             listing: components["schemas"]["ListingVersionInput"];
+        };
+        CompleteComparisonRequest: {
+            mode: components["schemas"]["ComparisonPreviewMode"];
+            requestId: string;
+            profile: components["schemas"]["HouseholdProfileInput"];
+            rules: components["schemas"]["RuleProfileInput"];
+            /** Format: date */
+            asOfDate: string;
+            storedBase?: null | components["schemas"]["CompleteComparisonStoredBase"];
+            overrides?: null | components["schemas"]["ComparisonCandidateRequest"][];
+            candidates?: null | components["schemas"]["ComparisonCandidateRequest"][];
+        };
+        CompleteComparisonResponse: {
+            requestId: string;
+            /** Format: uuid */
+            generationId: string;
+            mode: components["schemas"]["ComparisonPreviewMode"];
+            baselineToken: null | string;
+            /** Format: int32 */
+            candidateCount: number;
+            activeSensitivityMode: components["schemas"]["SensitivityMode"];
+            views: components["schemas"]["CompleteComparisonViews"];
+            /**
+             * Format: int32
+             * @default 1
+             */
+            transportVersion: number;
+        };
+        CompleteComparisonStoredBase: {
+            baselineToken: string;
+            /** Format: int64 */
+            householdProfileRevision: number;
+            /** Format: int64 */
+            ruleProfileRevision: number;
+        };
+        CompleteComparisonViews: {
+            baseline: components["schemas"]["ComparisonPreviewResponse"];
+            favorable: components["schemas"]["ComparisonPreviewResponse"];
+            cautious: components["schemas"]["ComparisonPreviewResponse"];
         };
         ConfirmHouseholdTransitionRequest: {
             profile: components["schemas"]["HouseholdProfileInput"];

@@ -3,6 +3,10 @@ namespace CarExpenseCalculator.Core.Households;
 public sealed class HouseholdFinancingCalculator
 {
     public HouseholdFinancingPreview Calculate(HouseholdProfileInput profile, IReadOnlyList<VehiclePurchaseInput> vehicles)
+        => CalculateBatch(profile, vehicles, 0, CancellationToken.None);
+
+    internal HouseholdFinancingPreview CalculateBatch(HouseholdProfileInput profile, IReadOnlyList<VehiclePurchaseInput> vehicles,
+        int indexOffset, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(vehicles);
@@ -17,18 +21,20 @@ public sealed class HouseholdFinancingCalculator
         var keys = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 0; index < snapshot.Length; index++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var vehicle = snapshot[index];
+            var globalIndex = indexOffset + index;
             if (vehicle is null)
             {
-                structureErrors.Add(new($"vehicles[{index}]", "missingItem", "Candidate cannot be null."));
+                structureErrors.Add(new($"vehicles[{globalIndex}]", "missingItem", "Candidate cannot be null."));
                 continue;
             }
 
-            structureErrors.AddRange(HouseholdInputValidator.ValidatePurchase(vehicle, $"vehicles[{index}]")
+            structureErrors.AddRange(HouseholdInputValidator.ValidatePurchase(vehicle, $"vehicles[{globalIndex}]")
                 .Where(error => error.Code == "invalidKey"));
             if (!keys.Add(vehicle.CandidateKey?.Trim() ?? string.Empty))
             {
-                structureErrors.Add(new($"vehicles[{index}].candidateKey", "duplicateKey", "Candidate keys must be unique."));
+                structureErrors.Add(new($"vehicles[{globalIndex}].candidateKey", "duplicateKey", "Candidate keys must be unique."));
             }
         }
 
@@ -37,7 +43,11 @@ public sealed class HouseholdFinancingCalculator
             throw new HouseholdInputValidationException(structureErrors);
         }
 
-        var results = snapshot.Select((vehicle, index) => CalculatePurchase(profile, vehicle, index, profileErrors)).ToArray();
+        var results = snapshot.Select((vehicle, index) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return CalculatePurchase(profile, vehicle, indexOffset + index, profileErrors);
+        }).ToArray();
         return new("SEK", profile.ActiveSensitivityMode, profileErrors, Array.AsReadOnly(results));
     }
 

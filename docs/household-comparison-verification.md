@@ -296,6 +296,87 @@ Record the same evidence as 3A, including PDF visual inspection and explicit
 limits of fake-only extraction. All relevant automated checks must pass; a
 manual example alone does not replace regression coverage.
 
+## Issue #85 complete-set evidence
+
+Implementation branch: `feature/85-all-vehicle-comparison`, based on merged PR
+#84 (`1bf03875c6fa65a1cf477dff427e43c5758d0cf6`). This records verification of
+the PR work; it does not claim an approved merge or delivery of #65's UI.
+The [transport contract](comparison-api.md#complete-set-comparison-85) and
+[#65 handoff](comparison-workspace-preparation.md) define remaining publication
+and interaction work. No migration or version change to existing engines.
+
+| Acceptance boundary | Automated evidence |
+| --- | --- |
+| Entire membership, 0/1/100/101/250, group independence | [CompleteComparisonTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/CompleteComparisonTests.cs): identical complete serialized results for batch sizes 1/7/99/100; duplicate detection and global paths beyond index 99. [CompleteComparisonSnapshotTests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/CompleteComparisonSnapshotTests.cs): mixed listing/legacy/purchase/lease roots exactly once, draft excluded. [CompleteComparisonPersistenceTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/CompleteComparisonPersistenceTests.cs): compact stored request and all three HTTP views for each count. |
+| Raw ordering and recommendation | Core and HTTP tests retain 100.001/100.002 SEK differences across groups despite equal displayed costs/scores; global cheapest ties and overlap, rejected alternatives. Existing B1–B8 evaluator tests use the same finalization; HTTP examples retain independent expected 85, [45,85], 75 and 15 scores. |
+| Coherent reads / stale baselines | Snapshot tests use separate PostgreSQL contexts to mutate profile, rules, facts, costs, listings, membership and deletion between payload groups. Current result stays on its captured snapshot; next old-token read conflicts. Invariant/culture-independent hashes and revision changes are checked. HTTP tests check whole-baseline and individual overlay identity/revisions. |
+| Large saved/manual data | Persistence test loads more than 2 MiB of stored cost notes using a request below 2 KiB. Endpoint test sends actual manual input above 2 MiB for 101 candidates. No upload sessions or implicit saves. |
+| Evidence, sensitivity and review | Persistence tests cover input-bound confirmation and 40,000→35,000 price edits, missing price, existing source checks, three views using the same confirmation, maximum 50+50 legacy input with unknown results, unresolved review and unknown/exceeded/invalid/unconfigured budgets. Explicit preview decisions do not change stored review. |
+| Request limits | [CompleteComparisonEndpointTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/CompleteComparisonEndpointTests.cs): real Kestrel exact 32 MiB/+1 with Content-Length and chunked UTF-8; configured limit affects only new route. [Browser HTTP tests](../src/frontend/e2e/complete-comparison-api.spec.ts) repeat exact proxy limits and 101-car stored/manual flows. Existing 100-car/2-MiB routes keep their regression coverage. |
+| Admission / cancellation / failure | [CompleteComparisonCancellationTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/CompleteComparisonCancellationTests.cs): two active slots, immediate third-request 503, injected 120-second deadline, cancelled database wait, raw TCP upload disconnect, response disconnect, sanitized group fault/missing group and slot reuse. Core cancellation never returns a partial set. |
+| Isolation and compatibility | Manual tests register throwing storage resolvers and still evaluate 101/250 candidates. No comparison code invokes extraction/AI or writes. Existing household, v1, listing, browser and URL acceptance suites remain mandatory. |
+
+Local environment: .NET SDK **10.0.400**, Node **22.22.2**, PostgreSQL **18**
+in disposable Testcontainers/`car-expense-e2e`, Docker Engine **29.5.3**.
+The complete backend verification passes **1,012 tests**: Core 562, API 262,
+PostgreSQL Infrastructure 129, Infrastructure unit 16, extractor 39 and
+architecture 4. Build: **0 warnings, 0 errors**; tests: **0 failed, 0 skipped**.
+Frontend verification passes **195 tests**, lint and production build.
+The final Chromium run passes **41 tests** with one worker, **0 failed/skipped**;
+URL acceptance and Nginx readiness/configuration checks pass. The pinned private
+CLI reports `codex-cli 0.153.0`; extraction tests use only the fake service.
+
+Commands are the README's restore/Release build/test, frontend `npm ci`, lint,
+test/build, `node scripts/verify-compose-boundaries.mjs`, API on port 5090 and
+`npm --prefix src/frontend run api:generate`, followed by ordered Docker build,
+PostgreSQL startup, explicit migration, API/web readiness, Chromium with one
+worker and `node scripts/verify-url-analysis-acceptance.mjs`. Generated schema
+adds only the intended routes/transport types and optional problem fields.
+Compose validation also checks a nondefault shared API/web request limit.
+
+Development reruns are recorded rather than hidden: fixtures were corrected for
+PostgreSQL timestamp precision, the existing constant-or-complete-trio sensitivity
+shape, and ephemeral Kestrel ports. The raw TCP upload fixture observes actual
+request admission before disconnecting. Known-length oversize tests use HTTP
+Expect/Continue to avoid a race between early rejection and continued uploading.
+The first full proxy run exposed a real exact-boundary defect: Kestrel counts
+HTTP/1.1 chunk framing in its limit. The new route now delegates decoded body
+size to its bounded reader for chunked transfers; exact 32 MiB is accepted and
+one additional decoded byte is still rejected. Old limits are unchanged.
+
+Browser reruns also exposed an existing fixture timing assumption: the car editor
+can appear before the independent shared-profile read finishes. An attempted
+request-event synchronization produced eight fixture failures and was reverted.
+The final fixture explicitly waits for the loaded profile before interaction,
+retaining all amount, save/conflict and legacy-review assertions. The complete
+41-test suite then passed without retries; no product UI change was needed.
+
+PowerShell initially rejected the unsigned `npm.ps1` wrapper; `npm.cmd` with
+the pinned Node binary completed all checks without changing execution policy.
+Playwright may emit its existing NO_COLOR/FORCE_COLOR notice. Initial migration
+on the empty disposable database logs a missing history-table probe before
+successfully applying all existing migrations. No new migration is introduced.
+CI links, final Chromium/URL results and cleanup are recorded in the PR linked
+from #85. No Unraid user data, real AI, comparison UI or PDF acceptance is claimed.
+The deferred #64 cleanup inventory remains untouched.
+
+### Issue #85 cleanup inventory
+
+The task API, MSBuild/compiler servers and disposable Compose stack were stopped;
+the task's PostgreSQL/Codex-home volumes and test networks were removed. The
+execution tool rejected the native PowerShell deletion of the verified work
+directory with `blocked by policy`, giving no further reason. The ignored
+`temp/issue85/` therefore remains: **2,490 files, 35,326,903 bytes** at the final
+local audit, comprising logs/TRX results, browser artifacts and process/Node
+caches. No helper is committed. This whole task-owned directory can be removed
+once permitted; the prior #64 directories are explicitly outside this cleanup.
+
+Windows Temp was inventoried for recent work-owned remnants. Anonymous empty
+files and background-installer logs could not be attributed to #85 and were
+preserved. Existing shared bin/obj, node_modules/dist and the pinned Node under
+the deferred #64 inventory were also preserved. No failure is reported as a
+successful cleanup.
+
 ## Documentation delivery checks
 
 For this planning PR, check changed Markdown links/anchors, UTF-8/formatting,

@@ -52,8 +52,9 @@ comparison of all saved cars without a fixed total count on 2026-09-08. The new
 [#85 backend handoff](all-vehicle-comparison-preparation.md) precedes #65.
 Three of the seven current stage 3B implementation items are delivered.
 The [#65 workspace preparation](comparison-workspace-preparation.md) records
-all six accepted choices. #85 is `status:blocked` pending preparation PR #84
-merge; #65 is `status:blocked` pending that preparation and #85 delivery.
+all six accepted choices. Preparation PR #84 is merged. #85 passed its dependency
+audit and is `status:in-progress`, implemented on its feature branch pending
+separate merge approval. #65 remains `status:blocked` until #85 is merged.
 #66–#67 retain their immediate implementation dependencies.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 
