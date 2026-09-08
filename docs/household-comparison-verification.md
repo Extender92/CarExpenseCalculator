@@ -164,7 +164,7 @@ Dropped groups must never yield a whole-set winner. Retain all #62–#64/3A
 evidence tests and the existing 938/195/37 baseline until implementation adds
 verified cases. New HTTP/generated types are delivered through #85's own PR.
 
-### Issue #65 workspace handoff
+### Original issue #65 workspace handoff
 
 The [workspace preparation](comparison-workspace-preparation.md) audits the
 merged #64 contract and planned frontend flows. The following is a future-test
@@ -186,6 +186,83 @@ handoff, not executed #65 evidence. Baseline: 938 backend, 195 frontend and
 
 PDF layout/export remains #66, and the cross-stage practical report remains #67.
 The preparation PR only verifies documentation and existing prerequisite CI.
+
+### Issue #65 workspace evidence
+
+Implemented on `feature/65-comparison-workspace` from merged #85 / PR #86
+(`885826a9b367337fa3f7610365f69a8ffa1207bf`). This is the comparison workspace PR's
+evidence; the separately approved merge and complete stage acceptance (#67) are
+not implied. [Workspace behavior and recovery](comparison-workspace.md) describe
+the delivered flows and module boundaries. The PR's checks identify the exact
+tested head commit and external CI run.
+
+| Acceptance / boundary | Executed evidence |
+| --- | --- |
+| Common priorities and honest scores, B1–B8 | [Comparison browser suite](../src/frontend/e2e/comparison-workspace.spec.ts): B1 85/100% coverage, B2 [45,85]/60%, disabled weights and fixed-goal changes, B5 [60,80] before [45,85] with overlap, B6 B,A,C,D complete/partial/rejected cost order and only B cheapest, B7 inclusive limits/unknown owners/confirmed missing tow bar, B8 unchanged contributions after adding a cheaper car. |
+| All cars / 50 per display page | Browser cases for 101 and 250 saved cars, an off-page definite preference winner, shared expanded detail pages and no extra request on pagination. [Response tests](../src/frontend/src/features/comparison/preview.test.ts) exercise 0/1/50/51/100/101/250 membership and permutation integrity; workspace tests retain page/expanded state and reset on sort. |
+| Costs, sensitivity, partial totals and budgets | Browser cases show A2 20,750 ownership versus 80,750 outflow; A5/A6 energy 9,504/10,320; A7 600 accrued tax and 200 average payments at six months; A8 7,200 costs with separate 3,600 workshop outflow and 3,600 saving; A9/A10 60,000 lease cost, 63,000 outflow, 3,000 refund and short/long incomplete periods; 200 versus 199 budget. Existing [household acceptance](../src/frontend/e2e/household-acceptance.spec.ts) retains exact A1–A11 and positive-interest reference coverage. The combined comparison energy/payment fixture explicitly uses zero-priced diesel for non-hybrid examples so all cars share one profile. |
+| Forms and exact authority | [Form/table tests](../src/frontend/src/features/comparison/components.test.tsx) exercise false/unknown, cleared versus absent collections, explicit evidence, exact mil input with trailing zeros, intervals/coverage and stale badges. [API tests](../src/frontend/src/features/comparison/api.test.ts) retain high precision and large revisions; response tests retain server order for equal displayed amounts. Existing household forms cover purchase/lease/null/zero/included/triple sensitivity and exact units. |
+| Complete current generations | [Workspace tests](../src/frontend/src/features/comparison/workspace.test.ts) cover debounce, reversed responses, latest queued work with two transports, four lazy detail reads, invalid candidate retention, independent numeric errors, dirty navigation, deletion and in-flight writes. Response tests reject missing view/count/identity/order/version/request/generation inconsistencies. Browser fault injection verifies that an incomplete third view leaves old results stale without a recommendation. |
+| Request sizes and failures | Comparison API client tests cover UTF-8 measurement, existing 2-MiB write limits, no fixed 2/32-MiB preview cap, server limits below/above default, 413/busy/timeout and truncated JSON without retry. Existing #85 Kestrel/Nginx exact-limit and chunked tests remain unchanged and pass in the full suites. |
+| Sources, conflicts and confirmation | Browser test reads a listing proposal without adoption, explicitly adopts version 1, retains it when version 2 arrives, records current/listing conflict and resolves it manually. Another keeps dirty gearbox facts while saving economic price 40,000 → 35,000, observes [0,100] after confirmation invalidation and [48.75,88.75] after explicit saved-cost confirmation. No comparison operation invokes extraction or AI. |
+| Concurrent editing and recovery | Two browser contexts change a shared profile while local weights remain dirty; explicit baseline review preserves local edits. Workspace tests preserve later rule/fact edits, expose refreshed facts before replacement, block old conflict references and detect unrelated concurrent inventory changes even during an own save. A delayed economic read test hides the old/blank editor until the requested car is loaded. |
+| Links, accessibility and isolation | Browser checks use keyboard Enter, focused error summary and focused criterion/economic fields, explicit manual mode with baseline storage failure, exact values retained through `/manual`, and a 390-pixel viewport without document overflow. Keyed-path regression follows a cost row through insertion/reordering. Full deletion retains both shared profiles. Existing URL, legacy and shared-draft regressions pass. Desktop/mobile screenshots were inspected locally; temporary images are not product assets. |
+
+Local verification uses .NET SDK **10.0.400**, Node **22.22.2**, Docker Engine
+**29.5.3**, disposable PostgreSQL **18** and the fake extractor. The backend
+restore/Release build/test passes **1,012 tests** (Core 562, API 262,
+PostgreSQL Infrastructure 129, Infrastructure unit 16, extractor 39,
+architecture 4), **0 failed/skipped**, with **0 build warnings/errors**.
+Frontend `npm ci`, lint, test and production build pass: **255 tests**,
+**0 failed/skipped**, no lint/build warnings. OpenAPI was regenerated from the
+API on port 5090 and has **no schema diff**. The isolated Docker build, explicit
+migration, readiness, `nginx -t`, Compose-boundary check and pinned
+`codex-cli 0.153.0` check pass. Full Chromium with one worker passes **55 tests**,
+**0 failed/skipped**; URL-acceptance state/concurrency/isolation/safe-log checks
+also pass. No production data or real AI service was used.
+
+Development reruns were necessary and are not omitted: corrected new fixtures
+used valid registration letters, positive consumption, an explicit zero-priced
+energy source, the existing partial-cost wording and complete version-2 listing
+metadata. An initial fixture TypeScript cast blocked Docker compilation and
+was corrected. Product regressions found and fixed during verification were
+trailing-zero loss while typing exact mil values, premature economic editing
+before a linked car finished loading, and collapsed fact sections during refresh.
+Additional tests protect revision coordination, late edits and partial-response
+publication. A transient hook-dependency lint warning was corrected. Playwright
+reports its existing `NO_COLOR`/`FORCE_COLOR` environment warning; npm printed an
+update notice and Git reported local LF/CRLF conversion notices. These did not
+change contracts or suppress any check. Later field-link refinements receive
+focused reruns and the PR's complete CI verification.
+
+#### Issue #65 cleanup inventory
+
+The temporary API process on 5090 and the `car-expense-e2e` stack were stopped.
+Its work-owned PostgreSQL and empty Codex volumes and networks were removed;
+no listener remained on 5090/8088 and no E2E container/volume remained.
+
+Work files remain in the single ignored directory
+`C:\Users\dann_\Source\repos\CarExpenseCalculator\temp\issue65\`.
+Native PowerShell deletion of this verified work-owned directory was rejected
+by automatic tool policy with **`blocked by policy`** before execution. No
+specific reason was provided and no alternative deletion bypass was attempted.
+The directory contains these work-owned groups, all disposable:
+
+- `docker-build.log`, `web-build.log` and two `Microsoft.NET.Workload_*.log` files.
+- `playwright/`, `focused-playwright/`, `full-playwright/`, `final-links/`
+  (test diagnostics and inspected desktop/mobile screenshots).
+- `npm-cache/` (the temporary pinned formatter), `node-compile-cache/`,
+  `playwright-transform-cache/`, `NuGetScratch/`, `MSBuildTempfezh4m0r.h0r/`,
+  `VBCSCompiler/`, `car-expense-process-test/` and temporary SDK subdirectories
+  `pdpqxdfb.1q0/`, `t5hnwfq1.lkx/`, `wktphv2b.f4f/`, `ymeiyxop.bvq/`.
+
+Windows Temp was also inspected. The first Compose build's metadata file
+`compose-build-metadataFile-1619021b-cbb0-4693-9b0f-be0378f36a22.json` had already
+been removed by the tool. Remaining recent empty GUID-named `.tmp` files and
+an empty `nsjD64.tmp` directory had no verifiable project ownership and were
+preserved. No project-attributable Windows Temp remainder was identified.
+There is no cleanup helper script. The deferred #64/#85 inventories and the
+pre-existing Node installation under `temp/issue64/` were left untouched.
 
 ## Verification commands by work area
 

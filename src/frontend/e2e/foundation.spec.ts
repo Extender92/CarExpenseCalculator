@@ -3,16 +3,20 @@ import { expect, test } from "@playwright/test";
 test("serves the dashboard and API through one origin", async ({ page }) => {
   let extractionRequests = 0;
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/listing-analyses") extractionRequests += 1;
+    if (new URL(request.url()).pathname === "/api/listing-analyses")
+      extractionRequests += 1;
   });
-  const responsePromise = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === "/api/system/status"
-      && response.request().method() === "GET",
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/system/status" &&
+      response.request().method() === "GET",
   );
   await page.goto("/");
   const response = await responsePromise;
 
-  await expect(page.getByRole("heading", { name: /ett bättre beslutsunderlag/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /ett bättre beslutsunderlag/i }),
+  ).toBeVisible();
   await expect(page.getByText("Systemet är friskt")).toBeVisible();
 
   expect(response.status()).toBe(200);
@@ -21,7 +25,7 @@ test("serves the dashboard and API through one origin", async ({ page }) => {
     status: "healthy",
     database: "available",
     features: {
-      ruleBasedSearch: false,
+      ruleBasedSearch: true,
       urlAnalysis: true,
       manualCalculator: true,
       aiReview: false,
@@ -38,13 +42,21 @@ test("serves the dashboard and API through one origin", async ({ page }) => {
 
 test("navigates to all three foundation routes", async ({ page }) => {
   await page.goto("/search");
-  await expect(page.getByRole("heading", { name: "Regelsökning" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Jämförelse", exact: true }),
+  ).toBeVisible();
 
   await page.goto("/analyze-urls");
-  await expect(page.getByRole("heading", { name: "Analysera URL:er" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Analysera URL:er" }),
+  ).toBeVisible();
 
   await page.goto("/manual");
-  await expect(page.getByRole("heading", { name: "Hushållskalkyl", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Hushållskalkyl", exact: true }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Äldre kalkyl", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Äldre kalkyl", exact: true }),
+  ).toBeVisible();
 });

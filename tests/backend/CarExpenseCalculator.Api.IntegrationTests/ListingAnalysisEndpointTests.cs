@@ -275,7 +275,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
         Assert.True(payload.RootElement.GetProperty("integrations")
             .GetProperty("codexListingExtractionConfigured").GetBoolean());
         var features = payload.RootElement.GetProperty("features");
-        Assert.False(features.GetProperty("ruleBasedSearch").GetBoolean());
+        Assert.True(features.GetProperty("ruleBasedSearch").GetBoolean());
         Assert.True(features.GetProperty("urlAnalysis").GetBoolean());
         Assert.True(features.GetProperty("manualCalculator").GetBoolean());
         Assert.False(features.GetProperty("aiReview").GetBoolean());
