@@ -3,7 +3,9 @@
 ## Status and scope
 
 Normative target for stage 3B. The #62 Core fact foundation is merged through
-[PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80); rules, scores, persistence and UI remain
+[PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80). Issue #63 adds
+the Core rules, scores and ordering on `feature/63-buying-rules-scores`, pending
+separate approved PR merge. Fact/rule persistence, HTTP and UI remain
 **not implemented**. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
@@ -151,6 +153,124 @@ var edited = facts with
 var accepted = processor.Normalize(edited);
 var displayedMil = SwedishMil.FromKilometres(200_000m); // exactly 20_000
 ```
+
+## Implemented Core evaluation (#63)
+
+The #63 implementation adds `ComparisonEvaluator.EvaluateComparison(profile,
+rules, asOfDate, candidates)` in `Core.Comparisons`. It is a pure calculation:
+no writes, providers, clock, UI feature enablement or retained evaluations.
+Rule and comparison-result versions start at **1**, independently of household
+calculation/result version **2** and storage version **1**. Existing household
+HTTP responses and OpenAPI remain unchanged.
+
+| Contract | Implemented semantics |
+| --- | --- |
+| `RuleProfileInput` | Copied hard rules, preferences and selected signals. Empty means no active defaults. `RuleProfileProcessor.Normalize` validates and normalizes before evaluation. |
+| `HardRuleInput` | Stable criterion key, typed operator, evidence requirement, inclusive limits or typed `ComparisonChoice` set, explicit enabled state. |
+| `PreferenceInput` | Stable key, weight 0-5, required evidence, numeric zero/full anchors or typed preferred choices. |
+| `ComparisonCandidateInput` | Existing UUID/`RegistrationNumber`, current source facts, optional current cost inputs, confirmation, source revisions, review items and reviewed condition-note facts. Collections are copied. |
+| `CostAssumptionConfirmation.Confirm(input, confirmedAt)` | Explicit adoption of the actual immutable car assumptions and caller-supplied time. Structural value comparison preserves confirmation across equivalent reads, but changes to amounts, sensitivity values, inclusion, energy, payment timing, notes or lease terms invalidate it. |
+| `ComparisonReviewItem` | Stable source-review key/reason and typed affected sections supplied by a trusted application adapter. This is not a client-authoritative flag or a second storage model. |
+| `CurrentEvaluation` | Normalized effective input, current household cost sections, independent errors, hard results/eligibility, per-preference assessment and weighted interval contribution, score/coverage, selected signals and recommendation flags. |
+| `ComparisonPreview` | Effective shared profile, normalized rules, explicit date, versions/profile errors, results in input order, separate UUID cost/score order lists and a preference-recommendation reason. Source revisions are echoed, not checked against a database. |
+
+`HardRuleOperator` supports inclusive ranges, boolean equality, allowed sets,
+fuel intersection, minimum remaining inspection days, and within-budget rules.
+Only the operator appropriate to the catalogue entry is accepted. Budget
+preferences are invalid. Numeric anchors may increase or decrease; whole-number
+hard limits are required for integer fields and remaining days. Date anchors use
+remaining days within the full `DateOnly` difference range. Numeric cost anchors
+have the decimal domain, without introducing a vehicle-price cap on totals.
+The unchanged household validator prevents residuals above purchase price and
+negative expense inputs, so it cannot currently produce negative complete cost.
+Negative anchors remain valid; invalid attempted negative costs remain unavailable.
+
+At most 100 candidates, 50 hard rules/preferences per collection and 50 choices
+per set are accepted. Duplicate UUIDs, normalized registrations and criterion
+keys are invalid. Supplied disabled-rule values are still validated, while
+missing targets are allowed for disabled entries. Signals have one entry per
+supported key; inspection signals require an explicit nonnegative whole-day
+threshold. Reviewed condition notes retain the listing limit of 10 notes,
+300 characters each; their source/evidence is validated through the fact path.
+
+### Effective purchase price and cost authority
+
+With current purchase cost inputs, price rules and preferences use their
+`PriceSek`, including an explicit missing price. They do not fill missing price
+from source facts. Without cost inputs they use the current price fact; lease
+applicability follows #62. If advertised facts say 40,000 and current purchase
+inputs say 35,000, the assessed price is **35,000**. Evidence for 40,000 cannot
+confirm it. A known source fact for exactly 35,000 can supply its own evidence;
+otherwise explicit adoption of the current cost inputs supplies user evidence.
+An unconfirmed changed price returns `effectivePriceNeedsConfirmation` and an
+unknown preference interval, while displaying the effective numeric value.
+`EffectiveInput.Facts` preserves the current source facts; consumers use
+`Assessment.Actual` for the evaluated price rather than substituting the source
+price. Confirmation never changes advertised source facts or creates history.
+
+The household engine now has one internal calculation path returning both its
+existing presentation and unrounded net/monthly/per-mil measures. Public
+`HouseholdCostCalculator.Calculate` projects the same existing version-2 result.
+Comparison consumes complete unrounded measures and authoritative budget
+statuses. It never accepts a submitted cost total or rebuilds a budget from
+rounded funding. A confirmed car-input snapshot remains applicable when the
+shared profile changes; the resulting costs remain estimates of those explicit
+household assumptions. Estimated totals cannot satisfy registry requirements.
+
+Unresolved review removes affected complete totals and score inputs, preserving
+known subtotals and independent sections. Cost-category review also propagates
+to ownership/monthly/per-mil completeness. Payment and budget impacts remain
+explicit. Full reconciliation is blocked where its cost/payment components are
+unresolved. A reviewed budget pass becomes unknown; a safe known exceedance,
+invalid budget or missing limit retains its state. Even an independent invalid
+expense cannot erase a safe exceedance already established by the cost engine.
+The #64 adapter must derive review impact and confirmations from typed/current
+underlying data; arbitrary client affected-section lists or confirmation flags
+must never be mapped as trusted evidence.
+
+### Independent validation, precision and explanations
+
+Strict public fact normalization still throws aggregated errors for invalid
+supplied values. An internal evaluation path preserves normalized fields and
+their individual errors so invalid seats, for example, cannot erase a known
+failed tow-bar rule. Errors retain stable codes and paths under
+`candidates[i].facts`, `candidates[i].costInput`, or `candidates[i].scores`;
+shared calculation errors retain `profile.*` paths. Existing structural
+household exceptions remain structural exceptions. Invalid rules/candidate
+structure throw `ComparisonInputValidationException`, with immutable
+`Path`/`Code`/technical English `Message` errors. Null top-level arguments use
+`ArgumentNullException`. HTTP mapping belongs to #64.
+
+Assessments expose actual values, available/required evidence, reasons and
+errors. Representative reasons are `unknownFact`, `notApplicable`,
+`conflictingFacts`, `invalidFact`, `insufficientEvidence`,
+`effectivePriceNeedsConfirmation`, `estimatedValueNotRegistryVerifiable`,
+`incompleteCost`, `budgetNotConfigured`, `unknownBudget`, `invalidBudget`,
+`zeroDistance`, and `legacyReview:<key>`. Existing calculation errors are
+preserved. Structure/rule codes include `required`, `tooManyItems`,
+`duplicateKey`, `identityMismatch`, `unsupportedCriterion`, `invalidOperator`,
+`invalidEnum`, `invalidLimits`, `invalidInteger`, `invalidAnchors`,
+`unsupportedPreference`, `invalidChoice`, `duplicateValue`, `invalidState`,
+`invalidText`, and `outOfRange`.
+
+Scores use decimal arithmetic with early endpoint clamping. Multiplication
+before division preserves representable tiny scores; division first is used
+when multiplying the numerator would overflow. An unrepresentable intermediate
+returns `calculationOutOfRange` only for that contribution, keeping its interval
+and other contributions. Raw scores/weighted totals determine order and winners;
+only returned score/percentage presentation rounds to two places away from zero.
+Raw equal costs share the cheapest label; display-equal costs are not necessarily
+ties. Registration tie order is ordinal over normalized registration strings.
+
+Hard results contain Swedish explanations and an independent
+`ObservedConditionSatisfied` value so an insufficiently evidenced seller claim
+does not masquerade as a trusted pass/fail. Selected condition notes are
+source-labelled informational text, without keyword diagnosis. Service and
+inspection signals distinguish explicit positive/unclear/expired/short facts;
+equality with the inspection threshold meets it. Cost/budget signals report
+current calculation completeness/status. They never modify rules or scores.
+`PreferenceRecommendationReason` distinguishes `definiteWinner`,
+`overlapOrTie`, `noEligibleCandidate`, and `noActiveCriteria`.
 
 ## Hard rules and explanations
 

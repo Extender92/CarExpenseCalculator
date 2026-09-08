@@ -1,6 +1,36 @@
 # Issue #63: buying rules and scoring preparation
 
-## Readiness and authority
+## Implementation status (2026-09-08)
+
+Preparation PR #81 was approved and merged as
+`6fc9470f04e0df0fc70b3767d55882c117c00c2f`; its merged-main CI passed. The user
+then explicitly assigned implementation on `feature/63-buying-rules-scores`.
+#63 is `status:in-progress`. Core contracts, independent rule evaluation,
+weighted score intervals, ordering, Swedish signals and tests are implemented
+on that branch, pending separate approved PR merge. See the
+[implemented contract](comparison-and-buying-scores.md#implemented-core-evaluation-63).
+
+The user confirmed one price clarification: current purchase cost input owns
+the evaluated price, including missing price; changing it cannot inherit older
+advertisement confirmation. Input-bound explicit adoption and exact matching
+evidence implement that boundary. The household engine supplies internal raw
+cost measures and unchanged version-2 presentation from one calculation path.
+
+All B1-B8 examples and integration regressions are mapped in the
+[verification matrix](household-comparison-verification.md#issue-63-core-evaluation-evidence).
+Current household validation prohibits residuals above price and negative
+expenses, so a negative complete ownership cost cannot be produced. Regression
+tests preserve that validation and exercise negative anchors without adding a
+cost-total injection route or broadening #63 into a 3A economic model change.
+
+This implementation has no storage/API/UI changes; #64 must implement trusted
+mapping for persisted facts, input confirmations and legacy review impacts.
+The preparation audit below records the original handoff. Its documentation-only
+publication instructions do not replace this explicitly assigned implementation:
+the implementation PR uses `Closes #63` only after acceptance, needs green CI,
+and requires its own separate merge approval. #64-#67 remain blocked meanwhile.
+
+## Preparation readiness and authority (2026-09-07)
 
 Preparation for [#63](https://github.com/Extender92/CarExpenseCalculator/issues/63),
 the second implementation item in stage 3B. This document records the dependency

@@ -44,7 +44,7 @@ listing contracts provide the implementation basis. #62 is closed through
 approved PR #80, merged as `60d2b49ab910ba17352637cc94b6649df06b117b` with green
 merged-main CI. See the [vehicle-facts implementation record](vehicle-facts-implementation-plan.md).
 The [#63 preparation audit](buying-rules-implementation-preparation.md) verifies
-all its prerequisites; #63 is `status:ready` and awaits explicit implementation
+all its prerequisites; #63 is now `status:in-progress` following explicit implementation
 assignment. Items #64–#67 remain blocked by their immediate implementation prerequisites.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 

@@ -2,9 +2,12 @@
 
 ## Delivery status
 
-Buying rules are planned, not implemented. Stage 3B follows the shared
-household-calculation work in stage 3A. The current example semantics below
-remain an optional starting profile. The accepted catalogue, formulas, evidence,
+Issue #63 implements deterministic Core buying rules, weighted score intervals,
+source-labelled signals and separate cost/preference ordering on
+`feature/63-buying-rules-scores`, pending approved PR merge. Storage/API and UI
+remain #64/#65 work. Stage 3B follows the shared household calculations in 3A.
+The example semantics below remain an optional starting profile, never active
+defaults. The accepted catalogue, formulas, evidence,
 ordering, and HTTP contracts are normative in
 [Comparison and buying scores](comparison-and-buying-scores.md), following the
 [Household calculations and comparison plan](household-comparison-plan.md).
@@ -28,11 +31,19 @@ Initial example profile:
 
 ### Warnings
 
-Warnings do not automatically reject a car unless the user promotes them to hard rules. Examples include rust, broken air conditioning, short inspection validity, unclear service history, import history, discrepancies between sources, and disclosed repair needs.
+Warnings do not automatically reject a car. The user must configure an accepted
+corresponding hard criterion. #63 reports explicit inspection thresholds,
+unclear service data and cost/budget completeness. Reviewed condition/repair
+notes are source-labelled information, with no automatic interpretation of rust,
+air-conditioning faults or free text as verified criteria. Import/history signals
+require future supported source facts.
 
 ### Positive signals
 
-Examples include a long recent ownership period, documented service history, recent inspection, consistent mileage history, and complete source data.
+#63 reports documented service, inspection validity meeting the explicit day
+threshold, complete cost inputs and budgets within their limits. Source labels
+remain visible and do not promote verification. Ownership duration, inferred
+inspection recency and mileage history remain future source-dependent examples.
 
 ## Evaluation principles
 
@@ -42,7 +53,7 @@ Examples include a long recent ownership period, documented service history, rec
 - Rule explanations are generated from deterministic templates; AI may rephrase them but may not change pass/fail state.
 - Owner count is a configurable signal rather than a universal measure of vehicle quality.
 
-## Planned configurable priorities
+## Implemented Core priorities and later application work
 
 - The accepted catalogue adds transmission, seats, model year, fuel, body,
   drivetrain, locality/county, braked towing capacity, inspection/service facts,

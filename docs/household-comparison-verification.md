@@ -46,7 +46,8 @@ inspection, geography, equipment or registration-year facts.
 [SwedishMilTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/SwedishMilTests.cs)
 cover the B7 conversion, precise decimal round trips, domain errors and
 unrepresentable conversion without silent rounding. These 61 new cases do not
-implement B7 hard-rule evaluation or B1-B8 score/order behavior; those remain #63.
+implement B7 hard-rule evaluation or B1-B8 score/order behavior; #63 adds those
+separately as described below.
 
 The #62 implementation uses the ordinary backend/CI groups below. Full-stage
 3B browser/PDF acceptance remains #67; existing household and URL regressions
@@ -55,6 +56,35 @@ The current merged baseline is 760 backend, 195 frontend and 33 Chromium tests.
 The [#63 preparation audit](buying-rules-implementation-preparation.md) maps B1-B8
 and the integration regressions to the next Core implementation. This preparation
 adds no new automated tests and does not claim rule/scoring behavior is verified.
+
+### Issue #63 Core evaluation evidence
+
+Implementation on `feature/63-buying-rules-scores` adds 114 Core cases to the
+merged baseline, pending approved implementation PR merge. These exercise the
+pure Core boundary; comparison HTTP/UI, persistence and stage #67 acceptance
+remain later work. Existing household and URL routes keep their regression suites.
+
+| Acceptance / boundary | Automated evidence |
+| --- | --- |
+| B1-B5/B8; fixed targets, weights, common denominator, intervals, clamping, no active score, overlaps and candidate-set independence | [ComparisonEvaluatorTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonEvaluatorTests.cs) |
+| B6-B7; hard failures/unverified requirements cannot win, partial cost remains visible, inclusive limits and registration ties | [ComparisonEvaluatorTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonEvaluatorTests.cs) |
+| All accepted source categories/fuels, numeric fields, ordinal/Unicode location matching, known empty fuels, inspection days and selected Swedish source signals | [ComparisonRulesAndSignalsTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonRulesAndSignalsTests.cs) |
+| Current 35,000 price versus 40,000 source price; missing price; exact reconstructed confirmation and invalidation after edits; explicit cost evidence and profile changes | [ComparisonCostEvidenceTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonCostEvidenceTests.cs) |
+| Raw net/monthly/per-mil costs, lease periods, fixed residual mismatch, zero distance, sensitivity, both budgets, safe exceedance despite missing/invalid expenses, and unresolved legacy review | [ComparisonCostEvidenceTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonCostEvidenceTests.cs) |
+| Sub-ore cost order, representable tiny scores and local score/cost overflow without rounding-induced winners | [ComparisonEvaluatorTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonEvaluatorTests.cs), [ComparisonCostEvidenceTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonCostEvidenceTests.cs) |
+| Invalid anchors/operators/weights/choices, disabled values, identity conflicts, 100/101 candidates, collection limits and immutable snapshots | [ComparisonInputValidationTests](../tests/backend/CarExpenseCalculator.Core.UnitTests/ComparisonInputValidationTests.cs) |
+
+The negative-cost regression preserves existing 3A validation: residual greater
+than purchase price cannot fabricate a complete negative estimate or cheapest
+winner. Negative numeric anchors remain valid. No existing economic bounds are
+relaxed to manufacture a test fixture. Derived nonzero-distance examples include
+explicit positive fuel consumption and a known price, rather than treating an
+empty source list or zero consumption as a complete energy model.
+
+Expected complete verification totals for this branch are 874 backend
+(551 Core + 323 existing other backend cases), 195 frontend and 33 Chromium
+tests. Record final command/CI results in the implementation PR; this branch
+record does not claim a merged or end-to-end comparison UI delivery.
 
 Issue #60 adds the [Swedish workspace](household-workspace.md), focused frontend
 tests under `features/household`, and the real

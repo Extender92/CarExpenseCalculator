@@ -160,11 +160,27 @@ through the existing source boundary. Manual replacement discards previous
 verification; client registry claims are rejected. The criterion catalogue
 identifies 3A cost/budget sources without accepting duplicate calculated values.
 See the [implemented Core contract](comparison-and-buying-scores.md#implemented-core-facts-62).
-This foundation is on `main` with green CI. The
-[#63 preparation audit](buying-rules-implementation-preparation.md) identifies
-the unrounded cost projection and independent field-error handling needed by
-comparison. Those are planned implementation work, not current rule behavior.
-Rule evaluation (#63), fact persistence/API (#64), and comparison UI (#65) remain separate.
+This foundation is on `main` with green CI. Issue #63 implements
+`ComparisonEvaluator` on `feature/63-buying-rules-scores`, pending approved PR
+merge. `RuleProfileProcessor` validates typed operators, common anchors/weights
+and evidence requirements. Internal fact normalization preserves independent
+errors while public saving stays strict. One household calculation path supplies
+unchanged rounded version-2 output and internal unrounded cost measures for
+comparison; budget authority remains in that engine. Core returns immutable
+hard results, score intervals/coverage, Swedish explanations/signals and separate
+cost/score order lists using full precision and registration ties.
+
+Effective purchase price comes from current cost inputs when present, without
+silently filling gaps from the advertisement. A `CostAssumptionConfirmation`
+binds explicit adoption to exact immutable input values and caller-provided
+time, not a transferable verification flag. Typed review impacts block dependent
+complete costs/budget passes while preserving known parts and safe exceedance.
+#64 must map stored reviews and current value confirmations through trusted
+application boundaries; Core does not reference its storage/HTTP DTOs. Rule and
+comparison-result versions are 1, separate from household/storage versions.
+See the [implemented evaluation contract](comparison-and-buying-scores.md#implemented-core-evaluation-63).
+Fact/rule persistence and API (#64), UI (#65), PDF (#66) and acceptance (#67)
+remain separate. No public route, schema, migration or feature flag changes here.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.
