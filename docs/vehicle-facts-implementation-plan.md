@@ -4,8 +4,12 @@
 
 Implementation record for [#62](https://github.com/Extender92/CarExpenseCalculator/issues/62),
 the first implementation item in stage 3B. The Core foundation described below
-is implemented and tested on `feature/62-vehicle-facts-provenance`, pending PR
-acceptance and separately approved merge. Rules and scores remain future work.
+was implemented and tested on `feature/62-vehicle-facts-provenance`, then merged
+through approved [PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80)
+as `60d2b49ab910ba17352637cc94b6649df06b117b`. #62 is closed and
+[merged-main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34118937565)
+is green. Rules and scores remain future work; see the
+[#63 preparation audit](buying-rules-implementation-preparation.md).
 
 Dependency audit on 2026-09-07:
 
@@ -23,8 +27,9 @@ Dependency audit on 2026-09-07:
   There are no unresolved product decisions or provider dependencies for #62.
 
 The user assigned implementation after preparation PR #79 was merged as
-`9994f7f8ae2d7330f6dcaa18146c6466f1fb0e9d`. The branch is
-`feature/62-vehicle-facts-provenance` and the issue is `status:in-progress`.
+`9994f7f8ae2d7330f6dcaa18146c6466f1fb0e9d`. The completed implementation branch
+was `feature/62-vehicle-facts-provenance`; it was deleted locally and remotely
+after the approved merge and verification of the clean `main` worktree.
 
 The scope is dependency-free Core facts, normalization, validation, explicit
 mapping and tests. Rules and scores belong to #63; persistence/API to #64;

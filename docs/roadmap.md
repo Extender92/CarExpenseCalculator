@@ -73,15 +73,17 @@ See the
 - End the stage with automated verification and a practical acceptance check
   using representative cars and changes to the common assumptions.
 
-## 3B. Comparison and configurable buying scores — planned
+## 3B. Comparison and configurable buying scores — in progress
 
 This stage depends on 3A and is refined from the existing rules/comparison
 tracker #12. Stage labels 3A and 3B preserve later milestone numbering; the
 [delivery backlog](household-comparison-backlog.md) defines the ordered issues.
-The prerequisite acceptance is complete. The first item, #62, implements the
-[Core vehicle-facts foundation](vehicle-facts-implementation-plan.md) on its PR
-branch, pending approved merge. Rules/scoring (#63), storage/API (#64), UI (#65),
-PDF (#66) and whole-stage acceptance (#67) remain future work.
+The prerequisite acceptance is complete. The first item, #62, delivered the
+[Core vehicle-facts foundation](vehicle-facts-implementation-plan.md) through
+approved PR #80. The [#63 preparation audit](buying-rules-implementation-preparation.md)
+confirms its prerequisites and ready status; implementation is not assigned by
+preparation. Rules/scoring (#63), storage/API (#64), UI (#65), PDF (#66) and
+whole-stage acceptance (#67) remain future work.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,
