@@ -3,11 +3,17 @@
 ## Status and authority
 
 Preparation for [#65](https://github.com/Extender92/CarExpenseCalculator/issues/65),
-authorized on 2026-09-08. This is a documentation and backlog handoff, not an
-implementation assignment for #65. The original branch was `docs/65-comparison-workspace-preparation`.
+authorized on 2026-09-08. The original branch was `docs/65-comparison-workspace-preparation`.
 [Preparation PR #84](https://github.com/Extender92/CarExpenseCalculator/pull/84)
-is merged. The #85 backend extension is implemented on its feature branch,
-pending separate merge approval; it does not close or implement #65.
+is merged. The #85 backend extension was merged through approved PR #86 as
+`885826a9b367337fa3f7610365f69a8ffa1207bf`. The subsequent #65 readiness audit
+confirmed green [main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34237584426)
+and 1,012 backend, 195 frontend and 41 Chromium tests. The user then assigned
+implementation on `feature/65-comparison-workspace`; the issue is in progress.
+The [implemented workspace](comparison-workspace.md) and
+[verification evidence](household-comparison-verification.md#issue-65-workspace-evidence)
+describe that PR delivery, pending separate merge approval. PDF and whole-stage
+acceptance remain #66–#67. The earlier audit below is historical context.
 
 The [product plan](household-comparison-plan.md),
 [comparison specification](comparison-and-buying-scores.md),
@@ -15,7 +21,7 @@ The [product plan](household-comparison-plan.md),
 [issue workflow](issue-workflow.md) remain authoritative. The UI, PDF and
 whole-stage acceptance are not delivered by publishing this document.
 
-## Dependency audit
+## Original dependency audit (before #85)
 
 Audited base: `77939ff2c013dc6e1b3db01059aeb50f0be0b3dd` on `main`.
 
@@ -52,11 +58,12 @@ Each implementation still requires explicit assignment.
 | Comparison membership | All current saved cars are compared together, with no fixed total vehicle-count limit. Separate backend delivery #85 precedes #65. |
 | Navigation | **Jämförelse** replaces **Regelsökning** in visible navigation; `/search` remains the route. |
 | Table layout | Main table visible immediately; expandable detail tables below it, with **Öppna alla**. |
+| Display pagination | Confirmed in the #65 implementation plan: 50 cars per page, shared across all tables; all cars still participate in every calculation. |
 | Initial ordering | Start with cost ordering and offer explicit preference ordering. Existing incomplete/rejected/evidence rules apply. |
 | Editing | Facts and source review live in comparison; economic inputs open the existing household editor at the right car/section. Dirty editing survives navigation. |
 | Evaluation date | Initialize a new workspace with the browser's current local calendar date, show an editable date field, and retain that date until explicit change/update. |
 
-## Inspected implementation
+## Implementation inspected during original preparation
 
 | Existing implementation | Handoff |
 | --- | --- |

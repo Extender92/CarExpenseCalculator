@@ -188,11 +188,14 @@ conflict operations; clients cannot assert evidence or calculated outcomes.
 Per-observation listing versions remain separate from the reviewed version.
 The shared cost writer invalidates input confirmations through Core structural
 equality, including draft adoption. Both shared profiles survive car deletion.
-UI (#65), PDF (#66) and acceptance (#67) remain separate; no feature flag changes.
+UI (#65), PDF (#66) and acceptance (#67) are separate deliveries. The #65 PR
+implements the [comparison workspace](comparison-workspace.md) and enables the
+existing `RuleBasedSearch` availability status. PDF and stage acceptance remain
+future work, and discovery/AI are not enabled.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
 reusable frontend state and the per-request boundary of server ordering.
 The [#85 extension](comparison-api.md#complete-set-comparison-85), implemented
-on its feature branch pending merge, adds complete-set server reads and global
+and merged through PR #86, adds complete-set server reads and global
 evaluation before #65. Infrastructure hashes a thin invariant revision manifest
 and reads full inputs in groups of 100 within the same RepeatableRead snapshot.
 The transaction closes before computation. Core retains raw decimals across
@@ -208,6 +211,20 @@ Nginx template uses the same setting, HTTP/1.1, disabled request/response
 buffering and 150-second timeouts on `/preview-all`; other routes keep 2 MiB.
 Candidate count and output size are not transport limits. #65 must publish
 only a completely received, current three-view generation.
+
+The comparison provider lives above page routes alongside the existing household
+provider. Household state alone owns the effective shared profile and stored
+economic editor; comparison owns rules, per-car fact actions, local date, manual
+candidates and results. Baseline loading does not start household previews.
+An explicit write notification and shared vehicle-write guard coordinate revisions
+between the two editors without erasing later changes. Refreshed fact/conflict
+references need explicit review before rebasing. Own writes also verify that no
+unacknowledged concurrent inventory change is hidden in the next response.
+Complete preview transport retains exact numbers with the existing lossless JSON
+adapter, two active requests at most, latest-only queued work, generation checks
+and four bounded lazy fact reads. The main and seven detail tables consume API
+orders in shared 50-car pages; stale outcomes suppress every recommendation.
+Manual candidate economics reuse household fields in a memory-only route context.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

@@ -8,7 +8,10 @@ scores and ordering (#63) are merged through PR #82. Issue #64 delivered
 [fact/rule persistence and HTTP](comparison-api.md) through approved PR #83.
 The [#65 preparation](comparison-workspace-preparation.md) records the accepted
 UI choices and the [#85 complete-set backend prerequisite](all-vehicle-comparison-preparation.md).
-Comparison UI, PDF and stage acceptance remain #65–#67. This stage depends on
+The #85 complete-set backend is merged through PR #86. The
+[Swedish comparison workspace](comparison-workspace.md) is implemented for #65
+on its PR branch, pending separate merge approval. PDF and stage acceptance
+remain #66–#67. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
@@ -190,7 +193,7 @@ Negative anchors remain valid; invalid attempted negative costs remain unavailab
 
 `EvaluateComparison` accepts at most 100 candidates. Issue #85 adds
 `EvaluateAllComparison(profile,rules,asOfDate,candidates,cancellationToken)`
-without a total-count cap, on its feature branch pending merge. Both entry
+without a total-count cap, merged through PR #86. Both entry
 points share candidate assessment and global finalization. The all-candidate
 path processes household groups of at most 100, retains raw cost/score measures,
 and summarizes upper bounds for an O(n log n) global sort/winner test. It checks
@@ -389,7 +392,9 @@ comparison, without a fixed total count. The #85 backend prerequisite provides
 complete-set membership, coherent revisions and global unrounded ordering;
 current 100-candidate request limits do not define a product selection limit.
 Selecting a car for editing or displaying one table page does not exclude
-other cars. Dashboard/status
+other cars. Display 50 cars per page with the same page and order in every table.
+Recalculation preserves the page and open sections; changing sort resets page one
+and deleting a car clamps the page to the remaining range. Dashboard/status
 copy and feature flags change only when corresponding behavior is delivered
 and tested. Stage 3A already supplies profile/vehicle editing; do not duplicate
 household overrides in this workspace. Facts and sources are edited in the

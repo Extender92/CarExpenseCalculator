@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 
 const modes = [
   {
-    title: "Regelsökning",
-    description: "Sök efter bilar som matchar pris, miltal, dragkrok och ägarhistorik.",
+    title: "Jämförelse",
+    description: "Jämför alla sparade bilar med gemensamma kostnader, köpkrav och ändringsbara prioriteringar.",
     to: "/search",
     icon: Search,
     color: "cyan",
@@ -40,7 +40,7 @@ export function DashboardPage() {
     <div className="space-y-10">
       <section className="flex flex-col justify-between gap-6 border-b border-slate-800 pb-9 md:flex-row md:items-end">
         <div className="max-w-3xl">
-          <Badge variant="success">Manuell kalkyl och URL-analys tillgängliga</Badge>
+          <Badge variant="success">Jämförelse, manuell kalkyl och URL-analys tillgängliga</Badge>
           <h1 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Ett bättre beslutsunderlag för nästa bil.
           </h1>
@@ -94,10 +94,10 @@ export function DashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle>Första sökprofilen</CardTitle>
-                <CardDescription>Reglerna vi bygger den framtida sökningen kring.</CardDescription>
+                <CardTitle>Exempel på köpkrav</CardTitle>
+                <CardDescription>Du väljer själv dina krav och vikter i Jämförelse. Exemplet aktiveras inte automatiskt.</CardDescription>
               </div>
-              <Badge variant="muted">Planerad</Badge>
+              <Badge variant="muted">Exempel</Badge>
             </div>
           </CardHeader>
           <CardContent>

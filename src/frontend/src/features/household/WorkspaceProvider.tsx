@@ -4,7 +4,11 @@ import { HouseholdWorkspace } from "./workspace";
 import { WorkspaceContext } from "./use-workspace";
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [workspace] = useState(() => new HouseholdWorkspace());
+  const [workspace] = useState(() => {
+    const value = new HouseholdWorkspace();
+    value.setCalculationActive(false);
+    return value;
+  });
   useEffect(() => {
     const focus = () => workspace.onFocus();
     const beforeUnload = (event: BeforeUnloadEvent) => {

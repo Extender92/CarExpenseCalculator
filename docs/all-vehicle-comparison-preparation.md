@@ -12,8 +12,11 @@ The approved delivery order is #64 (delivered), preparation PR #84 (merged),
 `1bf03875c6fa65a1cf477dff427e43c5758d0cf6` on clean main and
 [green CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34229003214).
 Issue #85 progressed through `status:ready` to `status:in-progress` after explicit
-assignment. Implementation is on `feature/85-all-vehicle-comparison`, pending
-separate merge approval. #65 stays blocked until its dependency is merged.
+assignment. Implementation was merged through approved
+[PR #86](https://github.com/Extender92/CarExpenseCalculator/pull/86) as
+`885826a9b367337fa3f7610365f69a8ffa1207bf`. The subsequent #65 dependency audit
+passed; its [workspace implementation](comparison-workspace.md) is now on its
+own PR branch, pending separate merge approval.
 
 The [implemented extension](comparison-api.md#complete-set-comparison-85) defines
 baseline tokens, compact stored overlays, independent manual input, three-view

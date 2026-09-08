@@ -24,11 +24,22 @@ import {
 } from "@/features/household/form-model";
 import { formatMoney, sameNumber } from "@/features/household/numbers";
 import { vehicleStateLabels } from "@/features/household/labels";
+import { ManualCostEditor } from "@/features/comparison/ManualCostEditor";
+import { focusField } from "@/features/comparison/navigation";
 
 export const householdLink =
   "text-sm font-medium text-cyan-300 underline decoration-cyan-800 underline-offset-4 hover:text-cyan-100";
 
 export function HouseholdPage() {
+  const [params] = useSearchParams();
+  const manual = params.get("comparisonCandidateId");
+  return manual ? (
+    <ManualCostEditor id={manual} field={params.get("field")} />
+  ) : (
+    <StoredHouseholdPage />
+  );
+}
+function StoredHouseholdPage() {
   const { workspace, state } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const opened = useRef<string | null>(null);
@@ -36,6 +47,7 @@ export function HouseholdPage() {
   useEffect(() => {
     workspace.start();
     workspace.onFocus();
+    return () => workspace.setCalculationActive(false);
   }, [workspace]);
   useEffect(() => {
     if (!requested) {
@@ -48,12 +60,55 @@ export function HouseholdPage() {
       void workspace.openVehicle(requested, params.has("listingVehicleId"));
   }, [workspace, requested, params, state.active.vehicleId]);
   const active = state.active;
+  const requestedField = params.get("field");
+  useEffect(() => {
+    if (requestedField && (!requested || active.vehicleId === requested))
+      focusField(requestedField, workspace.state.active.cost.input);
+  }, [requestedField, requested, active.vehicleId, active.token, workspace]);
   const key = active.vehicleId ? active.registrationNumber : "manual";
   const outcome = state.preview.results[key];
   const errors = { ...(!state.stale ? outcome?.fields : {}), ...state.errors };
   const latest = active.vehicleId ? state.vehicles[active.vehicleId] : null;
   const changedRemotely =
     latest && !sameNumber(latest.revision, active.baseRevision);
+  if (
+    params.get("returnTo") === "comparison" &&
+    requested &&
+    requested !== active.vehicleId
+  )
+    return (
+      <section className={`${panelClass} space-y-4`}>
+        <h1 className="text-2xl font-semibold">
+          Öppnar bilens ekonomiska underlag
+        </h1>
+        <p role="status">
+          {state.notice ??
+            "Väntar på den valda bilen. Ekonomifälten visas när rätt underlag har lästs."}
+        </p>
+        <Link className={householdLink} to="/search">
+          Tillbaka till jämförelsen
+        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="secondary"
+            onClick={() =>
+              void workspace.openVehicle(
+                requested,
+                params.has("listingVehicleId"),
+              )
+            }
+          >
+            Försök öppna den valda bilen igen
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setParams({ returnTo: "comparison" })}
+          >
+            Behåll nuvarande ekonomiredigering
+          </Button>
+        </div>
+      </section>
+    );
   return (
     <div className="space-y-6">
       <header>
@@ -67,6 +122,11 @@ export function HouseholdPage() {
           du väljer en sparknapp.
         </p>
         <nav aria-label="Kalkylflöden" className="mt-3 flex flex-wrap gap-5">
+          {params.get("returnTo") === "comparison" && (
+            <Link className={householdLink} to="/search">
+              Tillbaka till jämförelsen
+            </Link>
+          )}
           <Link
             className={householdLink}
             to={

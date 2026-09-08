@@ -85,11 +85,12 @@ confirmed its prerequisites. #63 Core rules/scoring and ordering is merged
 through PR #82. #64 delivered [storage/API](comparison-api.md) through approved
 PR #83 with green main CI. The user subsequently confirmed comparison of all
 saved cars without a fixed total count. The new [#85 backend prerequisite](all-vehicle-comparison-preparation.md)
-precedes #65; three of the seven current implementation items are complete.
+precedes #65; four of the seven current implementation items are merged.
 The [#65 preparation](comparison-workspace-preparation.md) records the accepted
-UI choices. Preparation PR #84 is merged; #85 is implemented on its assigned
-feature branch pending separate merge approval. UI (#65), PDF (#66) and
-whole-stage acceptance (#67) remain future work with their dependency gates.
+UI choices. Preparation PR #84 and #85 / PR #86 are merged. The
+[Swedish comparison workspace (#65)](comparison-workspace.md) is implemented on
+its PR branch, pending separate merge approval. PDF (#66) and whole-stage
+acceptance (#67) remain future work with their dependency gates.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,

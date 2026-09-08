@@ -15,7 +15,7 @@ const healthyStatus = {
   status: "healthy",
   database: "available",
   features: {
-    ruleBasedSearch: false,
+    ruleBasedSearch: true,
     urlAnalysis: true,
     manualCalculator: true,
     aiReview: false,
@@ -44,7 +44,7 @@ describe("Bilverktyget", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { name: /ett bättre beslutsunderlag/i })).toBeInTheDocument();
-    expect(screen.getAllByText("Regelsökning").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Jämförelse").length).toBeGreaterThan(0);
     expect(screen.getAllByText("URL-analys").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Manuell kalkyl").length).toBeGreaterThan(0);
     expect(await screen.findByText("Systemet är friskt")).toBeInTheDocument();

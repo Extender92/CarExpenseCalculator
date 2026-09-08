@@ -118,6 +118,29 @@ function removeTransitionVehicles(
 
 /** A tab-local workspace. Only explicit methods below write to the server. */
 export class HouseholdWorkspace {
+  private writeListeners = new Set<
+    (vehicle?: VehicleResponse, previousRevision?: Numeric | null) => void
+  >();
+  subscribeWrites(
+    listener: (
+      vehicle?: VehicleResponse,
+      previousRevision?: Numeric | null,
+    ) => void,
+  ) {
+    this.writeListeners.add(listener);
+    return () => {
+      this.writeListeners.delete(listener);
+    };
+  }
+  private publishedWrite(
+    vehicle?: VehicleResponse,
+    previousRevision?: Numeric | null,
+  ) {
+    for (const listener of this.writeListeners)
+      listener(vehicle, previousRevision);
+  }
+  private calculationActive = true;
+  private externalVehicleWrite = false;
   private listeners = new Set<() => void>();
   private token = 0;
   private readSequence = 0;
@@ -186,6 +209,7 @@ export class HouseholdWorkspace {
     };
   }
   start() {
+    this.calculationActive = true;
     if (!this.started) {
       this.started = true;
       void this.refresh();
@@ -221,6 +245,60 @@ export class HouseholdWorkspace {
       notice: null,
     });
     this.schedule();
+  }
+  /** Comparison reads the shared baseline without loading every household car. */
+  receiveProfile(remote: ProfileResponse, replace = false) {
+    if (replace || !this.state.profileDirty) {
+      this.set({
+        profile: cloneExact(remote.input ?? initialProfile()),
+        savedProfile: remote,
+        remoteProfile: null,
+        profileDirty: false,
+        profileEdit: this.state.profileEdit + 1,
+      });
+    } else if (!sameNumber(remote.revision, this.state.savedProfile.revision)) {
+      this.set({ remoteProfile: remote });
+    }
+  }
+  setCalculationActive(active: boolean) {
+    this.calculationActive = active;
+    if (!active) {
+      this.previewSequence++;
+      this.previewAbort?.abort();
+      if (this.previewTimer) clearTimeout(this.previewTimer);
+      this.previewTimer = null;
+      this.set({ calculating: false, stale: true });
+    }
+  }
+  async coordinateVehicleWrite<T>(write: () => Promise<T>): Promise<T> {
+    if (this.externalVehicleWrite || this.state.busy)
+      throw new Error("En sparning pågår. Vänta tills den är färdig.");
+    this.externalVehicleWrite = true;
+    try {
+      return await write();
+    } finally {
+      this.externalVehicleWrite = false;
+    }
+  }
+  /** An acknowledged fact-only write cannot change the economic assumptions. */
+  acknowledgeFactRevision(id: string, expected: Numeric, revision: Numeric) {
+    const active = this.state.active;
+    const stored = this.state.vehicles[id];
+    this.set({
+      ...(active.vehicleId === id && sameNumber(active.baseRevision, expected)
+        ? { active: { ...active, baseRevision: revision } }
+        : {}),
+      ...(stored && sameNumber(stored.revision, expected)
+        ? {
+            vehicles: { ...this.state.vehicles, [id]: { ...stored, revision } },
+          }
+        : {}),
+      summaries: this.state.summaries.map((v) =>
+        v.vehicleId === id && sameNumber(v.revision, expected)
+          ? { ...v, revision }
+          : v,
+      ),
+    });
   }
   editActive(patch: Partial<ActiveVehicle>) {
     const transition = this.state.transition;
@@ -279,6 +357,7 @@ export class HouseholdWorkspace {
     this.previewAbort?.abort();
     if (this.previewTimer) clearTimeout(this.previewTimer);
     this.set({ stale: true, calculating: false });
+    if (!this.calculationActive) return;
     this.previewTimer = setTimeout(() => {
       this.previewTimer = null;
       void this.calculate();
@@ -628,7 +707,7 @@ export class HouseholdWorkspace {
     });
   }
   private begin(kind: NonNullable<WorkspaceState["busy"]>) {
-    if (this.state.busy) return false;
+    if (this.state.busy || this.externalVehicleWrite) return false;
     this.writeEpoch++;
     this.set({ busy: kind, notice: null, errors: {}, loading: false });
     return true;
@@ -668,6 +747,7 @@ export class HouseholdWorkspace {
           : {}),
         notice: "Hushållsprofilen har sparats.",
       });
+      this.publishedWrite();
     } catch (error) {
       this.failure(error);
       this.set({
@@ -757,6 +837,7 @@ export class HouseholdWorkspace {
           });
       }
       this.putVehicle(saved);
+      this.publishedWrite(saved, active.baseRevision);
     } catch (error) {
       this.failure(error, "cost.input");
     } finally {
@@ -948,6 +1029,7 @@ export class HouseholdWorkspace {
     try {
       const saved = await householdApi.adopt(active.draftRevision);
       this.putVehicle(saved);
+      this.publishedWrite(saved, active.baseRevision);
       if (
         this.state.active.token === active.token &&
         !this.tombstones.has(saved.vehicleId)
@@ -1189,6 +1271,7 @@ export class HouseholdWorkspace {
           "Övergången är genomförd. Kvarvarande granskningsposter visas på respektive bil. Eventuella senare ändringar finns kvar för granskning.",
       });
       // Changed local editors remain recoverable; their old revisions must not be silently rebased.
+      this.publishedWrite();
       if (
         this.state.active.state === "legacyPending" &&
         this.state.active.token === activeToken &&
