@@ -153,3 +153,24 @@ public sealed record ComparisonPreviewRequest
     public ComparisonStoredBase? StoredBase { get; init; }
     public required IReadOnlyList<ComparisonCandidateRequest> Candidates { get; init; }
 }
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record CompleteComparisonStoredBase
+{
+    public required string BaselineToken { get; init; }
+    public required long HouseholdProfileRevision { get; init; }
+    public required long RuleProfileRevision { get; init; }
+}
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record CompleteComparisonRequest
+{
+    public required ComparisonPreviewMode Mode { get; init; }
+    public required string RequestId { get; init; }
+    public required H.HouseholdProfileInput Profile { get; init; }
+    public required RuleProfileInput Rules { get; init; }
+    public required DateOnly AsOfDate { get; init; }
+    public CompleteComparisonStoredBase? StoredBase { get; init; }
+    public IReadOnlyList<ComparisonCandidateRequest>? Overrides { get; init; }
+    public IReadOnlyList<ComparisonCandidateRequest>? Candidates { get; init; }
+}

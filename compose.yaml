@@ -50,6 +50,7 @@ services:
       ConnectionStrings__Postgres: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB:-car_expense_calculator};Username=${POSTGRES_USER:-car_expense_app};Password=${POSTGRES_PASSWORD:-car_expense_dev_only}
       CodexExtraction__BaseUrl: http://codex-extractor:8080
+      COMPARISON_MAX_REQUEST_BYTES: ${COMPARISON_MAX_REQUEST_BYTES:-33554432}
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,6 +64,8 @@ services:
       context: .
       dockerfile: src/frontend/Dockerfile
     restart: unless-stopped
+    environment:
+      COMPARISON_MAX_REQUEST_BYTES: ${COMPARISON_MAX_REQUEST_BYTES:-33554432}
     depends_on:
       - api
     ports:

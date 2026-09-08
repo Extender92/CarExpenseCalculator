@@ -26,6 +26,7 @@ builder.Services.AddOpenApi(options => options.CreateSchemaReferenceId = type =>
         ? "Nullable" + underlying.Name
         : Microsoft.AspNetCore.OpenApi.OpenApiOptions.CreateDefaultSchemaReferenceId(type));
 builder.Services.AddProblemDetails();
+builder.Services.AddSingleton<CarExpenseCalculator.Api.Comparisons.CompleteComparisonLimits>();
 builder.Services.AddSingleton<CostScenarioCalculator>();
 builder.Services.AddSingleton<HouseholdCostCalculator>();
 builder.Services.Configure<ApiBehaviorOptions>(options =>

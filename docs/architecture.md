@@ -191,11 +191,23 @@ equality, including draft adoption. Both shared profiles survive car deletion.
 UI (#65), PDF (#66) and acceptance (#67) remain separate; no feature flag changes.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
 reusable frontend state and the per-request boundary of server ordering.
-The accepted [#85 prerequisite](all-vehicle-comparison-preparation.md) will add
-complete-set server reads and global evaluation before #65. Internal processing
-groups and bounded transfers must not impose a total saved-car count limit.
-That extension must retain coherent revisions, exact ordering authority and
-the explicit manual mode without persisted preview sessions or result history.
+The [#85 extension](comparison-api.md#complete-set-comparison-85), implemented
+on its feature branch pending merge, adds complete-set server reads and global
+evaluation before #65. Infrastructure hashes a thin invariant revision manifest
+and reads full inputs in groups of 100 within the same RepeatableRead snapshot.
+The transaction closes before computation. Core retains raw decimals across
+groups and shares final ordering/upper-bound winner summaries with the original
+entry point. The API applies explicit actions once, then calculates three modes
+from that captured input. Manual mode resolves no store. No sessions/history
+or migration are introduced.
+
+API middleware bounds incoming memory with `COMPARISON_MAX_REQUEST_BYTES`
+(32 MiB by default), updates Kestrel's limit before reading, and admits two
+complete previews with a 120-second deadline and no queue. The frontend image's
+Nginx template uses the same setting, HTTP/1.1, disabled request/response
+buffering and 150-second timeouts on `/preview-all`; other routes keep 2 MiB.
+Candidate count and output size are not transport limits. #65 must publish
+only a completely received, current three-view generation.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

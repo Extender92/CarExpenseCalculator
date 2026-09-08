@@ -7,29 +7,31 @@ saved cars, without a fixed maximum number of cars**. This is not a request for
 a 100-car selection screen. [Issue #85](https://github.com/Extender92/CarExpenseCalculator/issues/85)
 provides the backend prerequisite for the [#65 workspace](comparison-workspace-preparation.md).
 
-The approved delivery order is #64 (delivered), preparation PR #84, #85, #65,
-#66 PDF, then #67 whole-stage acceptance. #85 and #65 remain `status:blocked`
-until their respective prerequisites are merged. After the preparation merge,
-audit #85 for readiness and produce its detailed implementation plan before
-explicit assignment. The user-facing decisions are resolved; choosing concrete
-wire shapes and implementation mechanics belongs to that plan.
+The approved delivery order is #64 (delivered), preparation PR #84 (merged),
+#85, #65, #66 PDF, then #67 whole-stage acceptance. The #85 start audit confirmed
+`1bf03875c6fa65a1cf477dff427e43c5758d0cf6` on clean main and
+[green CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34229003214).
+Issue #85 progressed through `status:ready` to `status:in-progress` after explicit
+assignment. Implementation is on `feature/85-all-vehicle-comparison`, pending
+separate merge approval. #65 stays blocked until its dependency is merged.
 
-This handoff changes no executable code, current HTTP limits, generated schema
-or database. Existing comparison/rule versions are 1, household versions 2 and
-storage formats 1. The [#64 API](comparison-api.md) remains the implemented
-contract until the explicit #85 extension is delivered and verified.
+The [implemented extension](comparison-api.md#complete-set-comparison-85) defines
+baseline tokens, compact stored overlays, independent manual input, three-view
+responses, 32-MiB configurable request transport and cancellation. Its transport
+version is 1; comparison/rule versions stay 1, household versions 2 and storage
+formats 1. No migration or UI is added. The original #64 route is unchanged.
 
-## Current limitation and inspected boundaries
+## Original limitation and implemented boundaries
 
 - [ComparisonPreviewService](../src/backend/CarExpenseCalculator.Api/Comparisons/ComparisonPreviewService.cs)
-  requires a candidate list and rejects more than 100 candidates. The HTTP/Nginx
-  body limit is 2 MiB for one request, not a total inventory definition.
+  retains a candidate list and 100-car/2-MiB limit on `/preview`. New
+  `/preview-all` reads the full saved set or accepts complete manual input.
 - [ComparisonSnapshotStore](../src/backend/CarExpenseCalculator.Infrastructure/Persistence/Comparisons/ComparisonStores.cs)
-  reads only explicitly supplied UUIDs in a RepeatableRead snapshot. It does
-  not currently capture the whole saved membership through an all-cars request.
+  retains explicit-UUID reads and adds baseline/full-set reads. Every 100-UUID
+  payload group shares the manifest's RepeatableRead transaction.
 - [ComparisonEvaluator](../src/backend/CarExpenseCalculator.Core/Comparisons/ComparisonEvaluator.cs)
-  computes exact cost/score ordering for at most 100 candidates. Its unrounded
-  work values are internal; its public result fields are presentation-rounded.
+  shares raw candidate work and global finalization between its original
+  bounded entry point and `EvaluateAllComparison`. Public values remain rounded.
 - [Household frontend batching](../src/frontend/src/features/household/preview.ts)
   can concatenate independent cost rows, but cannot combine rounded comparison
   scores or local winner flags into an authoritative global order.
@@ -81,12 +83,10 @@ complete membership or correctness across calculation/transport boundaries.
    result caches are introduced. Existing null/zero/included states, current cost
    confirmation and unresolved review behavior remain authoritative.
 
-The implementation plan must give #65 a concrete complete-set request/result
-contract, revision/error behavior, bounded transport mechanism for large
-unsaved/manual inputs and an all-sensitivity generation strategy. It must
-document compatibility/version handling and regenerate intended frontend types.
-It must not substitute a hard selection count for the accepted requirement.
-No new product decision is needed merely to choose internal batch sizes.
+The [wire contract](comparison-api.md#complete-set-comparison-85) and generated
+types give #65 concrete request/result shapes, conflict/resource behavior and
+all-sensitivity publication rules. An internal 100-car group never becomes a
+selection limit. Baseline tokens are stateless revision checks, not sessions.
 
 ## Verification and readiness evidence
 
@@ -108,11 +108,11 @@ Node 22.22.2 and disposable PostgreSQL 18. Run the
 regenerating types from port 5090, Chromium with one worker, and URL acceptance.
 Record passed/failed/skipped counts, warnings and reruns. No Unraid data or live AI.
 
-The implementation branch will be `feature/85-all-vehicle-comparison` after
-readiness and assignment. Its PR closes #85 only after every criterion is met
-and CI passes; merge needs separate approval. Then audit #65 against the newly
-published contract and updated test baseline. #85 does not implement the UI.
+The [#85 evidence matrix](household-comparison-verification.md#issue-85-complete-set-evidence)
+maps these boundaries to regression tests. Its PR closes #85 only after every
+criterion is met and CI passes; merge needs separate approval. After merge,
+audit #65 against the published contract and updated baseline. No UI is added.
 
 The [deferred cleanup inventory](comparison-workspace-preparation.md#deferred-cleanup-inventory)
-remains untouched as requested. Preparation creates no helper scripts or test
-stacks. Its own delivery checks cover documentation, links and backlog alignment.
+remains untouched as requested. Issue #85 owns only `temp/issue85/` and its
+disposable verification processes/stack; cleanup evidence belongs in its PR.

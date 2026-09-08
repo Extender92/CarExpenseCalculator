@@ -10,6 +10,30 @@
 
 `immich-postgres` is owned by Immich and must never be reused by this application.
 
+## Complete-comparison transport (#85)
+
+Issue #85 adds baseline/preview-all HTTP support on its feature branch pending
+merge. It requires **no new migration**. Set `COMPARISON_MAX_REQUEST_BYTES` in
+the deployment environment to a positive integer byte count, default `33554432`
+(32 MiB). Both `api` and `web` receive the same Compose/Unraid value. A direct
+API start and a standalone web image use that default too. Recreate both
+services after changing it; do not configure different proxy/API limits.
+
+The web image renders `/etc/nginx/templates/default.conf.template` through the
+official Nginx entrypoint. On `/api/comparisons/preview-all` it disables request
+and response buffering, uses HTTP/1.1 upstream, and sets 150-second read/send
+timeouts. Existing routes retain their 2-MiB body limits. The API raises the
+per-request Kestrel limit before reading and checks actual bytes in bounded
+memory, including chunked transfer; no body files are written.
+
+The API allows two complete previews per process with no queue and a 120-second
+total deadline. Handle `comparisonBusy`, `comparisonTimedOut`, and byte-limit
+errors explicitly. The body limit applies to uploaded changes/manual input,
+not saved inventory or output size. Memory grows with complete input and all
+three result views; no fixed car-count limit means no promise of unlimited
+capacity. There is no stored preview cache/session to clear. See the
+[HTTP contract](comparison-api.md#complete-set-comparison-85).
+
 ## PostgreSQL preparation
 
 Create a dedicated database and role:

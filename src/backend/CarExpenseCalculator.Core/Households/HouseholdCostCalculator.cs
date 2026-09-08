@@ -6,7 +6,8 @@ public sealed class HouseholdCostCalculator
         => CalculateForComparison(profile, vehicles).Preview;
 
     // The same calculation supplies presentation and ordering; no rounded re-composition.
-    internal HouseholdComparisonCalculation CalculateForComparison(HouseholdProfileInput profile, IReadOnlyList<VehicleCostInput> vehicles)
+    internal HouseholdComparisonCalculation CalculateForComparison(HouseholdProfileInput profile, IReadOnlyList<VehicleCostInput> vehicles,
+        int indexOffset = 0, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(vehicles);
@@ -14,17 +15,21 @@ public sealed class HouseholdCostCalculator
             throw new HouseholdInputValidationException([new("vehicles", "tooManyItems", "At most 100 candidates are allowed.")]);
         var snapshot = vehicles.ToArray();
         var nullErrors = snapshot.Select((car, index) => (car, index)).Where(pair => pair.car is null)
-            .Select(pair => new HouseholdInputError($"vehicles[{pair.index}]", "missingItem", "Candidate cannot be null.")).ToArray();
+            .Select(pair => new HouseholdInputError($"vehicles[{indexOffset + pair.index}]", "missingItem", "Candidate cannot be null.")).ToArray();
         if (nullErrors.Length > 0) throw new HouseholdInputValidationException(nullErrors);
 
-        var financing = new HouseholdFinancingCalculator().Calculate(profile,
-            snapshot.Select(car => new VehiclePurchaseInput(car.CandidateKey, car.PriceSek)).ToArray());
-        var validations = snapshot.Select((car, index) => HouseholdCostInputValidator.ValidateVehicle(car, $"vehicles[{index}]")).ToArray();
+        var financing = new HouseholdFinancingCalculator().CalculateBatch(profile,
+            snapshot.Select(car => new VehiclePurchaseInput(car.CandidateKey, car.PriceSek)).ToArray(), indexOffset, cancellationToken);
+        var validations = snapshot.Select((car, index) => HouseholdCostInputValidator.ValidateVehicle(car, $"vehicles[{indexOffset + index}]")).ToArray();
         var structural = validations.SelectMany(errors => errors).Where(HouseholdCostInputValidator.IsStructural).ToArray();
         if (structural.Length > 0) throw new HouseholdInputValidationException(structural);
 
-        var results = snapshot.Select((car, index) => CalculateVehicle(car, index, financing.Vehicles[index],
-            new HouseholdCostContext(profile, financing.ProfileErrors, validations[index]), validations[index])).ToArray();
+        var results = snapshot.Select((car, index) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return CalculateVehicle(car, indexOffset + index, financing.Vehicles[index],
+                new HouseholdCostContext(profile, financing.ProfileErrors, validations[index]), validations[index]);
+        }).ToArray();
         return new(new("SEK", HouseholdCalculationVersions.Calculation, HouseholdCalculationVersions.ResultSchema,
             profile.ActiveSensitivityMode, financing.ProfileErrors, Array.AsReadOnly(results.Select(x => x.Result).ToArray())),
             Array.AsReadOnly(results));

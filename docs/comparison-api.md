@@ -11,10 +11,10 @@ PR #82) are already merged. UI #65, PDF #66 and whole-stage acceptance #67
 remain separate deliveries. No comparison screen or feature flag is enabled.
 
 The [#65 preparation](comparison-workspace-preparation.md) distinguishes these
-implemented contracts from the accepted complete-set workspace. Its
-[#85 backend prerequisite](all-vehicle-comparison-preparation.md) must add the
-all-saved comparison path; the limits and shapes documented below describe #64,
-not that future extension.
+implemented contracts from the accepted complete-set workspace. Issue #85 adds
+the [complete-set contract](#complete-set-comparison-85) on
+`feature/85-all-vehicle-comparison`, pending separate PR merge approval. The
+original `/preview` contract below retains its 100-candidate/2-MiB limits.
 
 The [normative comparison specification](comparison-and-buying-scores.md) owns
 criteria, evidence, exact scoring and ordering. The API composes those Core
@@ -246,7 +246,7 @@ Review amounts are never silently added to costs.
 
 ## Errors, size and cancellation
 
-All new JSON request bodies are limited to **2 MiB of UTF-8 bytes**, including
+The original #64 JSON request bodies are limited to **2 MiB of UTF-8 bytes**, including
 chunked requests without Content-Length. Both API middleware and Nginx enforce
 the limit and return `payloadTooLarge`. The API bounds its in-memory buffer;
 it does not spill request bodies into temporary files.
@@ -272,6 +272,149 @@ previously used only as required values. This prevents nullable choices from
 changing existing listing and household result types; runtime enum validation
 is unchanged. The configuration uses the documented
 [OpenAPI schema reference customization](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/customize-openapi?view=aspnetcore-10.0).
+
+## Complete-set comparison (#85)
+
+This extension adds no migration, stored session, cache, history or implicit
+write. Its enclosing `transportVersion` is **1**; existing comparison/rule
+versions remain **1**, household versions **2** and storage formats **1**.
+
+| Route | Contract |
+| --- | --- |
+| GET `/api/comparisons/baseline` | 200 with nullable `profile` and `rules`, `householdProfileRevision`, `ruleProfileRevision`, `candidateCount`, `baselineToken` and `transportVersion`. Unsaved profiles are null/revision 0. |
+| POST `/api/comparisons/preview-all` | One complete comparison, in explicit `stored` or `manual` mode. No fixed total candidate-count limit. |
+
+### Baseline and consistent membership
+
+`IComparisonSnapshotStore.ReadBaselineAsync` reads both profiles and a thin
+vehicle manifest in `RepeatableRead`. `ReadAllAsync(token)` does the same,
+checks the token, then reads full payloads in groups of at most 100 UUIDs in
+that **same transaction**. The transaction ends before calculation/serialization.
+The existing selected-UUID reader is retained. See PostgreSQL's
+[repeatable-read contract](https://www.postgresql.org/docs/18/transaction-iso.html#XACT-REPEATABLE-READ).
+
+Every saved root appears once: listing-only, legacy, purchase and lease. Empty
+facts/costs never remove a car; the shared draft is not a candidate until adopted.
+Legacy input recovery does not deserialize old result payloads.
+
+The token is `v1:` followed by lowercase SHA-256 hex over UTF-8 text:
+
+```text
+v1\n{profileRevision}\n{ruleRevision}\n{vehicleCount}\n
+{uuid:N}|{normalizedRegistration}|{vehicleRevision}|{listingVersionOrNull}\n
+...one entry per vehicle, ordered by ordinal normalized registration...
+```
+
+The displayed `\n` represents an LF byte. Numbers use invariant decimal integer
+formatting, UUIDs use lowercase N format, and an absent listing version is the
+literal `null`. Existing writers' revision semantics make profile, rule,
+membership, fact, cost and listing changes detectable. The token is a change
+check, not an evidence claim or database record. A write after snapshot start
+does not change the captured result; a subsequent call with the old token fails.
+
+### Stored request
+
+```json
+{
+  "mode": "stored",
+  "requestId": "workspace-7",
+  "profile": {},
+  "rules": {},
+  "asOfDate": "2026-09-08",
+  "storedBase": {
+    "baselineToken": "v1:0000000000000000000000000000000000000000000000000000000000000000",
+    "householdProfileRevision": 0,
+    "ruleProfileRevision": 0
+  },
+  "overrides": []
+}
+```
+
+Replace the example token/revisions with GET's values. Supply the entire
+effective profile/rules, including unsaved edits; `{}` is an intentionally
+incomplete profile/empty rules, not a request to fill defaults from storage.
+Do not supply `candidates` in stored mode. `overrides` is optional and contains
+only explicitly edited cars using the existing candidate shape: UUID,
+registration, `storedBase.vehicleRevision`, required `storedBase.listing` with
+nullable `version`, and optional `facts`, `costInput`, `legacyDecisions`.
+
+Omitted cars stay in the comparison with saved input. Omitted cost input keeps
+saved costs; a supplied cost object replaces it completely in memory, including
+an explicitly missing purchase price. Per-override identity/revision/listing
+checks remain mandatory after whole-baseline validation. Review items come from
+storage; existing decision validation derives their remaining impact. No input
+or confirmation is saved by a preview.
+
+### Manual request and complete response
+
+Manual mode uses the [manual example above](#manual), with a full `candidates`
+collection of any count within the byte/resource limits. `storedBase` and
+`overrides` are forbidden. Candidate revisions, listing references and legacy
+review claims are rejected; no storage interface or AI service is resolved.
+Registration is mandatory and the UUID is a transient request identity.
+
+The response contains `requestId`, a new request-bound UUID `generationId`,
+`mode`, nullable `baselineToken`, `candidateCount`, `activeSensitivityMode`,
+`transportVersion` and `views:{baseline,favorable,cautious}`. Each view uses the
+existing `ComparisonPreviewResponse` shape, including effective input, evidence,
+source revisions, server-derived unsaved flags, errors and global orders.
+
+Stored candidates are ordered by normalized registration; manual candidates
+retain request order. All views have exactly the same identities in the same
+order. Actions, review decisions and explicit confirmations are applied once
+using one injected operation time. Only the effective profile's active mode
+changes between calculations. A sensitivity view creates no additional edit
+or confirmation. Existing sensitivity structure remains constant or three
+scenario values; missing amounts remain unknown, never copied from another mode.
+
+`ComparisonEvaluator.EvaluateAllComparison` shares candidate evaluation and final
+ordering with `EvaluateComparison`, which retains its public 100-car limit.
+Internal groups contain at most 100 cars. Raw decimal cost and score bounds
+survive until global ordering, cheapest ties and the strict winner test finish.
+The winner test uses common upper-bound summaries; finalization is O(n log n),
+not a pairwise scan. Errors use global candidate indexes, with UUIDs and stable
+cost keys in effective inputs; group boundaries do not change paths or results.
+
+### Resource limits and client publication
+
+`COMPARISON_MAX_REQUEST_BYTES` is a positive integer byte count, default
+**33,554,432 (32 MiB)**, configured identically for API and web in Compose/Unraid.
+Direct API/container starts use the same default. Exact-limit valid UTF-8 JSON
+is accepted; one additional byte, including whitespace, returns **413
+`payloadTooLarge`** and `maximumRequestBytes`. Actual reads are bounded even
+without Content-Length. This limits incoming overlays/manual input, not saved
+aggregate input or output size. Existing routes retain 2 MiB.
+
+Before any body read the API sets the per-request
+[Kestrel limit](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/options?view=aspnetcore-10.0#maximum-request-body-size).
+For chunked HTTP/1.1 it disables Kestrel's wire-byte limit on this route because
+[Kestrel also counts chunk framing](https://github.com/dotnet/aspnetcore/blob/v10.0.8/src/Servers/Kestrel/Core/src/Internal/Http/Http1ChunkedEncodingMessageBody.cs).
+The bounded application reader still enforces the exact decoded UTF-8 limit;
+chunk headers do not consume the user's JSON allowance. It buffers only bounded
+memory. Nginx renders its config from the official
+image template, uses HTTP/1.1 upstream and disables request/response buffering
+on this route, avoiding temporary body/response files. Its send/read timeouts
+are 150 seconds; see [proxy buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_request_buffering).
+
+The API admits at most two complete previews per process with no waiting queue;
+another request receives **503 `comparisonBusy`**. A 120-second total deadline
+includes body reading, snapshot acquisition, calculation and serialization.
+Cancellation propagates through these steps and releases the slot. Server
+timeout before response start gives **503 `comparisonTimedOut`**; after response
+start the connection is aborted, without appending a problem to partial JSON.
+Client cancellation never retries automatically.
+
+A changed whole-set token returns **409 `comparisonBaselineConflict`** with
+`actualBaselineToken`; the UI must reread and explicitly resolve local changes,
+not silently reuse edits on a newer snapshot. Existing 400/200 numeric-error,
+404, revision/identity 409 and sanitized storage 503 behavior remains intact.
+No successful envelope is returned if a group/view is missing or failed.
+
+#65 must parse the complete response, verify its current request/generation and
+view membership, and publish all three views together. An interrupted JSON
+response or obsolete generation must never supply a current order/winner.
+Memory grows with input/output: absence of a fixed count limit does not promise
+unlimited server capacity. UI pagination must not change comparison membership.
 
 ## Operations and remaining work
 

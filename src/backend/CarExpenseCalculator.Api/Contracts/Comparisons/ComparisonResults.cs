@@ -70,7 +70,17 @@ public sealed class ComparisonProblemDetails : ProblemDetails
     public Guid? VehicleId { get; init; }
     public long? ExpectedRevision { get; init; }
     public long? ActualRevision { get; init; }
+    public string? ActualBaselineToken { get; init; }
+    public long? MaximumRequestBytes { get; init; }
 }
+
+public sealed record ComparisonBaselineResponse(H.HouseholdProfileInput? Profile, long HouseholdProfileRevision,
+    RuleProfileInput? Rules, long RuleProfileRevision, int CandidateCount, string BaselineToken, int TransportVersion = 1);
+public sealed record CompleteComparisonViews(ComparisonPreviewResponse Baseline, ComparisonPreviewResponse Favorable,
+    ComparisonPreviewResponse Cautious);
+public sealed record CompleteComparisonResponse(string RequestId, Guid GenerationId, ComparisonPreviewMode Mode,
+    string? BaselineToken, int CandidateCount, H.SensitivityMode ActiveSensitivityMode, CompleteComparisonViews Views,
+    int TransportVersion = 1);
 public sealed class ComparisonValidationProblemDetails : ValidationProblemDetails
 {
     public required string Code { get; init; }

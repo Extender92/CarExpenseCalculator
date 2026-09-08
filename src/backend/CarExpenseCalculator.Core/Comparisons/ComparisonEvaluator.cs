@@ -12,14 +12,49 @@ public sealed class ComparisonEvaluator
         ArgumentNullException.ThrowIfNull(candidates);
         if (candidates.Count > 100) throw new ComparisonInputValidationException([
             new("candidates", "tooManyItems", "At most 100 candidates are allowed.")]);
+        return EvaluateAllComparison(profile, rules, asOfDate, candidates);
+    }
+
+    public ComparisonPreview EvaluateAllComparison(HouseholdProfileInput profile, RuleProfileInput rules,
+        DateOnly asOfDate, IReadOnlyList<ComparisonCandidateInput> candidates, CancellationToken cancellationToken = default)
+        => EvaluateBatches(profile, rules, asOfDate, candidates, 100, cancellationToken);
+
+    internal ComparisonPreview EvaluateBatches(HouseholdProfileInput profile, RuleProfileInput rules,
+        DateOnly asOfDate, IReadOnlyList<ComparisonCandidateInput> candidates, int batchSize, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(candidates);
+        ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(batchSize, 100);
+        cancellationToken.ThrowIfCancellationRequested();
         var normalizedRules = new RuleProfileProcessor().Normalize(rules);
         var snapshot = candidates.ToArray();
-        ValidateCandidates(snapshot);
-        var inputs = snapshot.Select(x => x.CostInput is { } cost
-            ? cost with { CandidateKey = x.RegistrationNumber.Value } : new VehicleCostInput(x.RegistrationNumber.Value, null)).ToArray();
-        var calculation = new HouseholdCostCalculator().CalculateForComparison(profile, inputs);
-        var work = snapshot.Select((x, index) => Evaluate(x, normalizedRules, asOfDate,
-            ComparisonReviewCompleteness.Apply(calculation.Vehicles[index], x.ReviewItems), index)).ToArray();
+        ValidateCandidates(snapshot, cancellationToken);
+        var calculator = new HouseholdCostCalculator();
+        // The empty calculation also validates shared structure when there are no cars.
+        var profileErrors = calculator.CalculateForComparison(profile, [], cancellationToken: cancellationToken).Preview.ProfileErrors;
+        var work = new List<EvaluationWork>(snapshot.Length);
+        for (var offset = 0; offset < snapshot.Length; offset += batchSize)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var batch = snapshot.Skip(offset).Take(batchSize).ToArray();
+            var inputs = batch.Select(x => x.CostInput is { } cost
+                ? cost with { CandidateKey = x.RegistrationNumber.Value } : new VehicleCostInput(x.RegistrationNumber.Value, null)).ToArray();
+            var calculation = calculator.CalculateForComparison(profile, inputs, offset, cancellationToken);
+            for (var i = 0; i < batch.Length; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                work.Add(Evaluate(batch[i], normalizedRules, asOfDate,
+                    ComparisonReviewCompleteness.Apply(calculation.Vehicles[i], batch[i].ReviewItems), offset + i));
+            }
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        return Complete(profile, normalizedRules, asOfDate, profileErrors, work);
+    }
+
+    private static ComparisonPreview Complete(HouseholdProfileInput profile, RuleProfileInput normalizedRules,
+        DateOnly asOfDate, IReadOnlyList<HouseholdInputError> profileErrors, IReadOnlyList<EvaluationWork> work)
+    {
         var costOrder = work.OrderBy(x => x.Result.Eligibility == BuyingEligibility.Rejected)
             .ThenBy(x => x.Cost is null).ThenBy(x => x.Cost)
             .ThenBy(x => x.Result.EffectiveInput.RegistrationNumber.Value, StringComparer.Ordinal).ToArray();
@@ -28,9 +63,14 @@ public sealed class ComparisonEvaluator
             .ThenBy(x => x.Result.EffectiveInput.RegistrationNumber.Value, StringComparer.Ordinal).ToArray();
         var cheapest = work.Where(x => x.Result.Eligibility == BuyingEligibility.Eligible && x.Cost is not null)
             .Select(x => x.Cost).DefaultIfEmpty(null).Min();
-        var winner = work.FirstOrDefault(x => x.Result.Eligibility == BuyingEligibility.Eligible && x.Lower is not null &&
-            work.Where(other => other != x && other.Result.Eligibility != BuyingEligibility.Rejected)
-                .All(other => other.Upper is not null && x.Lower > other.Upper));
+        var contenders = work.Where(x => x.Result.Eligibility != BuyingEligibility.Rejected).ToArray();
+        var unknownUpperCount = contenders.Count(x => x.Upper is null);
+        // Only the two greatest upper bounds are needed to exclude the candidate itself.
+        // Retain ties as separate contenders; rounded display scores never enter this test.
+        var highestUpper = contenders.Where(x => x.Upper is not null).OrderByDescending(x => x.Upper).Take(2).ToArray();
+        var winner = unknownUpperCount > 0 ? null : contenders.FirstOrDefault(x =>
+            x.Result.Eligibility == BuyingEligibility.Eligible && x.Lower is not null &&
+            (highestUpper.FirstOrDefault(other => !ReferenceEquals(other, x)) is not { } other || x.Lower > other.Upper));
         var reason = work.All(x => x.Lower is null) ? "noActiveCriteria" : winner is not null ? "definiteWinner"
             : work.All(x => x.Result.Eligibility != BuyingEligibility.Eligible) ? "noEligibleCandidate" : "overlapOrTie";
         var results = work.Select(x => x.Result with
@@ -38,7 +78,7 @@ public sealed class ComparisonEvaluator
             IsCheapestEligibleComplete = cheapest is not null && x.Cost == cheapest && x.Result.Eligibility == BuyingEligibility.Eligible,
             IsDefinitePreferenceWinner = ReferenceEquals(x, winner),
         });
-        return new(profile, normalizedRules, asOfDate, calculation.Preview.ProfileErrors, results,
+        return new(profile, normalizedRules, asOfDate, profileErrors, results,
             costOrder.Select(x => x.Result.EffectiveInput.VehicleId), scoreOrder.Select(x => x.Result.EffectiveInput.VehicleId), reason);
     }
 
@@ -150,14 +190,14 @@ public sealed class ComparisonEvaluator
     private static ScoreRange Round(ScoreRange range) => new(Round(range.Lower), Round(range.Upper));
     private sealed record EvaluationWork(CurrentEvaluation Result, decimal? Cost, decimal? Lower, decimal? Upper);
 
-    private static void ValidateCandidates(IReadOnlyList<ComparisonCandidateInput> candidates)
+    private static void ValidateCandidates(IReadOnlyList<ComparisonCandidateInput> candidates, CancellationToken cancellationToken)
     {
         var errors = new List<ComparisonInputError>();
-        RuleProfileProcessor.Limit(candidates.Count, 100, "candidates", errors);
         var ids = new HashSet<Guid>();
         var registrations = new HashSet<string>(StringComparer.Ordinal);
-        for (var i = 0; i < Math.Min(candidates.Count, 100); i++)
+        for (var i = 0; i < candidates.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var item = candidates[i];
             var path = $"candidates[{i}]";
             if (item is null) { errors.Add(new(path, "required", "A candidate cannot be null.")); continue; }

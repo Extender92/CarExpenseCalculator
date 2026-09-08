@@ -4,9 +4,10 @@
 
 Preparation for [#65](https://github.com/Extender92/CarExpenseCalculator/issues/65),
 authorized on 2026-09-08. This is a documentation and backlog handoff, not an
-implementation assignment. The branch is `docs/65-comparison-workspace-preparation`.
+implementation assignment for #65. The original branch was `docs/65-comparison-workspace-preparation`.
 [Preparation PR #84](https://github.com/Extender92/CarExpenseCalculator/pull/84)
-requires separate merge approval and must not close #65 or #85.
+is merged. The #85 backend extension is implemented on its feature branch,
+pending separate merge approval; it does not close or implement #65.
 
 The [product plan](household-comparison-plan.md),
 [comparison specification](comparison-and-buying-scores.md),
@@ -37,11 +38,12 @@ The original implementation dependencies are complete. The user resolved all
 six preparation questions on 2026-09-08, including comparison of every saved
 car without a fixed total count. This requires the separate
 [#85 backend prerequisite](https://github.com/Extender92/CarExpenseCalculator/issues/85).
-#85 is `status:blocked` pending this preparation's merge. #65 is
-`status:blocked` pending both preparation and #85 delivery. It no longer has
-an open product-choice gate. After the preparation merge, audit #85 before
-readiness and detailed implementation planning; after its approved implementation
-merge, audit #65. Each implementation still requires explicit assignment.
+#85 passed its dependency audit against merged PR #84 and is `status:in-progress`.
+#65 remains `status:blocked` pending #85 delivery. It has no open product-choice
+gate. After the approved #85 merge, audit #65 against the
+[complete-set contract](comparison-api.md#complete-set-comparison-85) and
+[verification evidence](household-comparison-verification.md#issue-85-complete-set-evidence).
+Each implementation still requires explicit assignment.
 
 ## Accepted user decisions
 
@@ -68,7 +70,7 @@ merge, audit #65. Each implementation still requires explicit assignment.
 
 ## Complete-set comparison prerequisite
 
-The existing API accepts at most 100 candidates and 2 MiB UTF-8 per request.
+The original `/api/comparisons/preview` accepts at most 100 candidates and 2 MiB UTF-8 per request.
 It returns `costOrder`, `scoreOrder` and winner flags for exactly that request's
 candidate set. It does not provide a global merge operation or unrounded rank
 keys. A stored request checks its own profiles/candidates in one database
@@ -100,7 +102,25 @@ recommendations across the entire set using unrounded measures. The client
 does not resend unchanged saved fact/cost payloads merely to include a car.
 Membership, revisions, unsaved overlays and all sensitivity views must belong
 to one coherent generation. The explicit transport extension and resource
-handling are part of #85's implementation plan, not functionality added here.
+handling are implemented by #85's new baseline/preview-all routes, pending merge.
+
+Use GET `/api/comparisons/baseline`, then POST `/api/comparisons/preview-all`
+with the complete effective profile/rules/date and only explicit stored-car
+`overrides`. Do not upload unchanged saved facts/costs. Preserve local editing
+on `comparisonBaselineConflict`; show the new baseline for explicit resolution.
+Do not silently retry/rebase or fall back to manual mode. Manual mode sends the
+complete transient candidate list, without stored claims.
+
+The default incoming JSON limit is 32 MiB, configurable through the shared
+`COMPARISON_MAX_REQUEST_BYTES` setting. It is not a car-count/output limit.
+Use the lossless adapter and actual UTF-8 size for local error reporting; the
+server remains authoritative. Handle `comparisonBusy` and `comparisonTimedOut`
+without automatic retries. All three views arrive in one response with
+`generationId`, request ID, candidate count and stored baseline token. Publish
+only after the entire current response parses and its three ordered identity
+sets agree. Never publish a surviving group/view from an incomplete response.
+Switching displayed sensitivity mode consumes the captured view; it does not
+create another confirmation or user edit.
 
 ## Workspace and editing handoff
 

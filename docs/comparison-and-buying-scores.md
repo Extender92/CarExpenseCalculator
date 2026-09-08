@@ -188,7 +188,18 @@ The unchanged household validator prevents residuals above purchase price and
 negative expense inputs, so it cannot currently produce negative complete cost.
 Negative anchors remain valid; invalid attempted negative costs remain unavailable.
 
-At most 100 candidates, 50 hard rules/preferences per collection and 50 choices
+`EvaluateComparison` accepts at most 100 candidates. Issue #85 adds
+`EvaluateAllComparison(profile,rules,asOfDate,candidates,cancellationToken)`
+without a total-count cap, on its feature branch pending merge. Both entry
+points share candidate assessment and global finalization. The all-candidate
+path processes household groups of at most 100, retains raw cost/score measures,
+and summarizes upper bounds for an O(n log n) global sort/winner test. It checks
+duplicate identities over the whole set and uses global indexes in errors.
+Different internal group sizes cannot change an evaluation or recommendation.
+The [HTTP extension](comparison-api.md#complete-set-comparison-85) captures one
+input set for all three sensitivity modes. No calculation version changes.
+
+At most 50 hard rules/preferences per collection and 50 choices
 per set are accepted. Duplicate UUIDs, normalized registrations and criterion
 keys are invalid. Supplied disabled-rule values are still validated, while
 missing targets are allowed for disabled entries. Signals have one entry per
