@@ -2,10 +2,11 @@
 
 ## Delivery status
 
-Issue #63 implements deterministic Core buying rules, weighted score intervals,
-source-labelled signals and separate cost/preference ordering on
-`feature/63-buying-rules-scores`, pending approved PR merge. Storage/API and UI
-remain #64/#65 work. Stage 3B follows the shared household calculations in 3A.
+Issue #63, merged through PR #82, implements deterministic Core buying rules,
+weighted score intervals, source-labelled signals and separate cost/preference
+ordering. Issue #64 adds [storage and HTTP](comparison-api.md) on its PR branch,
+pending separate merge approval. Comparison UI remains #65 work. Stage 3B follows
+the shared household calculations in 3A.
 The example semantics below remain an optional starting profile, never active
 defaults. The accepted catalogue, formulas, evidence,
 ordering, and HTTP contracts are normative in

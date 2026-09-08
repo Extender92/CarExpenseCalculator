@@ -427,7 +427,7 @@ public sealed class SavedListingStore(
         }
     }
 
-    private static SavedListing ToSavedListing(VehicleEntity vehicle)
+    internal static SavedListing ToSavedListing(VehicleEntity vehicle)
     {
         var entity = vehicle.Listing
             ?? throw new InvalidOperationException("The loaded vehicle does not contain a listing.");

@@ -51,7 +51,7 @@ public sealed class CostAssumptionConfirmation
         return new(input, confirmedAt);
     }
 
-    internal bool Matches(VehicleCostInput? input) => input is not null && Equal(Input, input);
+    public bool IsApplicableTo(VehicleCostInput? input) => input is not null && Equal(Input, input);
 
     private static bool Sequence<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);

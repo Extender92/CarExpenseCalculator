@@ -61,7 +61,7 @@ public sealed class ComparisonEvaluator
         }).ToArray();
         var normalized = new ComparisonCandidateInput(input.VehicleId, input.RegistrationNumber, facts,
             input.CostInput is { } costInput ? costInput with { CandidateKey = input.RegistrationNumber.Value } : null,
-            input.CostConfirmation?.Matches(input.CostInput) == true ? input.CostConfirmation : null,
+            input.CostConfirmation?.IsApplicableTo(input.CostInput) == true ? input.CostConfirmation : null,
             input.SourceRevisions, input.ReviewItems, notes);
         var criteria = new ComparisonCriteria(normalized, costs, errors, index, date);
         var hard = rules.HardRules.Where(x => x.Enabled).Select(rule =>

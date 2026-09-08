@@ -11,7 +11,7 @@ internal static class HouseholdStoreData
 {
     public static IQueryable<VehicleEntity> Vehicles(CarExpenseDbContext db, bool tracking = true)
     {
-        var query = db.Vehicles.Include(x => x.HouseholdCostInput)
+        var query = db.Vehicles.Include(x => x.HouseholdCostInput).Include(x => x.ComparisonFacts)
             .Include(x => x.Scenario).ThenInclude(x => x!.EnergySources)
             .Include(x => x.Scenario).ThenInclude(x => x!.OtherRecurringCosts)
             .Include(x => x.Scenario).ThenInclude(x => x!.OtherOneTimeCosts)
@@ -100,6 +100,13 @@ internal static class HouseholdStoreData
     {
         ValidateListingLabel(vehicle, write);
         var current = vehicle.HouseholdCostInput;
+        if (vehicle.ComparisonFacts?.CostConfirmedAt is { } confirmedAt)
+        {
+            var previous = current is null ? null : HouseholdJson.Deserialize<HouseholdJson.StoredCostPayload>(current.InputJson, current.SchemaVersion).Input.ToCore();
+            if (previous is null || !Core.Comparisons.CostAssumptionConfirmation.Confirm(previous, confirmedAt)
+                .IsApplicableTo(write.Input with { CandidateKey = vehicle.RegistrationNumber }))
+                vehicle.ComparisonFacts.CostConfirmedAt = null;
+        }
         var previousItems = ReviewItems(vehicle);
         var remaining = LegacyInputRecovery.Resolve(previousItems, write, transitioning);
         var source = current?.SourceListingVersion ?? vehicle.Scenario?.SourceListingVersion;

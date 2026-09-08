@@ -23,4 +23,6 @@ internal sealed class VehicleEntity
     public VehicleListingEntity? Listing { get; set; }
 
     public VehicleCostInputEntity? HouseholdCostInput { get; set; }
+
+    public Comparisons.VehicleComparisonFactsEntity? ComparisonFacts { get; set; }
 }

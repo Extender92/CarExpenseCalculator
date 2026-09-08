@@ -52,17 +52,17 @@ separately as described below.
 The #62 implementation uses the ordinary backend/CI groups below. Full-stage
 3B browser/PDF acceptance remains #67; existing household and URL regressions
 are retained without new product routes or external provider calls.
-The current merged baseline is 760 backend, 195 frontend and 33 Chromium tests.
+The #62 merged baseline was 760 backend, 195 frontend and 33 Chromium tests.
 The [#63 preparation audit](buying-rules-implementation-preparation.md) maps B1-B8
 and the integration regressions to the next Core implementation. This preparation
 adds no new automated tests and does not claim rule/scoring behavior is verified.
 
 ### Issue #63 Core evaluation evidence
 
-Implementation on `feature/63-buying-rules-scores` adds 114 Core cases to the
-merged baseline, pending approved implementation PR merge. These exercise the
-pure Core boundary; comparison HTTP/UI, persistence and stage #67 acceptance
-remain later work. Existing household and URL routes keep their regression suites.
+Issue #63, merged through approved PR #82, adds 114 Core cases to the #62
+baseline. These exercise the pure Core boundary; #64 adds storage and HTTP
+evidence below, while comparison UI and stage #67 acceptance remain later work.
+Existing household and URL routes keep their regression suites.
 
 | Acceptance / boundary | Automated evidence |
 | --- | --- |
@@ -81,10 +81,37 @@ relaxed to manufacture a test fixture. Derived nonzero-distance examples include
 explicit positive fuel consumption and a known price, rather than treating an
 empty source list or zero consumption as a complete energy model.
 
-Expected complete verification totals for this branch are 874 backend
+The merged #63 verification totals are 874 backend
 (551 Core + 323 existing other backend cases), 195 frontend and 33 Chromium
-tests. Record final command/CI results in the implementation PR; this branch
-record does not claim a merged or end-to-end comparison UI delivery.
+tests. This Core record does not claim an end-to-end comparison UI delivery.
+
+### Issue #64 persistence and HTTP evidence
+
+Implemented on `feature/64-comparison-persistence-api`, pending separate approved
+PR merge. See the [wire and storage contract](comparison-api.md). The merged
+baseline is 874 backend, 195 frontend and 33 Chromium tests; the new verification
+adds 64 backend cases and four browser/proxy cases. Final command and CI outcomes
+are recorded in the issue's implementation PR.
+
+| Acceptance / boundary | Automated evidence |
+| --- | --- |
+| Empty rule singleton, full replacement, all fact fields/states, exact decimals, dates, source versions, independent confirmation lifecycle and deletion through all existing stores | [ComparisonStoreTests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/ComparisonStoreTests.cs) |
+| Competing first rule saves; facts versus cost/listing/deletion; RepeatableRead consistency; cancellation and rollback after database failure; copied action collections | [ComparisonConcurrencyTests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/ComparisonConcurrencyTests.cs) |
+| Upgrade/rollback/reapply with preserved household identity/data; both new tables removed; no pending EF changes | [ComparisonStoreTests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/ComparisonStoreTests.cs), [MigrationTests](../tests/backend/CarExpenseCalculator.Infrastructure.IntegrationTests/MigrationTests.cs) |
+| B1–B8 score/order semantics through HTTP, zero/100/101 candidates, strict actions/enum/source claims, independent numeric failures, lease coverage, exact sorting and budget decisions | [ComparisonPreviewEndpointTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/ComparisonPreviewEndpointTests.cs) |
+| Stored snapshot revision/identity conflicts; 40,000 to 35,000 confirmation; no null-price backfill; large revisions; corrupt/versioned data; legacy 50+50 review and budget completeness | [ComparisonPersistenceEndpointTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/ComparisonPersistenceEndpointTests.cs) |
+| Cancelled/failed writes cannot return success or retry; sanitized unavailable storage and extraction isolation | [ComparisonCancellationEndpointTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/ComparisonCancellationEndpointTests.cs), [ComparisonPreviewEndpointTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/ComparisonPreviewEndpointTests.cs) |
+| Required enum schemas remain nonnullable; real browser B1, explicit persistence/deletion, exactly 2 MiB and oversize with/without Content-Length | [ComparisonPreviewEndpointTests](../tests/backend/CarExpenseCalculator.Api.IntegrationTests/ComparisonPreviewEndpointTests.cs), [comparison-api.spec.ts](../src/frontend/e2e/comparison-api.spec.ts) |
+
+Use .NET SDK 10.0.400, Node 22.22.2, PostgreSQL 18 and README's ordered isolated
+`car-expense-e2e` stack. The existing corrupt-legacy browser fixture deliberately
+requires that exact disposable project name; do not weaken its SQL target guard.
+Run restore/build/test, frontend ci/lint/test/build, API generation on 5090,
+Compose boundary validation, Chromium with one worker and the URL acceptance
+script. The generated schema should change only for the new routes/types and
+the scoped nullable-enum component separation. Backend totals are 938
+(551 Core, 213 API, 115 PostgreSQL, 16 Infrastructure unit, 39 extractor, four
+architecture), frontend 195 and Chromium 37. UI/PDF acceptance remains #65–#67.
 
 Issue #60 adds the [Swedish workspace](household-workspace.md), focused frontend
 tests under `features/household`, and the real
