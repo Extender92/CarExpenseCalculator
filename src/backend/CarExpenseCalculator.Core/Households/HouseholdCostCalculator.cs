@@ -3,6 +3,10 @@ namespace CarExpenseCalculator.Core.Households;
 public sealed class HouseholdCostCalculator
 {
     public HouseholdCostPreview Calculate(HouseholdProfileInput profile, IReadOnlyList<VehicleCostInput> vehicles)
+        => CalculateForComparison(profile, vehicles).Preview;
+
+    // The same calculation supplies presentation and ordering; no rounded re-composition.
+    internal HouseholdComparisonCalculation CalculateForComparison(HouseholdProfileInput profile, IReadOnlyList<VehicleCostInput> vehicles)
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(vehicles);
@@ -21,11 +25,12 @@ public sealed class HouseholdCostCalculator
 
         var results = snapshot.Select((car, index) => CalculateVehicle(car, index, financing.Vehicles[index],
             new HouseholdCostContext(profile, financing.ProfileErrors, validations[index]), validations[index])).ToArray();
-        return new("SEK", HouseholdCalculationVersions.Calculation, HouseholdCalculationVersions.ResultSchema,
-            profile.ActiveSensitivityMode, financing.ProfileErrors, Array.AsReadOnly(results));
+        return new(new("SEK", HouseholdCalculationVersions.Calculation, HouseholdCalculationVersions.ResultSchema,
+            profile.ActiveSensitivityMode, financing.ProfileErrors, Array.AsReadOnly(results.Select(x => x.Result).ToArray())),
+            Array.AsReadOnly(results));
     }
 
-    private static VehicleCostResult CalculateVehicle(VehicleCostInput car, int index, PurchaseFinancingResult financing,
+    private static HouseholdComparisonVehicle CalculateVehicle(VehicleCostInput car, int index, PurchaseFinancingResult financing,
         HouseholdCostContext context, IReadOnlyList<HouseholdInputError> inputErrors)
     {
         var path = $"vehicles[{index}]";
@@ -96,12 +101,13 @@ public sealed class HouseholdCostCalculator
         operating.Merge(energy);
         foreach (var category in categories) operating.Merge(category.Section);
         var payments = ledger.Finish(operating, depreciation, allowance, lease.Withheld, total, isLease);
-        return new(car.CandidateKey.Trim(), isLease ? null : financing, isLease ? CostSection.NotApplicable() : finance.Result(),
+        var result = new VehicleCostResult(car.CandidateKey.Trim(), isLease ? null : financing, isLease ? CostSection.NotApplicable() : finance.Result(),
             new(isLease ? CostSection.NotApplicable() : depreciation.Result(), CostSection.Money(residual)),
             energyResult, categories[0].Result, categories[1].Result, categories[2].Result, categories[3].Result,
             allowance.Result(), categories[4].Result,
             new(CostSection.Quantity(distance.Complete), total.Result(), monthly.Result(), perMil.Result(), isLease ? CostSection.NotApplicable() : equity.Result()),
             inputErrors, car.AcquisitionType, lease.Result, payments.Calendar, payments.Startup, payments.Monthly, payments.Reconciliation);
+        return new(result, total.Complete, monthly.Complete, perMil.Complete);
     }
 
     private static CostSection CalculateDistance(HouseholdCostContext context, bool requested = false)
@@ -223,3 +229,6 @@ public sealed class HouseholdCostCalculator
         return result;
     }
 }
+
+internal sealed record HouseholdComparisonCalculation(HouseholdCostPreview Preview, IReadOnlyList<HouseholdComparisonVehicle> Vehicles);
+internal sealed record HouseholdComparisonVehicle(VehicleCostResult Result, decimal? NetCostSek, decimal? CostPerMonthSek, decimal? CostPerMilSek);

@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Rule-based comparison, automatic discovery, and advisory AI review are not implemented yet.
+The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. The comparison workspace, automatic discovery, and advisory AI review are not implemented yet.
 
 The current work is split into household calculations (stage 3A) and
 comparison with configurable buying scores (stage 3B). A common editable
@@ -23,10 +23,14 @@ with green CI. Stage 3B's
 [#62 vehicle facts and evidence](docs/vehicle-facts-implementation-plan.md)
 foundation is merged through [PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80):
 immutable typed facts, explicit source/confirmation metadata, validation and
-reviewed-listing mapping in Core. The next item is
-[#63, buying rules and scores](docs/buying-rules-implementation-preparation.md),
-whose dependency audit is complete. Rules/scoring and fact persistence/API/UI
-(#64-#65) remain future work; preparation does not start implementation.
+reviewed-listing mapping in Core. Issue #63 implements
+[buying rules, score intervals and ordering](docs/comparison-and-buying-scores.md#implemented-core-evaluation-63)
+on `feature/63-buying-rules-scores`, pending approved PR merge. The Core engine
+uses common goals/weights, independent evidence-aware hard results and unrounded
+household cost measures. Current purchase inputs own the evaluated purchase price;
+changing it cannot inherit an older price's confirmation. Fact/rule persistence
+and HTTP (#64), comparison UI (#65), PDF (#66) and stage acceptance (#67) remain
+future work; no comparison product route or feature flag is enabled by #63.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

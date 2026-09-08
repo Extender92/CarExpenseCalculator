@@ -9,6 +9,15 @@ public sealed class VehicleFactsProcessor
 {
     public VehicleComparisonFacts Normalize(VehicleComparisonFacts input, AcquisitionType acquisitionType = AcquisitionType.Purchase)
     {
+        var (facts, errors) = NormalizeForEvaluation(input, acquisitionType);
+        if (errors.Count > 0) throw new VehicleFactsValidationException(errors);
+        return facts;
+    }
+
+    // Evaluation keeps independent valid fields; the public save boundary stays strict.
+    internal (VehicleComparisonFacts Facts, IReadOnlyList<VehicleFactsValidationError> Errors) NormalizeForEvaluation(
+        VehicleComparisonFacts input, AcquisitionType acquisitionType = AcquisitionType.Purchase)
+    {
         ArgumentNullException.ThrowIfNull(input);
         var errors = new List<VehicleFactsValidationError>();
         if (!Enum.IsDefined(acquisitionType))
@@ -49,14 +58,10 @@ public sealed class VehicleFactsProcessor
                 (value, path) => Text(value, VehicleFactLimits.MaximumNotesLength, path, errors)),
         };
 
-        if (errors.Count > 0)
-        {
-            throw new VehicleFactsValidationException(errors);
-        }
-
-        return acquisitionType == AcquisitionType.Lease && normalized.PurchasePriceSek.State == VehicleFactState.Unknown
+        normalized = acquisitionType == AcquisitionType.Lease && normalized.PurchasePriceSek.State == VehicleFactState.Unknown
             ? normalized with { PurchasePriceSek = VehicleFact<decimal>.NotApplicable() }
             : normalized;
+        return (normalized, errors.AsReadOnly());
     }
 
     // Re-run the established source boundary; merely importing does not confirm a value.

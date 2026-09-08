@@ -81,9 +81,10 @@ tracker #12. Stage labels 3A and 3B preserve later milestone numbering; the
 The prerequisite acceptance is complete. The first item, #62, delivered the
 [Core vehicle-facts foundation](vehicle-facts-implementation-plan.md) through
 approved PR #80. The [#63 preparation audit](buying-rules-implementation-preparation.md)
-confirms its prerequisites and ready status; implementation is not assigned by
-preparation. Rules/scoring (#63), storage/API (#64), UI (#65), PDF (#66) and
-whole-stage acceptance (#67) remain future work.
+confirmed its prerequisites. Following explicit assignment, #63 implements
+Core rules/scoring and ordering on `feature/63-buying-rules-scores`, pending
+approved PR merge. Storage/API (#64), UI (#65), PDF (#66) and whole-stage
+acceptance (#67) remain future work and are not unblocked by an unmerged PR.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,
