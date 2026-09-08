@@ -30,10 +30,11 @@ public sealed class SavedCostScenarioApiFactory : WebApplicationFactory<Program>
         var dbContext = scope.ServiceProvider.GetRequiredService<CarExpenseDbContext>();
         // TRUNCATE CASCADE also removes the draft singleton through its optional vehicle FK.
         await dbContext.Database.ExecuteSqlRawAsync("""
-            TRUNCATE TABLE vehicles, household_state CASCADE;
+            TRUNCATE TABLE vehicles, household_state, rule_profile CASCADE;
             INSERT INTO household_state (id, profile_revision, transition_revision, schema_version)
                 VALUES (1, 0, 0, 1);
             INSERT INTO vehicle_draft (id, revision, schema_version) VALUES (1, 0, 1);
+            INSERT INTO rule_profile (id, revision, schema_version) VALUES (1, 0, 1);
             """);
     }
 

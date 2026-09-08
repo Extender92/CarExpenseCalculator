@@ -196,7 +196,7 @@ listings and result snapshots intact. The two singleton rows start at revision
 0 with null contents; no financial profile is inferred from an existing car.
 The explicit migrations command above is still required before running the new
 application. Normal API startup never migrates. Persistence contracts are
-implemented; the household HTTP/UI flows arrive in #59-#60.
+implemented, including the household HTTP/UI flows from #59-#60.
 
 Before any rollback, stop application writes and make a verified PostgreSQL
 backup of `car_expense_calculator` using the existing `postgresql18` container.
@@ -225,3 +225,29 @@ preserves surviving listings and unconverted scenarios; it does not restore
 discarded household data. Test upgrade/rollback/reapply only on disposable
 PostgreSQL 18 fixtures. Unraid's persistent application data is never a test
 target. See the [implemented storage/transition contract](household-calculations.md#implemented-household-persistence).
+
+### Comparison storage migration and rollback
+
+Issue #64 adds `20260908103211_AddComparisonPersistence` on its PR branch.
+Run the existing explicit migration command before deploying the matching API;
+API startup never migrates. It creates an empty revision-0 rule singleton and
+current per-vehicle comparison facts without importing advertisements or
+confirming assumptions. Existing household, legacy and listing data is preserved.
+
+To roll back only comparison storage, first stop writes and verify a backup of
+the application's database in `postgresql18`. Use the newer image, which knows
+the Down migration:
+
+```bash
+docker compose -f compose.unraid.yaml stop web api codex-extractor
+docker compose -f compose.unraid.yaml run --rm api migrate 20260906151351_AddHouseholdPersistence
+```
+
+This explicitly removes rule input, comparison facts, per-observation source
+versions and cost confirmations. Household profile, cost inputs, shared draft,
+legacy scenarios/results, listings and vehicle identities remain. Reapplying
+creates empty comparison storage; restoring removed comparison data requires
+the backup. Lower rollback targets also remove comparison data before performing
+their documented actions. Upgrade/rollback/reapply verification uses only
+disposable PostgreSQL 18 databases, never Unraid user data. See the
+[comparison persistence contract](comparison-api.md#versions-and-persistence).

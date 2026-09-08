@@ -77,14 +77,14 @@ internal sealed class ComparisonCriteria(ComparisonCandidateInput candidate, Hou
             return Fact("purchasePriceSek", candidate.Facts.PurchasePriceSek, x => new(number: x));
         var fieldErrors = errors.Where(x => x.Path == $"candidates[{index}].costInput.priceSek").ToArray();
         if (input.PriceSek is not { } price) return new(null, [], ["unknownFact"], fieldErrors);
-        if (candidate.CostConfirmation?.Matches(input) == true)
+        if (candidate.CostConfirmation?.IsApplicableTo(input) == true)
             return new(new(number: price), ConfirmationEvidence(), fieldErrors.Length == 0 ? [] : ["invalidFact"], fieldErrors);
         var source = Fact("purchasePriceSek", candidate.Facts.PurchasePriceSek, x => new(number: x));
         if (source.Actual?.Number == price && source.Reasons.Count == 0 && fieldErrors.Length == 0) return source;
         return new(new(number: price), [], fieldErrors.Length == 0 ? ["effectivePriceNeedsConfirmation"] : ["invalidFact"], fieldErrors);
     }
 
-    private IReadOnlyList<ComparisonEvidence> ConfirmationEvidence() => candidate.CostConfirmation?.Matches(candidate.CostInput) == true
+    private IReadOnlyList<ComparisonEvidence> ConfirmationEvidence() => candidate.CostConfirmation?.IsApplicableTo(candidate.CostInput) == true
         ? Array.AsReadOnly(new[] { new ComparisonEvidence(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.UserConfirmed,
             ConfirmedAt: candidate.CostConfirmation.ConfirmedAt) }) : [];
 

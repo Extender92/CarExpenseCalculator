@@ -3,10 +3,11 @@
 ## Status and scope
 
 Normative target for stage 3B. The #62 Core fact foundation is merged through
-[PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80). Issue #63 adds
-the Core rules, scores and ordering on `feature/63-buying-rules-scores`, pending
-separate approved PR merge. Fact/rule persistence, HTTP and UI remain
-**not implemented**. This stage depends on
+[PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80). Core rules,
+scores and ordering (#63) are merged through PR #82. Issue #64 implements
+[fact/rule persistence and HTTP](comparison-api.md) on
+`feature/64-comparison-persistence-api`, pending separately approved PR merge.
+Comparison UI, PDF and stage acceptance remain #65–#67. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
@@ -141,7 +142,8 @@ observation, value/collection index, or evidence property, for example
 `invalidListing`, and `conversionNotExact`. Listing-boundary errors retain their
 existing listing paths with `invalidListing`. Invalid supplied input throws;
 it is not silently relabeled as missing. Ordinary null top-level arguments use
-`ArgumentNullException`. Later API/error mapping remains #64 work.
+`ArgumentNullException`. The [#64 HTTP boundary](comparison-api.md#errors-size-and-cancellation)
+maps these errors without exposing storage details.
 
 ```csharp
 var processor = new VehicleFactsProcessor();
@@ -161,7 +163,7 @@ rules, asOfDate, candidates)` in `Core.Comparisons`. It is a pure calculation:
 no writes, providers, clock, UI feature enablement or retained evaluations.
 Rule and comparison-result versions start at **1**, independently of household
 calculation/result version **2** and storage version **1**. Existing household
-HTTP responses and OpenAPI remain unchanged.
+HTTP responses remain unchanged. #64 extends OpenAPI with the comparison contract.
 
 | Contract | Implemented semantics |
 | --- | --- |
@@ -394,6 +396,12 @@ history is required. Downloaded copies remain outside application deletion.
 
 ## Future contracts and persistence
 
+Issue #64 implements the storage and HTTP portions below; the heading is retained
+for existing issue links. [Comparison storage and HTTP](comparison-api.md) specifies
+the API-owned DTOs, typed fact actions, explicit cost confirmation lifecycle,
+source listing versions, two preview modes, transaction/revision checks, error
+mapping and migration rollback. `ComparisonReportInput` remains #66 work.
+
 `EvaluateComparison(profile, rules, asOfDate, candidates)` calls 3A calculation
 and deterministic rules with full current inputs. Client-submitted calculated
 totals, verified flags, and evaluation snapshots are never authoritative.
@@ -415,12 +423,13 @@ unavailability is 503. Manual writes cannot assert registry verification.
 Generate frontend types from OpenAPI, never hand-edit the schema file.
 
 One current rule profile and one current fact set per vehicle are persisted.
-Evaluations are recomputed from current inputs; any optional current cache must
-include profile, rule, vehicle, listing, and algorithm revisions. Cache mismatch
-recomputes or returns unavailable, never serves stale evaluation as current.
-Do not add evaluation/history tables merely for future use. Vehicle replacement
-and deletion invalidate all dependent current data and remove matching draft
-contents; deleting a car leaves the shared household and rule profiles.
+Evaluations are recomputed from current inputs without a cache or history table.
+Stored preview checks profile, rule, vehicle and listing revisions in one
+RepeatableRead snapshot and rejects changed baselines. Manual preview is an
+explicit independent mode, never an automatic fallback after storage failure.
+Ordinary vehicle changes retain saved drafts; their older base revision prevents
+adoption. Full vehicle deletion clears facts, confirmations and matching draft
+contents while preserving the shared household and rule profiles.
 
 ## Worked examples
 

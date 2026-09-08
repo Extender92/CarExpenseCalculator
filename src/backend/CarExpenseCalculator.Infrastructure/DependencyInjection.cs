@@ -37,6 +37,9 @@ public static class DependencyInjection
         services.AddScoped<IVehicleCostInputStore, VehicleCostInputStore>();
         services.AddScoped<ISharedVehicleDraftStore, SharedVehicleDraftStore>();
         services.AddScoped<IHouseholdTransitionStore, HouseholdTransitionStore>();
+        services.AddScoped<Persistence.Comparisons.IRuleProfileStore, Persistence.Comparisons.RuleProfileStore>();
+        services.AddScoped<Persistence.Comparisons.IVehicleFactsStore, Persistence.Comparisons.VehicleFactsStore>();
+        services.AddScoped<Persistence.Comparisons.IComparisonSnapshotStore, Persistence.Comparisons.ComparisonSnapshotStore>();
 
         var extractorAddress = configuration["CodexExtraction:BaseUrl"]
             ?? "http://codex-extractor:8080";

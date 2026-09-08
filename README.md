@@ -23,14 +23,18 @@ with green CI. Stage 3B's
 [#62 vehicle facts and evidence](docs/vehicle-facts-implementation-plan.md)
 foundation is merged through [PR #80](https://github.com/Extender92/CarExpenseCalculator/pull/80):
 immutable typed facts, explicit source/confirmation metadata, validation and
-reviewed-listing mapping in Core. Issue #63 implements
+reviewed-listing mapping in Core. Issue #63, merged through PR #82, implements
 [buying rules, score intervals and ordering](docs/comparison-and-buying-scores.md#implemented-core-evaluation-63)
-on `feature/63-buying-rules-scores`, pending approved PR merge. The Core engine
+in Core. The engine
 uses common goals/weights, independent evidence-aware hard results and unrounded
 household cost measures. Current purchase inputs own the evaluated purchase price;
-changing it cannot inherit an older price's confirmation. Fact/rule persistence
-and HTTP (#64), comparison UI (#65), PDF (#66) and stage acceptance (#67) remain
-future work; no comparison product route or feature flag is enabled by #63.
+changing it cannot inherit an older price's confirmation. Issue #64 implements
+[comparison storage and HTTP](docs/comparison-api.md) on
+`feature/64-comparison-persistence-api`, pending separately approved PR merge:
+current rule/fact storage, explicit evidence actions, cost confirmation and
+revision-checked stored previews alongside independent manual previews.
+Comparison UI (#65), PDF (#66) and stage acceptance (#67) remain future work;
+no comparison screen or feature flag is enabled.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

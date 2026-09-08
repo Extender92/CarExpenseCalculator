@@ -4,6 +4,93 @@
  */
 
 export interface paths {
+    "/api/comparisons/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ComparisonPreviewRequest"];
+                    "application/*+json": components["schemas"]["ComparisonPreviewRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ComparisonPreviewResponse"];
+                        "application/json": components["schemas"]["ComparisonPreviewResponse"];
+                        "text/json": components["schemas"]["ComparisonPreviewResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/household-calculations/preview": {
         parameters: {
             query?: never;
@@ -484,6 +571,159 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rule-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RuleProfileResponse"];
+                        "application/json": components["schemas"]["RuleProfileResponse"];
+                        "text/json": components["schemas"]["RuleProfileResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveRuleProfileRequest"];
+                    "application/*+json": components["schemas"]["SaveRuleProfileRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RuleProfileResponse"];
+                        "application/json": components["schemas"]["RuleProfileResponse"];
+                        "text/json": components["schemas"]["RuleProfileResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1843,6 +2083,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vehicle-facts/{vehicleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleFactsResponse"];
+                        "application/json": components["schemas"]["VehicleFactsResponse"];
+                        "text/json": components["schemas"]["VehicleFactsResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    vehicleId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveVehicleFactsRequest"];
+                    "application/*+json": components["schemas"]["SaveVehicleFactsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["VehicleFactsResponse"];
+                        "application/json": components["schemas"]["VehicleFactsResponse"];
+                        "text/json": components["schemas"]["VehicleFactsResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ComparisonProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1855,6 +2252,8 @@ export interface components {
         };
         /** @enum {unknown} */
         BodyType: "sedan" | "hatchback" | "wagon" | "suv" | "coupe" | "convertible" | "minivan" | "pickup" | "van" | "other";
+        /** @enum {unknown} */
+        BuyingEligibility: "eligible" | "needsVerification" | "rejected";
         CalculationCompleteness: {
             isComplete: boolean;
             isCashFlowComplete: boolean;
@@ -1894,6 +2293,189 @@ export interface components {
             averagePerYearSek: number;
             isComplete: boolean;
         };
+        ComparisonCandidateRequest: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            storedBase?: null | components["schemas"]["ComparisonVehicleBase"];
+            facts?: components["schemas"]["VehicleFactsWrite"];
+            costInput?: null | components["schemas"]["VehicleCostInput"];
+            legacyDecisions?: null | components["schemas"]["LegacyItemDecision"][];
+        };
+        ComparisonCandidateResult: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            effectiveFacts: components["schemas"]["ComparisonFactSet"];
+            effectiveCostInput: null | components["schemas"]["VehicleCostInput"];
+            /** Format: date-time */
+            costConfirmedAt: null | string;
+            unresolvedLegacyItems: components["schemas"]["LegacyReviewResponse"][];
+            sourceRevisions: components["schemas"]["ComparisonSourceRevisions"];
+            needsListingReview: boolean;
+            storedInputState: null | components["schemas"]["NullableVehicleInputState"];
+            unsaved: components["schemas"]["ComparisonDirtyState"];
+            cost: components["schemas"]["VehicleCostResult"];
+            errors: components["schemas"]["ComparisonFieldError"][];
+            hardRules: components["schemas"]["HardRuleEvaluation"][];
+            eligibility: components["schemas"]["BuyingEligibility"];
+            contributions: components["schemas"]["PreferenceContribution"][];
+            score: null | components["schemas"]["ScoreRange"];
+            /** Format: double */
+            coveragePercent: null | number;
+            scoreUnavailableReason: null | string;
+            signals: components["schemas"]["ComparisonSignal"][];
+            isCheapestEligibleComplete: boolean;
+            isDefinitePreferenceWinner: boolean;
+        };
+        ComparisonChoice: {
+            boolean?: null | boolean;
+            transmission?: null | components["schemas"]["NullableTransmission"];
+            fuelType?: null | components["schemas"]["FuelType"];
+            bodyType?: null | components["schemas"]["NullableBodyType"];
+            drivetrain?: null | components["schemas"]["NullableDrivetrain"];
+            serviceDocumentation?: null | components["schemas"]["NullableServiceDocumentationStatus"];
+            text?: null | string;
+        };
+        ComparisonDirtyState: {
+            profile: boolean;
+            rules: boolean;
+            facts: boolean;
+            costs: boolean;
+            reviewDecisions: boolean;
+            costConfirmation: boolean;
+            listingReview: boolean;
+        };
+        ComparisonEvidence: {
+            origin: components["schemas"]["FieldOrigin"];
+            extractionMethod: components["schemas"]["ExtractionMethod"];
+            verification: components["schemas"]["VerificationStatus"];
+            sourceUrl: null | string;
+            /** Format: date-time */
+            observedAt: null | string;
+            /** Format: date-time */
+            confirmedAt: null | string;
+        };
+        ComparisonFactSet: {
+            facts: components["schemas"]["VehicleComparisonFacts"];
+            conditionNotes: null | components["schemas"]["VehicleFactOfstring"][];
+        };
+        ComparisonFieldError: {
+            path: string;
+            code: string;
+            message: string;
+        };
+        ComparisonObservedValue: {
+            /** Format: double */
+            number: null | number;
+            choice: null | components["schemas"]["ComparisonChoice"];
+            /** Format: date */
+            date: null | string;
+            fuels: null | components["schemas"]["FuelType"][];
+        };
+        /** @enum {unknown} */
+        ComparisonPreviewMode: "stored" | "manual";
+        ComparisonPreviewRequest: {
+            mode: components["schemas"]["ComparisonPreviewMode"];
+            requestId: string;
+            profile: components["schemas"]["HouseholdProfileInput"];
+            rules: components["schemas"]["RuleProfileInput"];
+            /** Format: date */
+            asOfDate: string;
+            storedBase?: null | components["schemas"]["ComparisonStoredBase"];
+            candidates: components["schemas"]["ComparisonCandidateRequest"][];
+        };
+        ComparisonPreviewResponse: {
+            requestId: string;
+            mode: components["schemas"]["ComparisonPreviewMode"];
+            storageChecked: boolean;
+            profile: components["schemas"]["HouseholdProfileInput"];
+            rules: components["schemas"]["RuleProfileInput"];
+            /** Format: date */
+            asOfDate: string;
+            /** Format: int32 */
+            ruleVersion: number;
+            /** Format: int32 */
+            resultSchemaVersion: number;
+            /** Format: int32 */
+            calculationVersion: number;
+            /** Format: int32 */
+            householdResultSchemaVersion: number;
+            profileErrors: components["schemas"]["ComparisonFieldError"][];
+            candidates: components["schemas"]["ComparisonCandidateResult"][];
+            costOrder: string[];
+            scoreOrder: string[];
+            preferenceRecommendationReason: string;
+        };
+        ComparisonProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+            /** Format: uuid */
+            vehicleId?: null | string;
+            /** Format: int64 */
+            expectedRevision?: null | number;
+            /** Format: int64 */
+            actualRevision?: null | number;
+        };
+        ComparisonSignal: {
+            key: components["schemas"]["ComparisonSignalKey"];
+            kind: components["schemas"]["ComparisonSignalKind"];
+            reasonCode: string;
+            explanation: string;
+            evidence: null | components["schemas"]["ComparisonEvidence"];
+        };
+        ComparisonSignalInput: {
+            key: components["schemas"]["ComparisonSignalKey"];
+            /** Format: int32 */
+            shortInspectionDays?: null | number;
+        };
+        /** @enum {unknown} */
+        ComparisonSignalKey: "conditionNotes" | "serviceDocumentation" | "inspectionValidity" | "costCompleteness" | "startupBudget" | "monthlyBudget";
+        /** @enum {unknown} */
+        ComparisonSignalKind: "information" | "warning" | "positive";
+        ComparisonSourceRevisions: {
+            /** Format: int64 */
+            householdProfile: null | number;
+            /** Format: int64 */
+            ruleProfile: null | number;
+            /** Format: int64 */
+            vehicle: null | number;
+            /** Format: int64 */
+            listing: null | number;
+            /** Format: int64 */
+            factsReviewedListing: null | number;
+            /** Format: int64 */
+            costReviewedListing: null | number;
+        };
+        ComparisonStoredBase: {
+            /** Format: int64 */
+            householdProfileRevision: number;
+            /** Format: int64 */
+            ruleProfileRevision: number;
+        };
+        ComparisonValidationProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            code: string;
+            fieldErrors: components["schemas"]["ComparisonFieldError"][];
+            errors?: {
+                [key: string]: string[];
+            };
+        };
+        ComparisonVehicleBase: {
+            /** Format: int64 */
+            vehicleRevision: number;
+            listing: components["schemas"]["ListingVersionInput"];
+        };
         ConfirmHouseholdTransitionRequest: {
             profile: components["schemas"]["HouseholdProfileInput"];
             /** Format: int64 */
@@ -1904,6 +2486,8 @@ export interface components {
         };
         /** @enum {unknown} */
         ConsumptionBasis: "wholeDistance" | "drivingMode" | null;
+        /** @enum {unknown} */
+        CostConfirmationAction: "preserve" | "confirm" | "clear";
         CostSectionResult: {
             state: components["schemas"]["CostSectionState"];
             /** Format: double */
@@ -1926,6 +2510,15 @@ export interface components {
         CreateVehicleCostInputRequest: {
             registrationNumber: string;
             cost: components["schemas"]["VehicleCostWrite"];
+        };
+        CriterionAssessment: {
+            criterionKey: string;
+            actual: null | components["schemas"]["ComparisonObservedValue"];
+            evidence: components["schemas"]["ComparisonEvidence"][];
+            minimumEvidence: components["schemas"]["EvidenceRequirement"];
+            hasAdequateEvidence: boolean;
+            reasons: string[];
+            errors: components["schemas"]["ComparisonFieldError"][];
         };
         /** @enum {unknown} */
         Drivetrain: "frontWheelDrive" | "rearWheelDrive" | "allWheelDrive";
@@ -1977,7 +2570,186 @@ export interface components {
         /** @enum {unknown} */
         EnergyUnit: "litre" | "kilowattHour" | "kilogram";
         /** @enum {unknown} */
+        EvidenceRequirement: "advertised" | "userConfirmed" | "registryVerified";
+        /** @enum {unknown} */
         ExtractionMethod: "ai" | "manual";
+        /** @enum {unknown} */
+        FactEditKind: "preserve" | "unknown" | "notApplicable" | "manual" | "listing" | "conflict" | "resolve";
+        FactEditOfBodyType: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfBodyType"];
+            observations?: null | components["schemas"]["FactSelectionOfBodyType"][];
+        };
+        FactEditOfboolean: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfboolean"];
+            observations?: null | components["schemas"]["FactSelectionOfboolean"][];
+        };
+        FactEditOfDateOnly: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfDateOnly"];
+            observations?: null | components["schemas"]["FactSelectionOfDateOnly"][];
+        };
+        FactEditOfdecimal: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfdecimal"];
+            observations?: null | components["schemas"]["FactSelectionOfdecimal"][];
+        };
+        FactEditOfDrivetrain: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfDrivetrain"];
+            observations?: null | components["schemas"]["FactSelectionOfDrivetrain"][];
+        };
+        FactEditOfint: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfint"];
+            observations?: null | components["schemas"]["FactSelectionOfint"][];
+        };
+        FactEditOfIReadOnlyListOfFuelType: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfIReadOnlyListOfFuelType"];
+            observations?: null | components["schemas"]["FactSelectionOfIReadOnlyListOfFuelType"][];
+        };
+        FactEditOfServiceDocumentationStatus: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfServiceDocumentationStatus"];
+            observations?: null | components["schemas"]["FactSelectionOfServiceDocumentationStatus"][];
+        };
+        FactEditOfstring: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfstring"];
+            observations?: null | components["schemas"]["FactSelectionOfstring"][];
+        };
+        FactEditOfTransmission: {
+            kind: components["schemas"]["FactEditKind"];
+            manual?: null | components["schemas"]["ManualFactValueOfTransmission"];
+            observations?: null | components["schemas"]["FactSelectionOfTransmission"][];
+        };
+        FactObservationOfBodyType: {
+            value: components["schemas"]["BodyType"];
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfboolean: {
+            value: boolean;
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfDateOnly: {
+            /** Format: date */
+            value: string;
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfdecimal: {
+            /** Format: double */
+            value: number;
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfDrivetrain: {
+            value: components["schemas"]["Drivetrain"];
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfint: {
+            /** Format: int32 */
+            value: number;
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfIReadOnlyListOfFuelType: {
+            value: null | components["schemas"]["FuelType"][];
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfServiceDocumentationStatus: {
+            value: components["schemas"]["ServiceDocumentationStatus"];
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfstring: {
+            value: null | string;
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        FactObservationOfTransmission: {
+            value: components["schemas"]["Transmission"];
+            evidence: components["schemas"]["ComparisonEvidence"];
+            /** Format: int64 */
+            sourceListingVersion: null | number;
+        };
+        /** @enum {unknown} */
+        FactSelectionKind: "current" | "listing" | "manual";
+        FactSelectionOfBodyType: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfBodyType"];
+        };
+        FactSelectionOfboolean: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfboolean"];
+        };
+        FactSelectionOfDateOnly: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfDateOnly"];
+        };
+        FactSelectionOfdecimal: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfdecimal"];
+        };
+        FactSelectionOfDrivetrain: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfDrivetrain"];
+        };
+        FactSelectionOfint: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfint"];
+        };
+        FactSelectionOfIReadOnlyListOfFuelType: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfIReadOnlyListOfFuelType"];
+        };
+        FactSelectionOfServiceDocumentationStatus: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfServiceDocumentationStatus"];
+        };
+        FactSelectionOfstring: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfstring"];
+        };
+        FactSelectionOfTransmission: {
+            kind: components["schemas"]["FactSelectionKind"];
+            /** Format: int32 */
+            observationIndex?: null | number;
+            manual?: null | components["schemas"]["ManualFactValueOfTransmission"];
+        };
         FeatureStatusResponse: {
             ruleBasedSearch: boolean;
             urlAnalysis: boolean;
@@ -2032,6 +2804,29 @@ export interface components {
         FinancingState: "complete" | "partial" | "unavailable" | "invalid";
         /** @enum {unknown} */
         FuelType: "petrol" | "diesel" | "electricity" | "ethanol" | "biogas" | "naturalGas" | "liquefiedPetroleumGas" | "hydrogen" | "other";
+        HardRuleEvaluation: {
+            rule: components["schemas"]["HardRuleInput"];
+            state: components["schemas"]["HardRuleState"];
+            assessment: components["schemas"]["CriterionAssessment"];
+            observedConditionSatisfied: null | boolean;
+            reasonCode: string;
+            explanation: string;
+        };
+        HardRuleInput: {
+            criterionKey: string;
+            operator: components["schemas"]["HardRuleOperator"];
+            minimumEvidence: components["schemas"]["EvidenceRequirement"];
+            /** Format: double */
+            minimum?: null | number;
+            /** Format: double */
+            maximum?: null | number;
+            allowedValues?: null | components["schemas"]["ComparisonChoice"][];
+            enabled?: boolean;
+        };
+        /** @enum {unknown} */
+        HardRuleOperator: "inclusiveRange" | "equals" | "allowedSet" | "intersects" | "minimumRemainingDays" | "withinBudget";
+        /** @enum {unknown} */
+        HardRuleState: "pass" | "fail" | "needsVerification";
         HouseholdBudgetResult: {
             /** Format: double */
             limitSek: null | number;
@@ -2470,6 +3265,10 @@ export interface components {
         ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "locality" | "county" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
         /** @enum {unknown} */
         ListingLinkMode: "preserve" | "current";
+        ListingVersionInput: {
+            /** Format: int64 */
+            version: null | number;
+        };
         LoanInstallment: {
             /** Format: int32 */
             monthOffset: number;
@@ -2516,6 +3315,59 @@ export interface components {
             otherOneTimeCosts: components["schemas"]["OneTimeCostResult"][];
             netOwnershipCost: null | components["schemas"]["NetOwnershipCostResult"];
         };
+        ManualFactValueOfBodyType: {
+            value: components["schemas"]["BodyType"];
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfboolean: {
+            value: boolean;
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfDateOnly: {
+            /** Format: date */
+            value: string;
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfdecimal: {
+            /** Format: double */
+            value: number;
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfDrivetrain: {
+            value: components["schemas"]["Drivetrain"];
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfint: {
+            /** Format: int32 */
+            value: number;
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfIReadOnlyListOfFuelType: {
+            value: components["schemas"]["FuelType"][];
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfServiceDocumentationStatus: {
+            value: components["schemas"]["ServiceDocumentationStatus"];
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfstring: {
+            value: string;
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
+        ManualFactValueOfTransmission: {
+            value: components["schemas"]["Transmission"];
+            /** Format: date-time */
+            observedAt?: null | string;
+        };
         /** @enum {unknown} */
         MissingCategory: "vehicleTax" | "insurance" | "maintenanceAndRepairs" | "residualValue";
         NamedRecurringCostInput: {
@@ -2543,6 +3395,16 @@ export interface components {
             estimatedEquityAtPeriodEndSek: number;
             isComplete: boolean;
         };
+        /** @enum {unknown} */
+        NullableBodyType: "sedan" | "hatchback" | "wagon" | "suv" | "coupe" | "convertible" | "minivan" | "pickup" | "van" | "other" | null;
+        /** @enum {unknown} */
+        NullableDrivetrain: "frontWheelDrive" | "rearWheelDrive" | "allWheelDrive" | null;
+        /** @enum {unknown} */
+        NullableServiceDocumentationStatus: "documented" | "partial" | "absent" | null;
+        /** @enum {unknown} */
+        NullableTransmission: "manual" | "automatic" | null;
+        /** @enum {unknown} */
+        NullableVehicleInputState: "listingOnly" | "legacyPending" | "current" | null;
         OneTimeCostInput: {
             label: string;
             /** Format: double */
@@ -2552,6 +3414,24 @@ export interface components {
             label: string;
             /** Format: double */
             amountSek: number;
+        };
+        PreferenceContribution: {
+            preference: components["schemas"]["PreferenceInput"];
+            assessment: components["schemas"]["CriterionAssessment"];
+            range: components["schemas"]["ScoreRange"];
+            weightedContribution: components["schemas"]["ScoreRange"];
+            explanation: string;
+        };
+        PreferenceInput: {
+            criterionKey: string;
+            /** Format: int32 */
+            weight: number;
+            minimumEvidence: components["schemas"]["EvidenceRequirement"];
+            /** Format: double */
+            zeroPoint?: null | number;
+            /** Format: double */
+            fullPoint?: null | number;
+            preferredValues?: null | components["schemas"]["ComparisonChoice"][];
         };
         PurchaseCashAllocation: {
             /** Format: double */
@@ -2630,6 +3510,21 @@ export interface components {
             schemaVersion: null | number;
             sources: string[];
             draft: components["schemas"]["ListingDraftInput"];
+        };
+        RuleProfileInput: {
+            hardRules?: components["schemas"]["HardRuleInput"][];
+            preferences?: components["schemas"]["PreferenceInput"][];
+            signals?: components["schemas"]["ComparisonSignalInput"][];
+        };
+        RuleProfileResponse: {
+            input: null | components["schemas"]["RuleProfileInput"];
+            /** Format: int64 */
+            revision: number;
+            /**
+             * Format: int32
+             * @default 1
+             */
+            storageVersion: number;
         };
         SavedCostScenarioProblemDetails: {
             type?: null | string;
@@ -2790,11 +3685,27 @@ export interface components {
             expectedRevision: number;
             input: components["schemas"]["HouseholdProfileInput"];
         };
+        SaveRuleProfileRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            input: components["schemas"]["RuleProfileInput"];
+        };
         SaveVehicleDraftRequest: {
             /** Format: int64 */
             expectedRevision: number;
             input: components["schemas"]["VehicleDraftInput"];
             replaceExisting?: boolean;
+        };
+        SaveVehicleFactsRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            input: components["schemas"]["VehicleFactsWrite"];
+        };
+        ScoreRange: {
+            /** Format: double */
+            lower: number;
+            /** Format: double */
+            upper: number;
         };
         /** @enum {unknown} */
         SellerType: "private" | "dealer";
@@ -2810,6 +3721,8 @@ export interface components {
             /** Format: double */
             cautious?: null | number;
         };
+        /** @enum {unknown} */
+        ServiceDocumentationStatus: "documented" | "partial" | "absent";
         SourcedCollectionInputOfEnergyConsumptionInput: {
             values: components["schemas"]["EnergyConsumptionInput"][];
             provenance: components["schemas"]["FieldProvenanceInput"];
@@ -2932,6 +3845,26 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        VehicleComparisonFacts: {
+            purchasePriceSek: components["schemas"]["VehicleFactOfdecimal"];
+            odometerKilometres: components["schemas"]["VehicleFactOfdecimal"];
+            ownerCount: components["schemas"]["VehicleFactOfint"];
+            towBar: components["schemas"]["VehicleFactOfboolean"];
+            transmission: components["schemas"]["VehicleFactOfTransmission"];
+            seats: components["schemas"]["VehicleFactOfint"];
+            modelYear: components["schemas"]["VehicleFactOfint"];
+            fuelTypes: components["schemas"]["VehicleFactOfIReadOnlyListOfFuelType"];
+            bodyType: components["schemas"]["VehicleFactOfBodyType"];
+            drivetrain: components["schemas"]["VehicleFactOfDrivetrain"];
+            locality: components["schemas"]["VehicleFactOfstring"];
+            county: components["schemas"]["VehicleFactOfstring"];
+            towingCapacityKilograms: components["schemas"]["VehicleFactOfint"];
+            inspectionValidThrough: components["schemas"]["VehicleFactOfDateOnly"];
+            serviceDocumentation: components["schemas"]["VehicleFactOfServiceDocumentationStatus"];
+            lastServiceDate: components["schemas"]["VehicleFactOfDateOnly"];
+            lastServiceOdometerKilometres: components["schemas"]["VehicleFactOfdecimal"];
+            serviceNotes: components["schemas"]["VehicleFactOfstring"];
+        };
         VehicleCostInput: {
             candidateKey: string;
             acquisitionType?: components["schemas"]["AcquisitionType"];
@@ -3025,6 +3958,99 @@ export interface components {
             /** Format: int64 */
             revision: number;
             input: null | components["schemas"]["VehicleDraftInput"];
+        };
+        VehicleFactEdits: {
+            purchasePriceSek?: null | components["schemas"]["FactEditOfdecimal"];
+            odometerKilometres?: null | components["schemas"]["FactEditOfdecimal"];
+            ownerCount?: null | components["schemas"]["FactEditOfint"];
+            towBar?: null | components["schemas"]["FactEditOfboolean"];
+            transmission?: null | components["schemas"]["FactEditOfTransmission"];
+            seats?: null | components["schemas"]["FactEditOfint"];
+            modelYear?: null | components["schemas"]["FactEditOfint"];
+            fuelTypes?: null | components["schemas"]["FactEditOfIReadOnlyListOfFuelType"];
+            bodyType?: null | components["schemas"]["FactEditOfBodyType"];
+            drivetrain?: null | components["schemas"]["FactEditOfDrivetrain"];
+            locality?: null | components["schemas"]["FactEditOfstring"];
+            county?: null | components["schemas"]["FactEditOfstring"];
+            towingCapacityKilograms?: null | components["schemas"]["FactEditOfint"];
+            inspectionValidThrough?: null | components["schemas"]["FactEditOfDateOnly"];
+            serviceDocumentation?: null | components["schemas"]["FactEditOfServiceDocumentationStatus"];
+            lastServiceDate?: null | components["schemas"]["FactEditOfDateOnly"];
+            lastServiceOdometerKilometres?: null | components["schemas"]["FactEditOfdecimal"];
+            serviceNotes?: null | components["schemas"]["FactEditOfstring"];
+            conditionNotes?: null | components["schemas"]["FactEditOfstring"][];
+        };
+        VehicleFactOfBodyType: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfBodyType"][];
+        };
+        VehicleFactOfboolean: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfboolean"][];
+        };
+        VehicleFactOfDateOnly: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfDateOnly"][];
+        };
+        VehicleFactOfdecimal: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfdecimal"][];
+        };
+        VehicleFactOfDrivetrain: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfDrivetrain"][];
+        };
+        VehicleFactOfint: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfint"][];
+        };
+        VehicleFactOfIReadOnlyListOfFuelType: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfIReadOnlyListOfFuelType"][];
+        };
+        VehicleFactOfServiceDocumentationStatus: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfServiceDocumentationStatus"][];
+        };
+        VehicleFactOfstring: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfstring"][];
+        };
+        VehicleFactOfTransmission: {
+            state: components["schemas"]["VehicleFactState"];
+            observations: components["schemas"]["FactObservationOfTransmission"][];
+        };
+        VehicleFactsResponse: {
+            /** Format: uuid */
+            vehicleId: string;
+            registrationNumber: string;
+            /** Format: int64 */
+            revision: number;
+            input: null | components["schemas"]["ComparisonFactSet"];
+            listingProposal: null | components["schemas"]["ComparisonFactSet"];
+            /** Format: int64 */
+            currentListingVersion: null | number;
+            /** Format: int64 */
+            factsReviewedListingVersion: null | number;
+            /** Format: int64 */
+            costReviewedListingVersion: null | number;
+            needsListingReview: boolean;
+            /** Format: date-time */
+            costConfirmedAt: null | string;
+            /**
+             * Format: int32
+             * @default 1
+             */
+            storageVersion: number;
+        };
+        /** @enum {unknown} */
+        VehicleFactState: "known" | "unknown" | "notApplicable" | "conflicting";
+        VehicleFactsWrite: {
+            edits?: components["schemas"]["VehicleFactEdits"];
+            /** Format: int64 */
+            expectedListingVersion?: null | number;
+            reviewCurrentListing?: boolean;
+            costConfirmation?: components["schemas"]["CostConfirmationAction"];
         };
         /** @enum {unknown} */
         VehicleInputState: "listingOnly" | "legacyPending" | "current";

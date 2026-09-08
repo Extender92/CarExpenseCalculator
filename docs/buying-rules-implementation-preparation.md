@@ -5,9 +5,11 @@
 Preparation PR #81 was approved and merged as
 `6fc9470f04e0df0fc70b3767d55882c117c00c2f`; its merged-main CI passed. The user
 then explicitly assigned implementation on `feature/63-buying-rules-scores`.
-#63 is `status:in-progress`. Core contracts, independent rule evaluation,
-weighted score intervals, ordering, Swedish signals and tests are implemented
-on that branch, pending separate approved PR merge. See the
+#63 is closed through approved PR #82, merged as
+`7e5514c376311863084c0c3201e9c263a0bcd884`. Core contracts, independent rule
+evaluation, weighted score intervals, ordering, Swedish signals and tests are
+on main. Issue #64 now implements [trusted storage/API composition](comparison-api.md)
+on its PR branch, pending separate merge approval. See the
 [implemented contract](comparison-and-buying-scores.md#implemented-core-evaluation-63).
 
 The user confirmed one price clarification: current purchase cost input owns
@@ -23,12 +25,10 @@ expenses, so a negative complete ownership cost cannot be produced. Regression
 tests preserve that validation and exercise negative anchors without adding a
 cost-total injection route or broadening #63 into a 3A economic model change.
 
-This implementation has no storage/API/UI changes; #64 must implement trusted
-mapping for persisted facts, input confirmations and legacy review impacts.
-The preparation audit below records the original handoff. Its documentation-only
-publication instructions do not replace this explicitly assigned implementation:
-the implementation PR uses `Closes #63` only after acceptance, needs green CI,
-and requires its own separate merge approval. #64-#67 remain blocked meanwhile.
+The #63 implementation had no storage/API/UI changes. Its #64 successor adds
+trusted mapping for persisted facts, confirmations and review impacts; #65–#67
+remain dependent on later delivery. The preparation audit below is a historical
+handoff, not the current issue status or an instruction to repeat its publication.
 
 ## Preparation readiness and authority (2026-09-07)
 
