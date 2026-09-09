@@ -14,8 +14,10 @@ generated frontend types (#59) and the [Swedish household workspace](household-w
 [verification report](household-stage-3a-verification-report.md) and merged
 through PR #78. Stage 3A is complete. Stage 3B facts, rules, storage/API, full
 inventory, workspace and PDF (#62–#66 plus #85) are merged; the
-[#67 preparation](comparison-stage-3b-preparation.md) covers the remaining
-whole-stage acceptance and evidence report.
+[#67 preparation](comparison-stage-3b-preparation.md) is followed by the
+[whole-stage acceptance report](comparison-stage-3b-verification-report.md).
+Its automated and practical checks are verified on the acceptance branch;
+separate merge approval and stage-completion review remain.
 The implemented HTTP contracts are in [Household API](household-api.md),
 [Manual calculator](manual-calculator.md) and [URL analysis](url-analysis.md).
 

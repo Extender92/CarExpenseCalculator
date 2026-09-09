@@ -60,9 +60,12 @@ The [#66 PDF report](comparison-pdf.md) is now merged through approved PR #89,
 as `72ded81784950860ab9ab186a5f4c30974ee2951`. Its new baseline is 1,012 backend,
 273 frontend and 63 Chromium tests. The
 [#67 preparation](comparison-stage-3b-preparation.md) verifies all functional
-dependencies and maps remaining stage acceptance. #67 stays `status:blocked`
-until that preparation is separately merged and readiness rechecked; no open
-product decision was found. Actual execution still requires explicit assignment.
+dependencies and was merged through approved PR #90. After readiness was
+rechecked, the user assigned execution and #67 moved to `status:in-progress`.
+The [acceptance report](comparison-stage-3b-verification-report.md) records
+1,012 backend, 273 frontend and 69 Chromium passes plus fresh PDF/native-print
+inspection. Separate acceptance merge approval remains; #12 and the milestone
+stay open until the final stage audit. No later work is assigned by this update.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 
 | Key | Issue | Deliverable | Prerequisite work |

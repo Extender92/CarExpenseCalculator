@@ -93,10 +93,12 @@ approved PR #87 (`4ba0a0b0f386f7e077c4466a046726cdf3a9df97`) with
 [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144).
 The [#66 PDF report](comparison-pdf.md) is delivered through approved PR #89,
 merged as `72ded81784950860ab9ab186a5f4c30974ee2951`. The
-[#67 acceptance preparation](comparison-stage-3b-preparation.md) audits the
-implemented stage and remaining practical checks. Final whole-stage acceptance
-and its committed evidence report remain #67; preparation alone does not close
-the tracker or milestone.
+[#67 acceptance preparation](comparison-stage-3b-preparation.md) is followed by
+the [whole-stage verification report](comparison-stage-3b-verification-report.md):
+1,012 backend, 273 frontend and 69 Chromium tests, fresh PDF/native-print
+inspection and six joined lifecycle regressions. This is verified acceptance
+branch work; separate merge approval and final review of #12/milestone 3B
+remain. No later milestone is activated by this report.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,

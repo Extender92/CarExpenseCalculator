@@ -127,6 +127,14 @@ Unraid data and live AI were not used. Whole-stage acceptance remains #67.
 
 ### Execution notes
 
+A separate fresh stage session is now recorded in the
+[#67 acceptance report](comparison-stage-3b-verification-report.md#fresh-pdf-and-native-print-observations).
+It generated new 34/39/71/337-page PDFs, checked every page's bounds and all
+121-month/50+50 content, visually reviewed representative pages, and repeated
+native print/cancel/retry and 390px inspection after realistic edits. The
+earlier feature evidence below remains historical; #67's separate merge
+approval and stage audit are still pending.
+
 The baseline was 1,012 backend, 255 frontend and 55 Chromium tests. Local
 backend restore/build/test passed all **1,012** tests with zero warnings/errors,
 failures or skips. Frontend lint/test/build passed **273** tests; the full

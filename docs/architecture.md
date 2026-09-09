@@ -243,8 +243,11 @@ Native printing waits for rendering and used fonts; cancellation is not saving.
 No server renderer, additional API, schema change, runtime package or report
 history is introduced. Implementation is merged through approved PR #89. The
 [#67 preparation](comparison-stage-3b-preparation.md) maps implemented contracts
-to whole-stage tests and practical evidence without proposing new layers,
-endpoints or migrations; execution and its final report remain separate work.
+to whole-stage tests and practical evidence. The
+[execution report](comparison-stage-3b-verification-report.md) now records the
+joined browser lifecycles and fresh PDF/native-print checks on the acceptance
+branch. No production layers, endpoints, types or migrations changed; separate
+acceptance merge approval remains.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

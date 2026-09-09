@@ -375,13 +375,22 @@ test("a malformed or stale next generation cannot be exported; direct report nav
     delete value.views.cautious;
     await route.fulfill({ response: upstream, json: value });
   });
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Öppna rapport", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByText("Resultaten är inaktuella.", { exact: false }),
-  ).toBeVisible();
+  try {
+    await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
+    // Busy state alone is insufficient: wait until the malformed response was
+    // actually read and rejected before checking that export stays blocked.
+    await expect(
+      page.getByText(/Ett komplett jämförelsesvar kunde inte läsas/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Öppna rapport", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      page.getByText("Resultaten är inaktuella.", { exact: false }),
+    ).toBeVisible();
+  } finally {
+    await page.unrouteAll({ behavior: "wait" });
+  }
 });
 
 test("A2/A8: report separates ownership cost, cash outflow and internal repair saving", async ({
