@@ -10,6 +10,11 @@ const ComparisonPage = lazy(() =>
     default: module.ComparisonPage,
   })),
 );
+const ComparisonReportPage = lazy(() =>
+  import("@/pages/ComparisonReportPage").then((module) => ({
+    default: module.ComparisonReportPage,
+  })),
+);
 
 const ManualCalculatorPage = lazy(() =>
   import("@/pages/ManualCalculatorPage").then((module) => ({
@@ -44,6 +49,7 @@ export function App() {
           }
         >
           <Routes>
+            <Route path="search/report" element={<ComparisonReportPage />} />
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="search" element={<ComparisonPage />} />

@@ -266,14 +266,16 @@ preserved. No project-attributable Windows Temp remainder was identified.
 There is no cleanup helper script. The deferred #64/#85 inventories and the
 pre-existing Node installation under `temp/issue64/` were left untouched.
 
-### Issue #66 PDF handoff (not executed evidence)
+### Issue #66 PDF evidence
 
-The [preparation audit](comparison-pdf-preparation.md#required-verification-for-implementation)
-maps the report scope onto the merged #65 complete-response and exact-number
-contracts. Existing baseline: 1,012 backend, 255 frontend, 55 Chromium tests.
-No PDF behavior is delivered or verified by this documentation preparation.
+The [report implementation and evidence](comparison-pdf.md#verification-evidence)
+maps each report requirement to frontend, Chromium and practical checks on
+`feature/66-comparison-pdf`. The preparation baseline was 1,012 backend,
+255 frontend and 55 Chromium tests; preparation itself did not verify PDF.
+The report document records final counts, actual multipage files, native
+print/cancel/retry checks, development reruns and browser-controlled limitations.
 
-Required new evidence includes immutable capture through edits/saves/late
+Coverage includes immutable capture through edits/saves/late
 responses; stale/invalid-generation gating versus valid partial export; complete
 1/50/51/101/250-car membership independent of page/expanded sections; captured
 server order and exact assumptions; all three sensitivities, evidence, review
@@ -281,8 +283,9 @@ items and unsaved flags; actual Swedish multipage PDFs without clipping; print
 cancel/return/reload/deletion behavior; and no writes, recalculation, AI or report
 archive. Inspect complete and partial PDF files visually in addition to automated
 print-media checks. Reuse A1–A11/B1–B8 references and existing cross-route tests.
-The browser's actual print/save-PDF action needs a practical check, separate
-from Playwright's headless PDF output. Record skipped checks and layout limitations.
+The browser's actual print/save-PDF dialog was checked separately from headless
+PDF generation. Whole-stage #67 acceptance and an approved #66 merge remain
+separate gates; no milestone completion is claimed here.
 
 ## Verification commands by work area
 

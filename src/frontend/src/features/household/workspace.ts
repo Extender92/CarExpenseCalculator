@@ -154,6 +154,7 @@ export class HouseholdWorkspace {
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
   private tombstones = new Set<string>();
   private started = false;
+  private reportActive = false;
   state: WorkspaceState = {
     profile: initialProfile(),
     savedProfile: emptyProfileResponse(),
@@ -217,7 +218,12 @@ export class HouseholdWorkspace {
     }
   }
   onFocus() {
-    if (this.started) void this.refresh();
+    if (this.started && !this.reportActive) void this.refresh();
+  }
+  setReportActive(active: boolean) {
+    const returning = this.reportActive && !active;
+    this.reportActive = active;
+    if (returning) this.onFocus();
   }
   dispose() {
     this.readAbort?.abort();
@@ -357,7 +363,7 @@ export class HouseholdWorkspace {
     this.previewAbort?.abort();
     if (this.previewTimer) clearTimeout(this.previewTimer);
     this.set({ stale: true, calculating: false });
-    if (!this.calculationActive) return;
+    if (!this.calculationActive || this.reportActive) return;
     this.previewTimer = setTimeout(() => {
       this.previewTimer = null;
       void this.calculate();

@@ -43,6 +43,7 @@ import {
   ruleErrors,
   validResponse,
 } from "./preview";
+import { captureReport, type ComparisonReportInput } from "./report-model";
 
 export const emptyRules = (): Rules => ({
   hardRules: [],
@@ -98,7 +99,10 @@ export interface ComparisonState {
   sort: "cost" | "score";
   page: number;
   expanded: string[];
+  editorPanels: string[];
   requestBytes: number;
+  report: ComparisonReportInput | null;
+  reportInvalidated: boolean;
 }
 const fingerprint = (value: unknown) => {
   try {
@@ -137,7 +141,10 @@ export class ComparisonWorkspace {
     sort: "cost",
     page: 1,
     expanded: [],
+    editorPanels: [],
     requestBytes: 0,
+    report: null,
+    reportInvalidated: false,
   };
   private listeners = new Set<() => void>();
   private generation = 0;
@@ -156,6 +163,9 @@ export class ComparisonWorkspace {
   private unsubscribe: (() => void) | null = null;
   private unsubscribeWrites: (() => void) | null = null;
   private expectedVehicles: Map<string, string> | null = null;
+  private reportActive = false;
+  private acceptedGeneration = -1;
+  private acceptedResponse: ComparisonResponse | null = null;
   private rememberWrite(
     id?: string,
     revision?: Numeric,
@@ -261,7 +271,54 @@ export class ComparisonWorkspace {
     else this.start();
   }
   onFocus() {
-    if (this.started && !this.state.busy) void this.refresh();
+    if (this.started && !this.state.busy && !this.reportActive)
+      void this.refresh();
+  }
+  setReportActive(active: boolean) {
+    const returning = this.reportActive && !active;
+    this.reportActive = active;
+    if (!active && (this.state.report || this.state.reportInvalidated))
+      this.set({ report: null, reportInvalidated: false });
+    if (returning) {
+      if (this.state.mode === "manual") this.schedule();
+      else this.onFocus();
+    }
+  }
+  reportBlockReason(): string | null {
+    const s = this.state;
+    if (s.busy || this.household.state.busy)
+      return "Vänta tills sparningen är klar innan rapporten öppnas.";
+    if (s.loading || this.household.state.loading)
+      return "Vänta tills aktuella underlag har lästs.";
+    if (s.remote || s.problem?.code === "comparisonBaselineConflict")
+      return "Granska det ändrade serverunderlaget och beräkna jämförelsen på nytt.";
+    if (
+      s.stale ||
+      s.calculating ||
+      this.timer ||
+      this.queued ||
+      Object.keys(s.errors).length ||
+      !s.response ||
+      s.response !== this.acceptedResponse ||
+      this.acceptedGeneration !== this.generation ||
+      s.response.mode !== s.mode
+    )
+      return "Rapporten behöver en aktuell jämförelse. Välj Beräkna nu och invänta resultatet.";
+    if (s.response.views.baseline.candidates.length === 0)
+      return "Lägg till bilar innan du öppnar en rapport.";
+    return null;
+  }
+  openReport(): boolean {
+    const reason = this.reportBlockReason();
+    if (reason) {
+      this.set({ notice: reason });
+      return false;
+    }
+    this.set({
+      report: captureReport(this.state.response!, this.state.sort),
+      reportInvalidated: false,
+    });
+    return true;
   }
   dispose() {
     this.disposed = true;
@@ -303,6 +360,14 @@ export class ComparisonWorkspace {
   }
   setExpanded(expanded: string[]) {
     this.set({ expanded });
+  }
+  setEditorPanel(key: string, open: boolean) {
+    if (this.state.editorPanels.includes(key) === open) return;
+    this.set({
+      editorPanels: open
+        ? [...this.state.editorPanels, key]
+        : this.state.editorPanels.filter((k) => k !== key),
+    });
   }
   setMode(mode: ComparisonState["mode"]) {
     if (mode === this.state.mode) return;
@@ -384,7 +449,8 @@ export class ComparisonWorkspace {
     });
   }
   async refresh(ownWrite = this.expectedVehicles !== null) {
-    if (this.state.mode !== "stored" || this.disposed) return;
+    if (this.state.mode !== "stored" || this.disposed || this.reportActive)
+      return;
     this.readAbort?.abort();
     const controller = new AbortController();
     this.readAbort = controller;
@@ -889,14 +955,14 @@ export class ComparisonWorkspace {
   }
   schedule() {
     this.invalidate();
-    if (!this.started || this.disposed) return;
+    if (!this.started || this.disposed || this.reportActive) return;
     this.timer = setTimeout(() => {
       this.timer = null;
       void this.calculate();
     }, 500);
   }
   async calculate() {
-    if (this.disposed) return;
+    if (this.disposed || this.reportActive) return;
     this.invalidate();
     this.set({ errors: {}, notice: null, problem: null });
     if (this.activeRequests.size >= 2) {
@@ -944,6 +1010,8 @@ export class ComparisonWorkspace {
         throw new ComparisonApiError(409, "comparisonBaselineConflict");
       }
       this.expectedVehicles = null;
+      this.acceptedGeneration = current;
+      this.acceptedResponse = response;
       this.set({
         response,
         stale: false,
@@ -1152,6 +1220,11 @@ export class ComparisonWorkspace {
       facts,
       selected: this.state.selected === id ? null : this.state.selected,
       response: null,
+      ...(this.state.report?.response.views.baseline.candidates.some(
+        (c) => c.vehicleId === id,
+      )
+        ? { report: null, reportInvalidated: true }
+        : {}),
     });
     this.schedule();
   }

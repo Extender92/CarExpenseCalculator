@@ -11,6 +11,7 @@ import type { ComparisonResponse, Result, Schema } from "./api";
 import { criteria, eligibilityLabels, labelFor, reasonText } from "./catalogue";
 import { Evidence } from "./FactsEditor";
 import { economicLink, errorTarget } from "./navigation";
+import { budgetLabels, scoreText } from "./report-format";
 
 const linkClass = "text-cyan-300 underline underline-offset-4";
 type Column = { label: string; render: (r: Result) => ReactNode };
@@ -149,21 +150,8 @@ function Category({
   );
 }
 function Score({ value }: { value: Schema<"ScoreRange"> | null }) {
-  return value ? (
-    <span>
-      [{formatNumeric(value.lower)}, {formatNumeric(value.upper)}]
-    </span>
-  ) : (
-    <span>Ingen poäng</span>
-  );
+  return <span>{scoreText(value)}</span>;
 }
-const budgetLabels = {
-  notConfigured: "Ingen budgetgräns angiven",
-  withinLimit: "Inom budget",
-  exceeded: "Budgeten överskrids",
-  unknown: "Kan inte bedömas ännu",
-  invalid: "Ogiltig budget",
-};
 const detailPanels = [
   "Krav, prioriteringar och källor",
   "Finansiering och värdeminskning",

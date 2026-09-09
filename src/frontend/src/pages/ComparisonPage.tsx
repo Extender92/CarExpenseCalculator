@@ -124,6 +124,16 @@ export function ComparisonPage() {
           <Button onClick={() => run(() => void workspace.calculate())}>
             Beräkna nu
           </Button>
+          <Button
+            variant="secondary"
+            disabled={workspace.reportBlockReason() !== null}
+            aria-describedby="report-help"
+            onClick={() => {
+              if (workspace.openReport()) navigate("/search/report");
+            }}
+          >
+            Öppna rapport
+          </Button>
           {!isManual && (
             <Button
               variant="secondary"
@@ -134,6 +144,10 @@ export function ComparisonPage() {
             </Button>
           )}
         </div>
+        <p id="report-help" className="text-sm text-slate-300">
+          {workspace.reportBlockReason() ??
+            "Rapporten innehåller alla bilar, alla detaljavsnitt och aktuella osparade antaganden."}
+        </p>
         <p className="text-sm text-slate-300">
           Aktivt läge:{" "}
           {h.profile.activeSensitivityMode === "favorable"
@@ -155,7 +169,12 @@ export function ComparisonPage() {
         {state.rulesDirty && (
           <p className="text-amber-200">Osparade köpkrav och prioriteringar</p>
         )}
-        <details>
+        <details
+          open={state.editorPanels.includes("profile")}
+          onToggle={(e) =>
+            workspace.setEditorPanel("profile", e.currentTarget.open)
+          }
+        >
           <summary className="cursor-pointer font-semibold">
             Hushållsprofil – visa och redigera
           </summary>
@@ -174,7 +193,12 @@ export function ComparisonPage() {
             {h.notice && <p role="status">{h.notice}</p>}
           </div>
         </details>
-        <details>
+        <details
+          open={state.editorPanels.includes("rules")}
+          onToggle={(e) =>
+            workspace.setEditorPanel("rules", e.currentTarget.open)
+          }
+        >
           <summary className="cursor-pointer font-semibold">
             Köpkrav och prioriteringar
           </summary>
