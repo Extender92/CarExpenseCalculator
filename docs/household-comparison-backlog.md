@@ -7,7 +7,7 @@ The [product plan](household-comparison-plan.md), normative
 [comparison](comparison-and-buying-scores.md) specifications, and
 [verification plan](household-comparison-verification.md) define this queue.
 The original planning PR defined the queue without implementing its features.
-The documentation gate and stage 3A are now complete. Trackers are overviews,
+The documentation gate and stages 3A/3B are complete. Trackers are overviews,
 never implementation assignments.
 
 Completed documentation gate: [PR #54](https://github.com/Extender92/CarExpenseCalculator/pull/54).
@@ -33,8 +33,9 @@ approved final merge `15b281f` and green merged-main CI: 699 backend,
 
 ## Stage 3B - Comparison and buying scores
 
-Tracker: [#12](https://github.com/Extender92/CarExpenseCalculator/issues/12). Existing milestone ID 3 is
-renamed [3B - Comparison and buying scores](https://github.com/Extender92/CarExpenseCalculator/milestone/3).
+Tracker: [#12](https://github.com/Extender92/CarExpenseCalculator/issues/12).
+Milestone: [3B - Comparison and buying scores](https://github.com/Extender92/CarExpenseCalculator/milestone/3).
+Both are closed after the final audit on 2026-09-09.
 Every 3B item depends transitively on completed 3A acceptance, not on closing
 a tracker merely because its planning has been refined.
 
@@ -50,22 +51,25 @@ with [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/
 Its [storage/API contract](comparison-api.md) is on main. The user confirmed
 comparison of all saved cars without a fixed total count on 2026-09-08. The new
 [#85 backend handoff](all-vehicle-comparison-preparation.md) precedes #65.
-Six of the seven current stage 3B implementation items are delivered.
+All seven stage 3B implementation items are delivered.
 The [#65 workspace preparation](comparison-workspace-preparation.md) records
 all six accepted choices. Preparation PR #84, #85 / PR #86 and #65 / PR #87 are
 merged. Main `4ba0a0b0f386f7e077c4466a046726cdf3a9df97` has
 [green CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144):
 1,012 backend, 255 frontend and 55 Chromium tests pass.
 The [#66 PDF report](comparison-pdf.md) is now merged through approved PR #89,
-as `72ded81784950860ab9ab186a5f4c30974ee2951`. Its new baseline is 1,012 backend,
+as `72ded81784950860ab9ab186a5f4c30974ee2951`. Its feature baseline was 1,012 backend,
 273 frontend and 63 Chromium tests. The
 [#67 preparation](comparison-stage-3b-preparation.md) verifies all functional
 dependencies and was merged through approved PR #90. After readiness was
-rechecked, the user assigned execution and #67 moved to `status:in-progress`.
+rechecked, the user assigned execution and subsequently approved its merge.
 The [acceptance report](comparison-stage-3b-verification-report.md) records
 1,012 backend, 273 frontend and 69 Chromium passes plus fresh PDF/native-print
-inspection. Separate acceptance merge approval remains; #12 and the milestone
-stay open until the final stage audit. No later work is assigned by this update.
+inspection. [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91)
+merged as `d096aecec539d44d231fecf1412a6fc4560e005b`, with
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34397026629).
+Issue #67 and every item below are closed; the final audit also closed #12 and
+the milestone. No later work is assigned by this update.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 
 | Key | Issue | Deliverable | Prerequisite work |
@@ -84,14 +88,18 @@ These issues remain **status:needs-refinement** and do not block 3A/3B. Registry
 and mileage-based service work have no delivery milestone until separately
 refined. AI assistance belongs to milestone 5 under tracker #14.
 
-| Key | Issue | Refinement | Prerequisite work |
+| Key | Issue | Refinement | Completed prerequisite work |
 | --- | --- | --- | --- |
-| F1 | [#68](https://github.com/Extender92/CarExpenseCalculator/issues/68) | Refine permitted registry access and evidence freshness | Documentation merge |
-| F2 | [#69](https://github.com/Extender92/CarExpenseCalculator/issues/69) | Refine evidence-backed maintenance and repair AI suggestions | A7 |
-| F3 | [#70](https://github.com/Extender92/CarExpenseCalculator/issues/70) | Refine mileage-triggered service and tyre scheduling | A7 |
+| F1 | [#68](https://github.com/Extender92/CarExpenseCalculator/issues/68) | Refine permitted registry access and evidence freshness | PR #54 merged |
+| F2 | [#69](https://github.com/Extender92/CarExpenseCalculator/issues/69) | Refine evidence-backed maintenance and repair AI suggestions | PR #54 merged; #61 delivered through PR #78 |
+| F3 | [#70](https://github.com/Extender92/CarExpenseCalculator/issues/70) | Refine mileage-triggered service and tyre scheduling | PR #54 merged; #61 delivered through PR #78 |
 
 Tracker [#14](https://github.com/Extender92/CarExpenseCalculator/issues/14) includes later evidence-backed
-maintenance/repair suggestions with explicit adoption.
+maintenance/repair suggestions with explicit adoption. Its deterministic
+prerequisites #2, #11, #61 and #12 are complete. The remaining runtime,
+evidence, contract, limit and evaluation decisions still require refinement.
+No open issue is `status:ready` or `status:in-progress`; see the
+[planning checkpoint](roadmap.md#current-planning-checkpoint).
 [#13](https://github.com/Extender92/CarExpenseCalculator/issues/13) and
 [#15](https://github.com/Extender92/CarExpenseCalculator/issues/15) remain on hold. Closed milestones
 0-2 are not reopened. No provider, AI call, implementation, or deployment is

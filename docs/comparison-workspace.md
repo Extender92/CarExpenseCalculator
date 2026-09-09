@@ -5,8 +5,10 @@
 Delivered through approved [PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87)
 on 2026-09-08, merge `4ba0a0b0f386f7e077c4466a046726cdf3a9df97`, with
 [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144).
-PDF remains #66, with a [preparation audit](comparison-pdf-preparation.md);
-complete stage 3B acceptance remains #67. See the
+PDF was delivered separately through #66 / PR #89, followed by complete stage
+3B acceptance through #67 / PR #91. See the
+[stage closure](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+and the feature-level
 [verification evidence](household-comparison-verification.md#issue-65-workspace-evidence).
 
 The screen uses the existing [comparison API](comparison-api.md) and

@@ -191,7 +191,8 @@ equality, including draft adoption. Both shared profiles survive car deletion.
 UI (#65), PDF (#66) and acceptance (#67) are separate deliveries. Approved PR #87
 delivers the [comparison workspace](comparison-workspace.md) for #65 and enables the
 existing `RuleBasedSearch` availability status. PDF (#66) is merged through
-approved PR #89; stage acceptance remains #67. Discovery/AI are not enabled.
+approved PR #89; stage acceptance is delivered through #67 / approved PR #91.
+Discovery/AI are not enabled.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
 reusable frontend state and the per-request boundary of server ordering.
 The [#85 extension](comparison-api.md#complete-set-comparison-85), implemented
@@ -245,9 +246,11 @@ history is introduced. Implementation is merged through approved PR #89. The
 [#67 preparation](comparison-stage-3b-preparation.md) maps implemented contracts
 to whole-stage tests and practical evidence. The
 [execution report](comparison-stage-3b-verification-report.md) now records the
-joined browser lifecycles and fresh PDF/native-print checks on the acceptance
-branch. No production layers, endpoints, types or migrations changed; separate
-acceptance merge approval remains.
+joined browser lifecycles, fresh PDF/native-print checks, the approved PR #91
+merge and green merged-main CI. All 3B implementation issues, tracker #12 and
+the milestone are closed. No production layers, endpoints, types or migrations
+changed in acceptance. The [planning checkpoint](roadmap.md#current-planning-checkpoint)
+identifies later work that remains unimplemented or paused.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

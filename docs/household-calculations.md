@@ -138,8 +138,8 @@ sensitivity across candidates. See [cost tests](../tests/backend/CarExpenseCalcu
 [energy tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdEnergyCalculatorTests.cs)
 and [validation tests](../tests/backend/CarExpenseCalculator.Core.UnitTests/HouseholdCostInputValidationTests.cs).
 Actual payment/funding reconciliation is implemented by #57 as described below;
-saved/legacy-input integration and the practical whole-stage acceptance remain
-later issues.
+saved/legacy-input integration was delivered through #58–#60, followed by
+practical whole-stage acceptance #61 / PR #78.
 
 ## Implemented Core leasing and payments
 
@@ -345,8 +345,10 @@ Existing v1 writes cannot reintroduce a scenario on a converted car; they return
 the typed `householdTransitionRequired` store error, mapped to HTTP 409 by #59.
 Every old/new whole-vehicle deletion path removes listings, old/new inputs,
 child rows/results and a matching UUID/registration draft, while retaining the
-household profile and empty draft revision metadata. Rules/evaluations remain
-future 3B work and have no placeholder tables.
+household profile and empty draft revision metadata. The later delivered
+[comparison persistence](comparison-api.md) also removes vehicle-owned facts
+and confirmations while preserving the shared rule profile. Evaluations are
+calculated on demand without result-history tables.
 
 The real migration is `20260906151351_AddHouseholdPersistence`. See the
 [explicit migration, backup and destructive rollback procedure](deployment-unraid.md#household-storage-migration-and-rollback).

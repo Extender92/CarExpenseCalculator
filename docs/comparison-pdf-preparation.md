@@ -8,7 +8,8 @@ The [implemented report and test evidence](comparison-pdf.md) describe the
 delivered branch behavior and actual PDF/native-dialog inspection. The original
 audit and proposed seams below are retained as the planning record, not as
 outstanding readiness instructions. The [#67 preparation](comparison-stage-3b-preparation.md)
-now covers the subsequent whole-stage acceptance.
+was followed by completed whole-stage acceptance through approved PR #91; see
+the [acceptance and closure record](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure).
 
 Audited on 2026-09-09 against `main` commit
 `4ba0a0b0f386f7e077c4466a046726cdf3a9df97`. The worktree was clean and

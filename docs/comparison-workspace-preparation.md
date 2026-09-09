@@ -16,9 +16,10 @@ merged as `4ba0a0b0f386f7e077c4466a046726cdf3a9df97` with
 The [implemented workspace](comparison-workspace.md) and
 [verification evidence](household-comparison-verification.md#issue-65-workspace-evidence)
 describe that delivered implementation: 1,012 backend, 255 frontend and 55
-Chromium tests pass. [PDF preparation](comparison-pdf-preparation.md) is next;
-PDF and whole-stage acceptance remain #66–#67. The earlier audit below is
-historical context.
+Chromium tests passed at that feature's delivery. [PDF preparation](comparison-pdf-preparation.md)
+was followed by #66 / PR #89 and whole-stage acceptance #67 / PR #91.
+The [acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records completed stage 3B. The earlier audit below is historical context.
 
 The [product plan](household-comparison-plan.md),
 [comparison specification](comparison-and-buying-scores.md),

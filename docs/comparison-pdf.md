@@ -8,7 +8,9 @@ dependencies #65/#85. Issue #66 is closed. The feature verification below was
 performed on `feature/66-comparison-pdf` at `bd0c92b95927cabcffbfb99d02a2a804ef40a4f6`;
 [PR CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34344637466)
 passed before the approved merge. The [#67 preparation](comparison-stage-3b-preparation.md)
-defines the remaining whole-stage evidence; feature delivery does not complete it.
+defined the separate whole-stage evidence, subsequently delivered through #67 /
+approved PR #91. The [acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records green main CI and final closure of tracker #12 and milestone 3B.
 HTTP, storage and all existing versions are unchanged. There is no new runtime
 package, export service, result calculation or report archive.
 
@@ -123,7 +125,8 @@ Large complete reports can be long: the 120-month case intentionally retains
 each payment, error and source record. Browser pagination can split long rows;
 the following page repeats the table/registration headings. Other browsers,
 physical printers and user-selected paper/header settings were not tested.
-Unraid data and live AI were not used. Whole-stage acceptance remains #67.
+Unraid data and live AI were not used. Whole-stage acceptance was subsequently
+delivered through #67, independently of these feature-level observations.
 
 ### Execution notes
 
@@ -132,8 +135,8 @@ A separate fresh stage session is now recorded in the
 It generated new 34/39/71/337-page PDFs, checked every page's bounds and all
 121-month/50+50 content, visually reviewed representative pages, and repeated
 native print/cancel/retry and 390px inspection after realistic edits. The
-earlier feature evidence below remains historical; #67's separate merge
-approval and stage audit are still pending.
+earlier feature evidence remains historical; #67 is now delivered through
+approved PR #91 and the final stage audit is complete.
 
 The baseline was 1,012 backend, 255 frontend and 55 Chromium tests. Local
 backend restore/build/test passed all **1,012** tests with zero warnings/errors,

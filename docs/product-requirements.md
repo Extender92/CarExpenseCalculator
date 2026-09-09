@@ -15,9 +15,12 @@ The application must remain useful without external AI. Deterministic normalizat
 
 ## Usage modes
 
-### Rule-based search
+### Comparison and buying rules
 
-The user creates a search profile containing hard requirements and softer preferences. Once a permitted listing source is available, a background process can collect candidates, reject hard-rule failures, and rank the remaining cars.
+The user edits common hard requirements and preferences and compares all saved
+or explicitly entered registered candidates. The implemented comparison keeps
+rejected and incomplete cars visible, with explainable scores and evidence gaps.
+Automatic collection from a permitted listing source is separate paused work.
 
 ### URL analysis
 
@@ -27,9 +30,9 @@ integration, clearly marks missing and unverified values, permits manual
 correction, and can store one current reviewed listing per vehicle. Extraction
 failure leaves manual entry available.
 
-Rule evaluation and side-by-side comparison are applied to these saved candidates
-in stage 3B, after household calculations in stage 3A; they are not part of the
-URL-ingestion milestone itself.
+Rule evaluation and side-by-side comparison apply to these saved candidates
+through completed stage 3B, following household calculations in stage 3A.
+They remain separate from URL ingestion.
 
 ### Manual calculation
 
@@ -58,9 +61,13 @@ rule/score engine and comparison persistence/API (#62–#64) are merged through
 PRs #80, #82 and #83. The all-car backend #85 / PR #86 and Swedish comparison
 interface #65 / PR #87 are also merged. The [PDF report](comparison-pdf.md)
 (#66 / PR #89) is merged, including feature-level PDF/native-print verification.
-The [#67 preparation](comparison-stage-3b-preparation.md) defines the remaining
-whole-stage acceptance. Automatic discovery, advisory AI review and image review
-remain future work.
+Whole-stage acceptance (#67) is delivered through approved PR #91. The
+[3B verification report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records the merge, green main CI and completed practical session. All seven 3B
+implementation issues, tracker #12 and the milestone are closed.
+Automatic discovery, advisory AI review and image review remain future work;
+the [planning checkpoint](roadmap.md#current-planning-checkpoint) identifies
+their unchanged refinement and pause gates.
 
 Stage 3A Core supports shared household assumptions, purchase financing and
 partial ownership costs, including energy, compound depreciation, separate
@@ -73,15 +80,15 @@ acceptance (#61) was merged through PR #78 with green CI. The
 [verification report](household-stage-3a-verification-report.md) records the
 tested implementation, results and limits. Stage 3A is complete.
 
-## Planned household calculation and comparison direction
+## Delivered household calculation and comparison direction
 
-The work is split into household calculations (3A, complete), then comparison
-and configurable buying scores (3B, in progress). The objective is to compare
+The work was split into household calculations (3A, complete), then comparison
+and configurable buying scores (3B, complete). The objective is to compare
 cars under the same household assumptions and determine estimated total cost
 after the chosen months or years, with a prominent monthly equivalent.
 
 - All supported car fuel types have equal priority, including combustion,
-  electric, and hybrid vehicles. Purchase and leasing are in planned scope;
+  electric, and hybrid vehicles. Purchase and leasing are implemented;
   keeping an already owned car is not a planned comparison mode.
 - One editable household profile owns common driving, cash, financing, energy,
   and budget assumptions. Purchase cash and the startup budget are separate.
@@ -91,7 +98,7 @@ after the chosen months or years, with a prominent monthly equivalent.
   named saved scenarios per car and no superseded calculation history.
 - The comparison workspace compares all current saved cars without a fixed
   maximum vehicle count. Internal batches/transfers do not restrict membership;
-  #85 adds the required complete-set backend before #65. The UI contains a main
+  #85 delivered the complete-set backend before #65. The UI contains a main
   total-cost table and multiple breakdown tables. Incomplete candidates stay
   visible with explicit missing calculations and partial totals.
 - User-defined favorable, baseline, and cautious sensitivity views operate on
@@ -112,4 +119,5 @@ and complete-cost ordering are recorded in the normative
 [Comparison and buying scores](comparison-and-buying-scores.md) specifications.
 The delivery stages and separate later refinement work are recorded in the
 [Household calculations and comparison plan](household-comparison-plan.md).
-These are target requirements, not claims about current implementation.
+The linked acceptance reports identify the delivered 3A/3B behavior. Explicitly
+later registry, AI and mileage-based service work remains unimplemented.

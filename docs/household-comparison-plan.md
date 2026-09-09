@@ -3,7 +3,7 @@
 ## Status and authority
 
 These decisions were agreed on 2026-09-06. Stages **3A, Household calculations**,
-and **3B, Comparison and buying scores**, are specified. Shared inputs, purchase
+and **3B, Comparison and buying scores**, are implemented and complete. Shared inputs, purchase
 financing and partial ownership costs with energy, depreciation and sensitivity
 are implemented in Core, together with leasing, calendar payments, cash/cost
 reconciliation and startup/average-month budgets. Infrastructure implements one
@@ -16,8 +16,10 @@ through PR #78. Stage 3A is complete. Stage 3B facts, rules, storage/API, full
 inventory, workspace and PDF (#62–#66 plus #85) are merged; the
 [#67 preparation](comparison-stage-3b-preparation.md) is followed by the
 [whole-stage acceptance report](comparison-stage-3b-verification-report.md).
-Its automated and practical checks are verified on the acceptance branch;
-separate merge approval and stage-completion review remain.
+Acceptance was approved and merged through PR #91 on 2026-09-09, followed by
+green main CI and closure of #67, tracker #12 and milestone 3B. The report's
+[closure record](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+separates the tested branch from its subsequent approved delivery.
 The implemented HTTP contracts are in [Household API](household-api.md),
 [Manual calculator](manual-calculator.md) and [URL analysis](url-analysis.md).
 
@@ -28,6 +30,9 @@ are in [Household calculations](household-calculations.md) and
 and practical acceptance; the [delivery backlog](household-comparison-backlog.md)
 maps the work to GitHub. The original planning PR only published specifications;
 the implemented Core and persistence boundaries above were delivered separately.
+The [current planning checkpoint](roadmap.md#current-planning-checkpoint)
+records remaining refinement work and paused milestones. No later preparation
+or implementation is started by this status synchronization.
 
 ## Objective and accepted decisions
 

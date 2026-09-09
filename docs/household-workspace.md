@@ -6,8 +6,10 @@ Issue #60 implements the Swedish stage 3A frontend over the existing
 [household API](household-api.md) and [calculation/persistence contracts](household-calculations.md).
 It adds no HTTP contracts or migrations. Calculation/result version remains 2;
 storage version remains 1. [Stage acceptance](household-stage-3a-verification-report.md)
-was executed for #61 on the report's identified commit. Cross-vehicle
-comparison tables, ranking, buying scores and PDF export remain stage 3B.
+was executed for #61 and delivered through approved PR #78. Cross-vehicle
+comparison tables, ranking, buying scores and PDF export were delivered in
+stage 3B; its [acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records approved PR #91 and stage closure.
 
 | Route | Interface |
 | --- | --- |
