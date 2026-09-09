@@ -40,7 +40,7 @@ The user enters vehicle, operating, financing, and usage values directly. Saving
 - Show the source and verification state of important facts.
 - Distinguish hard-rule failures, warnings, positive signals, and missing data.
 - Never invent registration numbers, ownership counts, prices, mileage, or vehicle history.
-- Permit side-by-side comparison of saved candidates in a later milestone.
+- Permit side-by-side comparison of saved or explicitly entered candidates.
 - Keep manual calculation and manually entered listing data available if AI or another external service is unavailable.
 
 ## Current delivery status
@@ -55,9 +55,10 @@ The complete URL flow is covered by fake-only automated acceptance from
 independent extraction outcomes through manual review, saved-listing lifecycle,
 and listing-linked calculation versioning. Stage 3B facts, the deterministic
 rule/score engine and comparison persistence/API (#62–#64) are merged through
-PRs #80, #82 and #83. The comparison interface (#65), PDF (#66), whole-stage
-acceptance (#67), automatic discovery, advisory AI review and image review
-remain future work.
+PRs #80, #82 and #83. The all-car backend #85 / PR #86 and Swedish comparison
+interface #65 / PR #87 are also merged. PDF (#66) has a
+[preparation audit](comparison-pdf-preparation.md); PDF, whole-stage acceptance
+(#67), automatic discovery, advisory AI review and image review remain future work.
 
 Stage 3A Core supports shared household assumptions, purchase financing and
 partial ownership costs, including energy, compound depreciation, separate

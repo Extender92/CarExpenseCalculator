@@ -2,10 +2,12 @@
 
 ## Delivery status
 
-Implemented on `feature/65-comparison-workspace`, based on merged #85 / PR #86
-(`885826a9b367337fa3f7610365f69a8ffa1207bf`). This document describes the PR
-implementation, not an approved merge. PDF remains #66 and complete stage 3B
-acceptance remains #67. See the [verification evidence](household-comparison-verification.md#issue-65-workspace-evidence).
+Delivered through approved [PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87)
+on 2026-09-08, merge `4ba0a0b0f386f7e077c4466a046726cdf3a9df97`, with
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144).
+PDF remains #66, with a [preparation audit](comparison-pdf-preparation.md);
+complete stage 3B acceptance remains #67. See the
+[verification evidence](household-comparison-verification.md#issue-65-workspace-evidence).
 
 The screen uses the existing [comparison API](comparison-api.md) and
 [deterministic specification](comparison-and-buying-scores.md). There are no new

@@ -145,7 +145,7 @@ defines the four store interfaces and typed conflict outcomes. The
 [household HTTP layer](household-api.md) exposes these stores and Core previews
 through API-owned DTOs and generated frontend types (#59). The Swedish workspace
 (#60) is implemented. [Stage acceptance evidence](household-stage-3a-verification-report.md)
-for #61 covers the complete flow. Score persistence remains stage 3B work.
+for #61 covers the complete flow. Comparison persistence is delivered through #64.
 No new household result cache or historical tables are introduced.
 
 Issue #62, merged through PR #80, adds the dependency-free `Core.Comparisons` fact foundation. Its
@@ -188,8 +188,8 @@ conflict operations; clients cannot assert evidence or calculated outcomes.
 Per-observation listing versions remain separate from the reviewed version.
 The shared cost writer invalidates input confirmations through Core structural
 equality, including draft adoption. Both shared profiles survive car deletion.
-UI (#65), PDF (#66) and acceptance (#67) are separate deliveries. The #65 PR
-implements the [comparison workspace](comparison-workspace.md) and enables the
+UI (#65), PDF (#66) and acceptance (#67) are separate deliveries. Approved PR #87
+delivers the [comparison workspace](comparison-workspace.md) for #65 and enables the
 existing `RuleBasedSearch` availability status. PDF and stage acceptance remain
 future work, and discovery/AI are not enabled.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
@@ -226,6 +226,15 @@ and four bounded lazy fact reads. The main and seven detail tables consume API
 orders in shared 50-car pages; stale outcomes suppress every recommendation.
 Manual candidate economics reuse household fields in a memory-only route context.
 
+The [#66 PDF preparation](comparison-pdf-preparation.md) proposes a frontend-owned
+`ComparisonReportInput` capturing one accepted complete response and selected
+order, with separate report/evaluation times. A transient print view consumes
+that immutable input, not live editors, lazy reads or paginated DOM. All cars,
+three sensitivity views, assumptions, sources, partial-result reasons and dirty
+flags already exist in the HTTP response. Printing requires no server renderer,
+additional API, schema change or retained report history. Report rendering and
+print CSS remain #66 implementation work; the whole-stage check remains #67.
+
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.
 Purchase and lease candidates share the same profile; lease coverage limits
@@ -256,7 +265,7 @@ One shared registration-linked draft has explicit save, its own revision, no
 automatic expiry, and atomic adoption; opening it does not consume it.
 Saved vehicles continue to require registration numbers. Deleting a vehicle
 removes its associated inputs, listing, derived results, and any associated
-draft, while retaining the shared household profile. Rule profiles remain 3B work.
+draft, while retaining the shared household and rule profiles.
 All vehicle/profile/draft/transition writers, including v1 scenario and listing
 stores, first take a transaction row lock on `household_state`, then check fresh
 revisions. Multi-query input and transition reads use repeatable-read snapshots.

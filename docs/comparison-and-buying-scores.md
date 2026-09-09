@@ -9,9 +9,10 @@ scores and ordering (#63) are merged through PR #82. Issue #64 delivered
 The [#65 preparation](comparison-workspace-preparation.md) records the accepted
 UI choices and the [#85 complete-set backend prerequisite](all-vehicle-comparison-preparation.md).
 The #85 complete-set backend is merged through PR #86. The
-[Swedish comparison workspace](comparison-workspace.md) is implemented for #65
-on its PR branch, pending separate merge approval. PDF and stage acceptance
-remain #66–#67. This stage depends on
+[Swedish comparison workspace](comparison-workspace.md) is delivered for #65
+through approved PR #87 with green merged-main CI. PDF and stage acceptance
+remain #66–#67; the [PDF preparation audit](comparison-pdf-preparation.md)
+defines the next implementation handoff. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
@@ -421,6 +422,15 @@ and page breaks without clipped columns. Provide a printable report and PDF
 download through browser print-to-PDF; the UI explains the browser's save-PDF
 step. No server PDF renderer, third-party export service, or persisted report
 history is required. Downloaded copies remain outside application deletion.
+
+The [#66 report handoff](comparison-pdf-preparation.md) makes the existing
+contract concrete: export all candidates and detail groups, independent of the
+screen's 50-car page or expanded sections, in the selected active-view API order.
+Capture only a completely received current generation; preserve partial sections
+and their errors without inventing complete totals. Report rendering uses a
+separate immutable copy of that response and never rereads live editor values.
+The proposed frontend print view, capture gate, lifecycle and verification are
+preparation work until #66 is explicitly implemented.
 
 ## Future contracts and persistence
 
