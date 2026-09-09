@@ -190,11 +190,13 @@ The preparation PR only verifies documentation and existing prerequisite CI.
 ### Issue #65 workspace evidence
 
 Implemented on `feature/65-comparison-workspace` from merged #85 / PR #86
-(`885826a9b367337fa3f7610365f69a8ffa1207bf`). This is the comparison workspace PR's
-evidence; the separately approved merge and complete stage acceptance (#67) are
-not implied. [Workspace behavior and recovery](comparison-workspace.md) describe
-the delivered flows and module boundaries. The PR's checks identify the exact
-tested head commit and external CI run.
+(`885826a9b367337fa3f7610365f69a8ffa1207bf`), then delivered through approved
+[PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87), merge
+`4ba0a0b0f386f7e077c4466a046726cdf3a9df97` on 2026-09-08.
+[Merged-main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144)
+passed all ordinary checks. Whole-stage acceptance (#67) remains separate.
+[Workspace behavior and recovery](comparison-workspace.md) describe the delivered
+flows and module boundaries; the following local evidence remains unchanged.
 
 | Acceptance / boundary | Executed evidence |
 | --- | --- |
@@ -263,6 +265,24 @@ an empty `nsjD64.tmp` directory had no verifiable project ownership and were
 preserved. No project-attributable Windows Temp remainder was identified.
 There is no cleanup helper script. The deferred #64/#85 inventories and the
 pre-existing Node installation under `temp/issue64/` were left untouched.
+
+### Issue #66 PDF handoff (not executed evidence)
+
+The [preparation audit](comparison-pdf-preparation.md#required-verification-for-implementation)
+maps the report scope onto the merged #65 complete-response and exact-number
+contracts. Existing baseline: 1,012 backend, 255 frontend, 55 Chromium tests.
+No PDF behavior is delivered or verified by this documentation preparation.
+
+Required new evidence includes immutable capture through edits/saves/late
+responses; stale/invalid-generation gating versus valid partial export; complete
+1/50/51/101/250-car membership independent of page/expanded sections; captured
+server order and exact assumptions; all three sensitivities, evidence, review
+items and unsaved flags; actual Swedish multipage PDFs without clipping; print
+cancel/return/reload/deletion behavior; and no writes, recalculation, AI or report
+archive. Inspect complete and partial PDF files visually in addition to automated
+print-media checks. Reuse A1–A11/B1–B8 references and existing cross-route tests.
+The browser's actual print/save-PDF action needs a practical check, separate
+from Playwright's headless PDF output. Record skipped checks and layout limitations.
 
 ## Verification commands by work area
 

@@ -8,7 +8,7 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 ## Status
 
-The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Issue #65 adds the Swedish comparison workspace on its PR branch; automatic discovery and advisory AI review remain future work.
+The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator, comparison and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Issue #65 is merged through PR #87; automatic discovery and advisory AI review remain future work.
 
 The current work is split into household calculations (stage 3A) and
 comparison with configurable buying scores (stage 3B). A common editable
@@ -40,13 +40,22 @@ all saved cars must be compared together without a fixed total vehicle-count
 limit. #85 implements the [complete-set HTTP flow](docs/comparison-api.md#complete-set-comparison-85)
 through merged [PR #86](https://github.com/Extender92/CarExpenseCalculator/pull/86):
 stateless baseline checks, compact saved-car overrides, independent manual input
-and three sensitivity views with global exact ordering. Issue #65 implements the
-[comparison workspace](docs/comparison-workspace.md) on
-`feature/65-comparison-workspace`, pending separate merge approval. **Jämförelse**
+and three sensitivity views with global exact ordering. Issue #65 delivered the
+[comparison workspace](docs/comparison-workspace.md) through approved
+[PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87), with
+[green merged-main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144).
+**Jämförelse**
 at `/search` compares the full saved inventory, displays 50 cars per page and
 supports explicit manual candidates, rule/fact editing, separate saves and
 source/confirmation review. The existing `RuleBasedSearch` availability flag is
 enabled with this working screen; it does not enable automatic listing discovery.
+
+Five of seven stage 3B items are delivered. The next item is
+[#66 PDF preparation](docs/comparison-pdf-preparation.md): capture the complete
+current comparison for readable browser print-to-PDF, including assumptions,
+all cars, sources and unsaved markers. This is preparation only; PDF is not
+implemented. #66 awaits the preparation merge and readiness audit; #67 remains
+the final whole-stage acceptance.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

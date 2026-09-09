@@ -9,11 +9,16 @@ is merged. The #85 backend extension was merged through approved PR #86 as
 `885826a9b367337fa3f7610365f69a8ffa1207bf`. The subsequent #65 readiness audit
 confirmed green [main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34237584426)
 and 1,012 backend, 195 frontend and 41 Chromium tests. The user then assigned
-implementation on `feature/65-comparison-workspace`; the issue is in progress.
+implementation on `feature/65-comparison-workspace`; #65 is now closed through
+approved [PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87),
+merged as `4ba0a0b0f386f7e077c4466a046726cdf3a9df97` with
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144).
 The [implemented workspace](comparison-workspace.md) and
 [verification evidence](household-comparison-verification.md#issue-65-workspace-evidence)
-describe that PR delivery, pending separate merge approval. PDF and whole-stage
-acceptance remain #66–#67. The earlier audit below is historical context.
+describe that delivered implementation: 1,012 backend, 255 frontend and 55
+Chromium tests pass. [PDF preparation](comparison-pdf-preparation.md) is next;
+PDF and whole-stage acceptance remain #66–#67. The earlier audit below is
+historical context.
 
 The [product plan](household-comparison-plan.md),
 [comparison specification](comparison-and-buying-scores.md),
@@ -251,7 +256,7 @@ Retain existing #60/URL/legacy behavior and all three navigation modes.
 
 ## Verification handoff and publication
 
-The [verification matrix](household-comparison-verification.md#issue-65-workspace-handoff)
+The [verification matrix](household-comparison-verification.md#original-issue-65-workspace-handoff)
 maps future UI acceptance to current authority and new tests. Use .NET SDK
 10.0.400 and Node 22.22.2. For #65, run frontend ci/lint/test/build, OpenAPI
 regeneration with no unexpected schema drift, Compose boundary validation and
