@@ -33,7 +33,8 @@ changing it cannot inherit an older price's confirmation. Issue #64 delivered
 [PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83):
 current rule/fact storage, explicit evidence actions, cost confirmation and
 revision-checked stored previews alongside independent manual previews.
-PDF (#66) is merged through approved PR #89; stage acceptance (#67) remains. The
+PDF (#66) is merged through approved PR #89; #67 acceptance is verified on its
+PR branch and still requires separately approved merge. The
 [#65 workspace preparation](docs/comparison-workspace-preparation.md) records
 the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
 all saved cars must be compared together without a fixed total vehicle-count
@@ -55,10 +56,12 @@ Six of seven stage 3B items are merged. The
 [PR #89](https://github.com/Extender92/CarExpenseCalculator/pull/89), following
 preparation PR #88. It captures the complete current comparison, including all
 cars, assumptions, sources and unsaved markers, for browser print-to-PDF.
-The [#67 acceptance preparation](docs/comparison-stage-3b-preparation.md) maps
-the remaining whole-stage checks to existing tests and practical evidence.
-Baseline: **1,012 backend, 273 frontend and 63 Chromium tests**. Preparation
-does not complete the stage; #67 and the 3B tracker/milestone remain open.
+The [#67 acceptance report](docs/comparison-stage-3b-verification-report.md)
+records the new whole-stage execution: **1,012 backend, 273 frontend and 69
+Chromium tests**, the full criterion catalogue, source/confirmation and legacy
+lifecycles, plus fresh PDF and native-print inspection. No production changes
+were needed. This is verified PR-branch work, not a merged stage-completion
+claim; #67 and the 3B tracker/milestone remain open pending their delivery gates.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
@@ -265,6 +268,7 @@ The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Un
 - [Comparison and buying scores specification](docs/comparison-and-buying-scores.md)
 - [Household and comparison verification](docs/household-comparison-verification.md)
 - [Stage 3A acceptance report](docs/household-stage-3a-verification-report.md)
+- [Stage 3B acceptance report](docs/comparison-stage-3b-verification-report.md)
 - [Household and comparison delivery backlog](docs/household-comparison-backlog.md)
 - [URL analysis specification](docs/url-analysis.md)
 - [URL analysis verification](docs/url-analysis-verification.md)

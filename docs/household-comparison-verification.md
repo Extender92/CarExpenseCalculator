@@ -4,9 +4,13 @@
 
 Acceptance specification for stages 3A/3B. The implementation notes below name
 automated coverage; the practical whole-stage #61 execution is recorded in the
-[stage 3A report](household-stage-3a-verification-report.md). Stage 3B acceptance
-is prepared in the [#67 handoff](comparison-stage-3b-preparation.md) and remains
-unexecuted as a whole-stage delivery. The 3A report records both tested branch
+[stage 3A report](household-stage-3a-verification-report.md). The
+[stage 3B report](comparison-stage-3b-verification-report.md) records the fresh
+#67 execution against the [handoff](comparison-stage-3b-preparation.md):
+1,012 backend, 273 frontend and 69 Chromium tests, complete criterion/lifecycle
+evidence and new PDF/native-print inspection. That acceptance is verified on
+the PR branch; separate merge and tracker/milestone review remain. The 3A report
+records both tested branch
 evidence and the approved PR #78 merge, including green merged-main CI.
 Use the normative [calculation](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications. Existing v1 tests
@@ -374,6 +378,17 @@ counts, warnings, and limitations in the stage acceptance issue and a committed
 verification report. Stage 3A closes only when the flow and regressions pass.
 
 ## Practical stage 3B acceptance
+
+The [2026-09-09 execution report](comparison-stage-3b-verification-report.md)
+maps every requirement below to newly executed or rerun tests and practical
+observations. [Comparison acceptance](../src/frontend/e2e/comparison-acceptance.spec.ts)
+adds six joined flows: all 20 criteria; inspection/evidence boundaries;
+listing/price/confirmation/report; two-browser explicit recovery; corrupt
+legacy 50+50 transition/report/mapping; and URL deletion of compared facts,
+costs and a matching draft. The existing suites retain B1–B8, A1–A11,
+precision, full inventory, failure and manual-isolation coverage. No product
+code or acceptance rule changed. Read the report's warnings and exact deferred
+cleanup path; PR acceptance does not imply that the stage is already merged.
 
 1. Use B1-B8 and the 3A fixtures. Confirm main/detail tables use the same profile,
    period, mode, and registration identity; every missing calculation is named.

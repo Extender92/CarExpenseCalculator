@@ -13,7 +13,10 @@ The #85 complete-set backend is merged through PR #86. The
 through approved PR #87 with green merged-main CI. The
 [PDF report](comparison-pdf.md) is merged through approved PR #89 after
 preparation PR #88. The [#67 preparation](comparison-stage-3b-preparation.md)
-maps the remaining whole-stage acceptance. This stage depends on
+is now followed by the [whole-stage verification report](comparison-stage-3b-verification-report.md),
+with fresh automated and practical evidence on the acceptance branch. Separate
+merge approval remains; no rules or public contracts changed in #67. This stage
+depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
