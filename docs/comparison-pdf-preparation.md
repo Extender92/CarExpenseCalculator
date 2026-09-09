@@ -81,6 +81,11 @@ requests, missing response views and locally unparseable edits block capture.
 Use the API's per-candidate unsaved flags rather than treating a client dirty
 boolean as evidence or silently considering a manual candidate saved.
 
+Calculated outputs use the screen's final display rounding. Input assumptions
+and rule anchors also need exact readable text, preserving all supplied decimal
+digits with Swedish units/separators. Do not use the rounded rule-summary display
+as the sole record of a high-precision goal or pass exact inputs through Number.
+
 Once captured, ordinary edits, profile saves, focus refreshes, sorting changes,
 page changes and late network responses cannot alter that report. Render all
 values, warnings and recommendations from the captured generation, never from
