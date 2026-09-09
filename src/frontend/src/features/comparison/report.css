@@ -1,0 +1,188 @@
+.report-page {
+  min-height: 100vh;
+  background: #fff;
+  color: #17202a;
+  padding: 1.5rem;
+}
+.report-actions,
+.comparison-report {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.report-actions {
+  border: 1px solid #64748b;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+.report-actions h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.report-actions button,
+.report-actions a {
+  display: inline-block;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 0.6rem 0.9rem;
+  margin: 0.7rem 0.8rem 0.7rem 0;
+  font-weight: 600;
+}
+.report-actions button {
+  background: #164e63;
+  color: white;
+}
+.report-actions button:disabled {
+  background: #e2e8f0;
+  color: #475569;
+}
+.report-page :focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 3px;
+}
+.comparison-report {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.comparison-report h1 {
+  font-size: 2rem;
+  font-weight: 750;
+  margin: 0.25rem 0 0.8rem;
+}
+.comparison-report h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 2rem 0 0.75rem;
+}
+.comparison-report h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.5rem;
+  border-bottom: 2px solid #334155;
+}
+.comparison-report p {
+  margin: 0.3rem 0 0.65rem;
+}
+.report-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+.report-notice {
+  border: 2px solid #475569;
+  padding: 0.6rem;
+}
+.report-note {
+  font-size: 0.85em;
+  font-weight: 400;
+}
+.report-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.9rem 0 1.2rem;
+}
+.comparison-report table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: 700px;
+}
+.comparison-report th,
+.comparison-report td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #94a3b8;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.comparison-report thead {
+  background: #f1f5f9;
+}
+.comparison-report .report-table-title {
+  font-size: 1.05em;
+  border-bottom: 2px solid #334155;
+}
+.comparison-report tbody th {
+  font-weight: 500;
+}
+.comparison-report
+  table:has(thead tr:nth-child(2) th:nth-child(2):last-child)
+  tbody
+  th {
+  width: 40%;
+}
+.report-metadata {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem 1rem;
+  overflow-wrap: anywhere;
+}
+.report-metadata dt {
+  font-weight: 600;
+}
+@page {
+  size: A4 landscape;
+  margin: 12mm;
+}
+@media print {
+  html,
+  body {
+    min-width: 0;
+    min-height: 0;
+    background: white;
+    color: #17202a;
+  }
+  .report-page {
+    padding: 0;
+    min-height: 0;
+  }
+  .report-actions,
+  .report-preparing {
+    display: none !important;
+  }
+  .comparison-report {
+    max-width: none;
+    font-size: 9pt;
+    line-height: 1.35;
+  }
+  .comparison-report h1 {
+    font-size: 20pt;
+  }
+  .comparison-report h2 {
+    font-size: 15pt;
+    margin-top: 9mm;
+  }
+  .comparison-report h3 {
+    font-size: 12pt;
+  }
+  .comparison-report h1,
+  .comparison-report h2,
+  .comparison-report h3 {
+    break-after: avoid;
+  }
+  .report-table-scroll {
+    overflow: visible;
+    margin: 4mm 0;
+  }
+  .comparison-report table {
+    min-width: 0;
+    width: 100%;
+  }
+  .comparison-report thead {
+    display: table-header-group;
+    break-inside: avoid;
+  }
+  .comparison-report th,
+  .comparison-report td {
+    padding: 1.5mm;
+  }
+  .comparison-report tr {
+    break-inside: auto;
+  }
+  .report-metadata {
+    display: block;
+  }
+  .report-metadata dd {
+    margin: 1mm 0 3mm;
+  }
+}

@@ -33,7 +33,7 @@ changing it cannot inherit an older price's confirmation. Issue #64 delivered
 [PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83):
 current rule/fact storage, explicit evidence actions, cost confirmation and
 revision-checked stored previews alongside independent manual previews.
-PDF (#66) and stage acceptance (#67) remain future work. The
+PDF (#66) is implemented on its review branch; stage acceptance (#67) remains. The
 [#65 workspace preparation](docs/comparison-workspace-preparation.md) records
 the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
 all saved cars must be compared together without a fixed total vehicle-count
@@ -50,12 +50,12 @@ supports explicit manual candidates, rule/fact editing, separate saves and
 source/confirmation review. The existing `RuleBasedSearch` availability flag is
 enabled with this working screen; it does not enable automatic listing discovery.
 
-Five of seven stage 3B items are delivered. The next item is
-[#66 PDF preparation](docs/comparison-pdf-preparation.md): capture the complete
-current comparison for readable browser print-to-PDF, including assumptions,
-all cars, sources and unsaved markers. This is preparation only; PDF is not
-implemented. #66 awaits the preparation merge and readiness audit; #67 remains
-the final whole-stage acceptance.
+Five of seven stage 3B items are merged. The
+[#66 PDF report](docs/comparison-pdf.md) is implemented and locally verified on
+`feature/66-comparison-pdf`, following merged preparation PR #88. It captures the
+complete current comparison, including all cars, assumptions, sources and
+unsaved markers, for browser print-to-PDF. This branch delivery is not an approved
+merge; #67 remains the final whole-stage acceptance.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
@@ -106,6 +106,14 @@ docker compose up --detach api web
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
 
 Open **Manuell kalkyl** (`/manual`) to edit the shared household profile and purchase/lease inputs. Previews refresh after 500 ms; **Beräkna nu** runs immediately. **Spara hushållsprofil**, **Spara bilunderlag**, and **Spara utkast** write separate resources explicitly. Ordinary Swedish registration identifies saved vehicles. **Granska äldre underlag** guides the atomic transition; **Äldre kalkyler** (`/manual/legacy`) retains the v1 editor for unconverted data. See the [workspace guide](docs/household-workspace.md).
+
+In **Jämförelse** (`/search`), choose **Öppna rapport** after the current
+comparison finishes, then **Skriv ut / Spara som PDF**. Choose **Spara som PDF**,
+all pages and A4 landscape in the browser dialog. The report includes every car,
+regardless of the displayed page or collapsed sections. Valid partial results
+retain their gaps; stale comparisons require **Beräkna nu** first. Returning
+keeps unsaved editing but releases the report; reloading the report requires a
+new capture. See the [report guide and verification](docs/comparison-pdf.md).
 
 Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing or explicitly save it to the shared household draft slot. A saved listing opens the household workspace through a reload-safe link. Advertised values and listing-version review require explicit choices. Transient URL cards disappear on reload; the explicitly saved shared draft survives. A missing Codex login disables automatic extraction without disabling manual entry or saved data.
 

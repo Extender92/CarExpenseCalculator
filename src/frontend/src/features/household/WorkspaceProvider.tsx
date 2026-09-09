@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { HouseholdWorkspace } from "./workspace";
 
 import { WorkspaceContext } from "./use-workspace";
@@ -9,6 +10,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     value.setCalculationActive(false);
     return value;
   });
+  const { pathname } = useLocation();
+  useEffect(() => {
+    workspace.setReportActive(pathname === "/search/report");
+  }, [pathname, workspace]);
   useEffect(() => {
     const focus = () => workspace.onFocus();
     const beforeUnload = (event: BeforeUnloadEvent) => {

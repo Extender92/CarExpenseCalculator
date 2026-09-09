@@ -10,9 +10,10 @@ The [#65 preparation](comparison-workspace-preparation.md) records the accepted
 UI choices and the [#85 complete-set backend prerequisite](all-vehicle-comparison-preparation.md).
 The #85 complete-set backend is merged through PR #86. The
 [Swedish comparison workspace](comparison-workspace.md) is delivered for #65
-through approved PR #87 with green merged-main CI. PDF and stage acceptance
-remain #66–#67; the [PDF preparation audit](comparison-pdf-preparation.md)
-defines the next implementation handoff. This stage depends on
+through approved PR #87 with green merged-main CI. The
+[PDF report](comparison-pdf.md) is implemented and verified on the #66 review
+branch after preparation PR #88; its merge requires approval. Whole-stage
+acceptance remains #67. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
@@ -429,8 +430,22 @@ screen's 50-car page or expanded sections, in the selected active-view API order
 Capture only a completely received current generation; preserve partial sections
 and their errors without inventing complete totals. Report rendering uses a
 separate immutable copy of that response and never rereads live editor values.
-The proposed frontend print view, capture gate, lifecycle and verification are
-preparation work until #66 is explicitly implemented.
+Issue #66 implements this contract on `feature/66-comparison-pdf`:
+`ComparisonWorkspace.openReport()` checks freshness, accepted generation,
+pending work, conflicts and local errors again before capturing. The
+frontend-owned `ComparisonReportInput` uses `cloneExact` and recursive freezing;
+it holds the full response, selected order, timestamp and timezone. The standalone
+`/search/report` route lives under both editing providers, outside navigation.
+It consumes no live editors, database reads or new calculations. Focus loading
+and automatic previews pause on the report route and resume on return.
+
+One report lives only in tab memory. Leaving releases it; direct visits/reloads
+show recovery guidance. Locally observed deletion of a member invalidates the
+whole report. Print readiness waits for the committed document and used fonts;
+cancelled printing preserves it, without treating `afterprint` as a saved file.
+The separate A4-landscape layout includes full input precision, all months and
+review records, wrapping source text and repeating table headings. See the
+[implemented report and verification evidence](comparison-pdf.md).
 
 ## Future contracts and persistence
 
@@ -438,7 +453,8 @@ Issue #64 implements the storage and HTTP portions below; the heading is retaine
 for existing issue links. [Comparison storage and HTTP](comparison-api.md) specifies
 the API-owned DTOs, typed fact actions, explicit cost confirmation lifecycle,
 source listing versions, two preview modes, transaction/revision checks, error
-mapping and migration rollback. `ComparisonReportInput` remains #66 work.
+mapping and migration rollback. `ComparisonReportInput` is frontend-owned and
+implemented by #66; it changes no HTTP or storage contract.
 
 `EvaluateComparison(profile, rules, asOfDate, candidates)` calls 3A calculation
 and deterministic rules with full current inputs. Client-submitted calculated

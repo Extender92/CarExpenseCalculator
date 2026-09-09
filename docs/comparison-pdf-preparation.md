@@ -2,6 +2,14 @@
 
 ## Audit and delivery gate
 
+**Implementation update:** preparation PR #88 is merged. The user subsequently
+assigned #66, now `status:in-progress` on `feature/66-comparison-pdf`.
+The [implemented report and test evidence](comparison-pdf.md) describe the
+delivered branch behavior and actual PDF/native-dialog inspection. The original
+audit and proposed seams below are retained as the planning record, not as
+outstanding readiness instructions. Implementation merge requires separate
+approval; #67 is still the subsequent whole-stage acceptance.
+
 Audited on 2026-09-09 against `main` commit
 `4ba0a0b0f386f7e077c4466a046726cdf3a9df97`. The worktree was clean and
 [merged-main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144)
@@ -15,18 +23,16 @@ approved [PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87).
 The complete-inventory backend (#85 / PR #86) is also on main. Five of the seven
 stage 3B implementation items are merged; #66 and #67 remain.
 
-The user assigned preparation, not PDF implementation. This document refines the
+At the preparation audit, the user had assigned preparation, not implementation. This document refines the
 existing [report specification](comparison-and-buying-scores.md#workspace-and-reports)
 without adding a product mode or changing calculation rules. No outstanding
 product decision was found. Implementation choices below are the proposed
 technical approach, not a claim that a report screen exists.
 
-Keep #66 `status:blocked` while this preparation PR awaits its separate approved
-merge. After that merge, verify its contents and the prerequisites on current
-main, then promote #66 to `status:ready`. Implementation requires a subsequent
-explicit assignment on `feature/66-comparison-pdf`. #67 remains blocked by #66;
-neither the tracker nor the milestone is complete. Do not use `Closes #66` on
-the preparation PR.
+The preparation gate has now been satisfied: its separately approved merge and
+the prerequisites were checked before promoting #66 to `status:ready` and
+starting the assigned implementation. #67 remains dependent on #66; neither
+the tracker nor the milestone is complete. The preparation PR did not close #66.
 
 ## Scope already agreed
 

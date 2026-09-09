@@ -190,8 +190,8 @@ The shared cost writer invalidates input confirmations through Core structural
 equality, including draft adoption. Both shared profiles survive car deletion.
 UI (#65), PDF (#66) and acceptance (#67) are separate deliveries. Approved PR #87
 delivers the [comparison workspace](comparison-workspace.md) for #65 and enables the
-existing `RuleBasedSearch` availability status. PDF and stage acceptance remain
-future work, and discovery/AI are not enabled.
+existing `RuleBasedSearch` availability status. PDF is implemented on the #66
+review branch; stage acceptance remains #67. Discovery/AI are not enabled.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
 reusable frontend state and the per-request boundary of server ordering.
 The [#85 extension](comparison-api.md#complete-set-comparison-85), implemented
@@ -226,14 +226,23 @@ and four bounded lazy fact reads. The main and seven detail tables consume API
 orders in shared 50-car pages; stale outcomes suppress every recommendation.
 Manual candidate economics reuse household fields in a memory-only route context.
 
-The [#66 PDF preparation](comparison-pdf-preparation.md) proposes a frontend-owned
-`ComparisonReportInput` capturing one accepted complete response and selected
-order, with separate report/evaluation times. A transient print view consumes
-that immutable input, not live editors, lazy reads or paginated DOM. All cars,
-three sensitivity views, assumptions, sources, partial-result reasons and dirty
-flags already exist in the HTTP response. Printing requires no server renderer,
-additional API, schema change or retained report history. Report rendering and
-print CSS remain #66 implementation work; the whole-stage check remains #67.
+The [#66 PDF report](comparison-pdf.md) implements frontend-owned
+`ComparisonReportInput`: an exact, recursively frozen copy of one accepted
+complete response and selected order, with separate report/evaluation times and
+timezone. The comparison workspace owns one capture; `/search/report` sits
+under the providers but outside the navigation layout. Both workspaces pause
+automatic focus reads/calculations there. Returning releases the capture and
+resumes refresh without resetting editing, page, order or open sections.
+Existing whole-car deletion events invalidate a report containing that identity.
+
+Pure report formatters share exact numbers, money, score and budget labels with
+the screen. A memoized print document consumes the capture, not live editors,
+lazy reads or paginated DOM. All cars, three sensitivity views, assumptions,
+sources, partial-result reasons and dirty flags come from the HTTP response.
+Native printing waits for rendering and used fonts; cancellation is not saving.
+No server renderer, additional API, schema change, runtime package or report
+history is introduced. Implementation is on the #66 review branch; the
+whole-stage check remains #67.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

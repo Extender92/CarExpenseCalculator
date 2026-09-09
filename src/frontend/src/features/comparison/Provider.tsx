@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useWorkspace } from "@/features/household/use-workspace";
 import { ComparisonWorkspace } from "./workspace";
 import { ComparisonContext } from "./use-comparison";
@@ -6,6 +7,10 @@ import { ComparisonContext } from "./use-comparison";
 export function ComparisonProvider({ children }: { children: ReactNode }) {
   const { workspace: household } = useWorkspace();
   const [workspace] = useState(() => new ComparisonWorkspace(household));
+  const { pathname } = useLocation();
+  useEffect(() => {
+    workspace.setReportActive(pathname === "/search/report");
+  }, [pathname, workspace]);
   useEffect(() => {
     workspace.connect();
     const focus = () => workspace.onFocus();
