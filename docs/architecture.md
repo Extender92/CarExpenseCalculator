@@ -190,8 +190,8 @@ The shared cost writer invalidates input confirmations through Core structural
 equality, including draft adoption. Both shared profiles survive car deletion.
 UI (#65), PDF (#66) and acceptance (#67) are separate deliveries. Approved PR #87
 delivers the [comparison workspace](comparison-workspace.md) for #65 and enables the
-existing `RuleBasedSearch` availability status. PDF is implemented on the #66
-review branch; stage acceptance remains #67. Discovery/AI are not enabled.
+existing `RuleBasedSearch` availability status. PDF (#66) is merged through
+approved PR #89; stage acceptance remains #67. Discovery/AI are not enabled.
 The [workspace preparation](comparison-workspace-preparation.md) identifies
 reusable frontend state and the per-request boundary of server ordering.
 The [#85 extension](comparison-api.md#complete-set-comparison-85), implemented
@@ -241,8 +241,10 @@ lazy reads or paginated DOM. All cars, three sensitivity views, assumptions,
 sources, partial-result reasons and dirty flags come from the HTTP response.
 Native printing waits for rendering and used fonts; cancellation is not saving.
 No server renderer, additional API, schema change, runtime package or report
-history is introduced. Implementation is on the #66 review branch; the
-whole-stage check remains #67.
+history is introduced. Implementation is merged through approved PR #89. The
+[#67 preparation](comparison-stage-3b-preparation.md) maps implemented contracts
+to whole-stage tests and practical evidence without proposing new layers,
+endpoints or migrations; execution and its final report remain separate work.
 
 Core also implements explicit lease contracts, bounded payment calendars,
 cash/cost reconciliation and separate startup/average-month funding checks.

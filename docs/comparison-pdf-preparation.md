@@ -2,13 +2,13 @@
 
 ## Audit and delivery gate
 
-**Implementation update:** preparation PR #88 is merged. The user subsequently
-assigned #66, now `status:in-progress` on `feature/66-comparison-pdf`.
+**Implementation update:** preparation PR #88 and implementation PR #89 are
+approved and merged; #66 is closed.
 The [implemented report and test evidence](comparison-pdf.md) describe the
 delivered branch behavior and actual PDF/native-dialog inspection. The original
 audit and proposed seams below are retained as the planning record, not as
-outstanding readiness instructions. Implementation merge requires separate
-approval; #67 is still the subsequent whole-stage acceptance.
+outstanding readiness instructions. The [#67 preparation](comparison-stage-3b-preparation.md)
+now covers the subsequent whole-stage acceptance.
 
 Audited on 2026-09-09 against `main` commit
 `4ba0a0b0f386f7e077c4466a046726cdf3a9df97`. The worktree was clean and

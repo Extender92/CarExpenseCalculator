@@ -50,16 +50,19 @@ with [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/
 Its [storage/API contract](comparison-api.md) is on main. The user confirmed
 comparison of all saved cars without a fixed total count on 2026-09-08. The new
 [#85 backend handoff](all-vehicle-comparison-preparation.md) precedes #65.
-Five of the seven current stage 3B implementation items are delivered.
+Six of the seven current stage 3B implementation items are delivered.
 The [#65 workspace preparation](comparison-workspace-preparation.md) records
 all six accepted choices. Preparation PR #84, #85 / PR #86 and #65 / PR #87 are
 merged. Main `4ba0a0b0f386f7e077c4466a046726cdf3a9df97` has
 [green CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144):
 1,012 backend, 255 frontend and 55 Chromium tests pass.
-The [#66 PDF preparation](comparison-pdf-preparation.md) confirms the implemented
-dependencies and defines frontend report capture/layout verification. #66 remains
-`status:blocked` only until this preparation is merged and readiness rechecked;
-it has no outstanding product decision. #67 remains blocked by #66.
+The [#66 PDF report](comparison-pdf.md) is now merged through approved PR #89,
+as `72ded81784950860ab9ab186a5f4c30974ee2951`. Its new baseline is 1,012 backend,
+273 frontend and 63 Chromium tests. The
+[#67 preparation](comparison-stage-3b-preparation.md) verifies all functional
+dependencies and maps remaining stage acceptance. #67 stays `status:blocked`
+until that preparation is separately merged and readiness rechecked; no open
+product decision was found. Actual execution still requires explicit assignment.
 No registry, AI or service-provider decision blocks this manual comparison stage.
 
 | Key | Issue | Deliverable | Prerequisite work |

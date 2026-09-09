@@ -2,10 +2,13 @@
 
 ## Delivery status
 
-Implemented on `feature/66-comparison-pdf` after merged preparation PR #88 and
-dependencies #65/#85. The implementation PR is linked from
-[#66](https://github.com/Extender92/CarExpenseCalculator/issues/66).
-This records branch verification, not an approved merge or #67 stage acceptance.
+Delivered through approved [PR #89](https://github.com/Extender92/CarExpenseCalculator/pull/89),
+merged as `72ded81784950860ab9ab186a5f4c30974ee2951`, after preparation PR #88 and
+dependencies #65/#85. Issue #66 is closed. The feature verification below was
+performed on `feature/66-comparison-pdf` at `bd0c92b95927cabcffbfb99d02a2a804ef40a4f6`;
+[PR CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34344637466)
+passed before the approved merge. The [#67 preparation](comparison-stage-3b-preparation.md)
+defines the remaining whole-stage evidence; feature delivery does not complete it.
 HTTP, storage and all existing versions are unchanged. There is no new runtime
 package, export service, result calculation or report archive.
 

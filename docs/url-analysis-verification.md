@@ -106,9 +106,10 @@ contains data or Codex authentication that must be retained.
   listing replacement marks a linked calculation outdated without changing its
   stored assumptions or result. Explicit review and save records the current
   listing version.
-- System status reports manual calculation and URL analysis as enabled, rule
-  search and advisory AI review as disabled, and extractor configuration
-  independently from database health. Inspecting status starts no extraction.
+- System status reports manual calculation, URL analysis and the implemented
+  comparison (`RuleBasedSearch`) as enabled; advisory AI review remains disabled.
+  Extractor configuration is independent from database health. Inspecting status
+  starts no extraction. See the [foundation regression](../src/frontend/e2e/foundation.spec.ts).
 
 ## Real local or Unraid extraction smoke test
 

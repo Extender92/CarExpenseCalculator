@@ -5,8 +5,9 @@
 Acceptance specification for stages 3A/3B. The implementation notes below name
 automated coverage; the practical whole-stage #61 execution is recorded in the
 [stage 3A report](household-stage-3a-verification-report.md). Stage 3B acceptance
-remains future work. The report records both tested branch evidence and the
-approved PR #78 merge, including green merged-main CI.
+is prepared in the [#67 handoff](comparison-stage-3b-preparation.md) and remains
+unexecuted as a whole-stage delivery. The 3A report records both tested branch
+evidence and the approved PR #78 merge, including green merged-main CI.
 Use the normative [calculation](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications. Existing v1 tests
 remain required. Routine extraction tests use the existing synthetic fake;
@@ -148,7 +149,7 @@ concurrency without racing the singleton fixtures.
 | Scores | B1-B5/B8; increasing/decreasing anchors, clamping, invalid equal anchors, categorical sets, weight bounds/zero, weighted coverage, insufficient evidence, no active criteria, deterministic ties. |
 | Hard rules/order | B6; high score never overrides hard failure or required verification; incomplete cost cannot win; overlapping intervals cannot imply a certain ranking. |
 | React state | Latest valid request wins across tables/batches; pending save cannot replace subsequent edits; failure keeps drafts; changes preview without implicit saves/AI; explicit draft replacement choice. |
-| HTTP/schema | Documented success, validation, conflict, missing resource, and storage failure cases; 100-candidate/2-MiB limits; no client-trusted results/verification; generated OpenAPI types agree. |
+| HTTP/schema | Documented success, validation, conflict, missing resource, and storage failure cases; original preview keeps 100 candidates/2 MiB; complete-set preview has no fixed count and configurable 32 MiB incoming-body default; no client-trusted results/verification; generated OpenAPI types agree. |
 | Report | Snapshot during concurrent edits, partial inputs, long tables over multiple pages, Swedish text, repeated headings, no clipped columns, dirty labels, complete assumptions/weights/sources, no persisted export. |
 
 ### Issue #85 complete-set comparison handoff
@@ -284,8 +285,8 @@ cancel/return/reload/deletion behavior; and no writes, recalculation, AI or repo
 archive. Inspect complete and partial PDF files visually in addition to automated
 print-media checks. Reuse A1–A11/B1–B8 references and existing cross-route tests.
 The browser's actual print/save-PDF dialog was checked separately from headless
-PDF generation. Whole-stage #67 acceptance and an approved #66 merge remain
-separate gates; no milestone completion is claimed here.
+PDF generation. Issue #66 is merged through approved PR #89. Whole-stage #67
+acceptance remains a separate gate; no milestone completion is claimed here.
 
 ## Verification commands by work area
 
