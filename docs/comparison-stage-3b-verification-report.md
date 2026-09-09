@@ -9,13 +9,13 @@ native print dialog. No product defect or unresolved product decision was
 found. Six browser regressions join previously separate feature flows; no
 production code, dependency, HTTP contract, calculation or migration changed.
 
-The tested code and tests are commit
+The initial complete local run used code and tests recorded in commit
 `4068820c39a2daf46561ca0bfb96ba048ed1a9dc` on
 `chore/67-comparison-stage-acceptance`. It is based on merged preparation
 `16f6981f34f7d858717f56dacd56034a98a0ca5d` / PR #90 and its successful
 [main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34364427068).
-Subsequent documentation commits record this execution without changing its
-tested implementation. The report and tests are published in
+The later report-test timing correction and its verification are recorded below;
+production implementation remains unchanged. The report and tests are published in
 [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91).
 This is branch acceptance evidence; separate merge approval and a final review
 of #12 and milestone 3B are still required. Neither tracker nor milestone is
@@ -38,7 +38,7 @@ Chromium run without retries. Migration, readiness, pinned CLI and URL
 acceptance passed there as well. The implementation/tests are identical to
 the tested commit above; this later revision adds the report/status documents.
 
-The final documentation-only publication of this CI evidence is checked by the
+The final publication, including the test-harness correction below, is checked by the
 [current PR checks](https://github.com/Extender92/CarExpenseCalculator/pull/91/checks)
 before handoff. CI links deliberately identify the tested revision separately
 from the document that records it. The issue links both the PR and this report.
@@ -232,6 +232,23 @@ two incorrect generated-property names, a textContent/innerText assertion and
 a DELETE response selector that omitted the query string. Those test errors
 were corrected; focused runs then passed and the complete 69-test suite passed
 without retries. The new tests use independently fixed expected values.
+
+A later duplicate push CI run,
+[34371005352](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34371005352),
+passed 68 browser tests but failed the existing malformed-report-response test
+on its initial attempt and both automatic retries. Its concurrent
+[PR run](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34371016913)
+passed all 69 in 3.6 minutes. Investigation found a test-harness race: the old
+assertions could pass on the immediate busy/stale state before `route.fetch`
+finished, then teardown ended that route callback. The corrected test waits
+for the actual Swedish malformed-response error and explicitly waits for
+route handlers to finish in `finally`. It strengthens the observed behavior;
+it neither suppresses callback errors nor changes the application.
+The corrected case passed **20/20 consecutive local runs, zero retries**;
+the entire **8/8 report suite** then passed without retries, including the
+250-car export. Frontend lint passed again. Final PR checks cover the corrected
+full suite. The second disposable verification stack and its volumes were
+removed afterward as well.
 
 The temporary native-inspection helper initially surfaced the expected closure
 of the print-dialog page during cancellation as an exception; the dialog had
