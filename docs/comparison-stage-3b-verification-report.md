@@ -15,7 +15,8 @@ The tested code and tests are commit
 `16f6981f34f7d858717f56dacd56034a98a0ca5d` / PR #90 and its successful
 [main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34364427068).
 Subsequent documentation commits record this execution without changing its
-tested implementation. PR CI and publication are recorded below before delivery.
+tested implementation. The report and tests are published in
+[PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91).
 This is branch acceptance evidence; separate merge approval and a final review
 of #12 and milestone 3B are still required. Neither tracker nor milestone is
 closed by this report.
@@ -25,6 +26,22 @@ The [preparation matrix](comparison-stage-3b-preparation.md) and
 define the scope. Dependencies #61–#66 and #85, and preparation #90, were
 rechecked as merged before #67 changed from ready to in progress. Versions
 remain comparison/rule/complete transport **1**, household **2**, storage **1**.
+
+### Published CI evidence
+
+[PR CI run 34370114313](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34370114313)
+passed all four ordinary jobs on acceptance revision
+`2cf4c94fbc1285d661b7fe8643f0bbfe51dd6595`: backend, frontend, OpenAPI and
+Docker/end-to-end. Its logs confirm **1,012 / 273 / 69** passing tests, zero
+failed/skipped tests, zero backend build warnings/errors and a **3.3-minute**
+Chromium run without retries. Migration, readiness, pinned CLI and URL
+acceptance passed there as well. The implementation/tests are identical to
+the tested commit above; this later revision adds the report/status documents.
+
+The final documentation-only publication of this CI evidence is checked by the
+[current PR checks](https://github.com/Extender92/CarExpenseCalculator/pull/91/checks)
+before handoff. CI links deliberately identify the tested revision separately
+from the document that records it. The issue links both the PR and this report.
 
 ## Environment and executed checks
 
@@ -265,8 +282,8 @@ under the same directory. This is the complete new work-owned cleanup root.
 The three prior files in `temp/issue67/preparation/` and all older deferred
 inventories, including the read-only Node/PDF tools, remain untouched.
 
-Local acceptance and the practical session are complete. Delivery additionally
-requires published report/tests and all ordinary PR CI checks green. After
-separate approval to merge, audit the stage and this evidence before closing
+Local acceptance, the practical session and the published acceptance CI run
+passed. All ordinary checks on the final PR head must also be green before
+handoff. After separate approval to merge, audit the stage and this evidence before closing
 tracker #12 and milestone 3B. Registry integration, advisory AI and later/paused
 work remain outside this acceptance.
