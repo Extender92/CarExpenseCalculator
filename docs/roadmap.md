@@ -1,5 +1,29 @@
 # Roadmap
 
+## Current planning checkpoint
+
+Audited on 2026-09-09 after approved [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91),
+merge `d096aecec539d44d231fecf1412a6fc4560e005b`, and
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34397026629).
+Foundation, manual calculation, URL analysis, household calculations (3A), and
+comparison/buying scores/PDF (3B) are complete. The
+[3B acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records final verification and closure. Tracker #12 and milestone 3B are closed.
+
+| Remaining planning area | GitHub work | Current gate |
+| --- | --- | --- |
+| Automatic discovery, milestone 4 | [#13](https://github.com/Extender92/CarExpenseCalculator/issues/13) | On hold; explicit resumption and permitted marketplace access required. |
+| Advisory AI review, milestone 5 | [#14](https://github.com/Extender92/CarExpenseCalculator/issues/14), including maintenance/repair refinement [#69](https://github.com/Extender92/CarExpenseCalculator/issues/69) | Needs refinement. Deterministic prerequisites are complete; advisory scope, runtime, evidence, limits and evaluation decisions remain. |
+| Image review, milestone 6 | [#15](https://github.com/Extender92/CarExpenseCalculator/issues/15) | On hold; explicit resumption and AI-review contracts/evaluation required. |
+| Registry access, no assigned milestone | [#68](https://github.com/Extender92/CarExpenseCalculator/issues/68) | Needs refinement: provider eligibility, permitted access, fields, freshness and terms. |
+| Mileage/time-based service, no assigned milestone | [#70](https://github.com/Extender92/CarExpenseCalculator/issues/70) | Needs refinement: interval evidence, trigger precedence and reconciliation with manual costs. |
+
+There is no ready or in-progress implementation issue. Completed prerequisites
+are not unresolved blockers, but they do not resolve the decisions above.
+This checkpoint synchronizes status only; no later milestone preparation,
+provider choice, implementation or deployment has been assigned. Historical
+preparation documents retain their dated evidence and original delivery gates.
+
 ## 0. Repository foundation — complete
 
 - Preserve and tag the console prototype.
@@ -73,7 +97,7 @@ See the
 - End the stage with automated verification and a practical acceptance check
   using representative cars and changes to the common assumptions.
 
-## 3B. Comparison and configurable buying scores — in progress
+## 3B. Comparison and configurable buying scores — complete
 
 This stage depends on 3A and is refined from the existing rules/comparison
 tracker #12. Stage labels 3A and 3B preserve later milestone numbering; the
@@ -85,7 +109,7 @@ confirmed its prerequisites. #63 Core rules/scoring and ordering is merged
 through PR #82. #64 delivered [storage/API](comparison-api.md) through approved
 PR #83 with green main CI. The user subsequently confirmed comparison of all
 saved cars without a fixed total count. The new [#85 backend prerequisite](all-vehicle-comparison-preparation.md)
-preceded #65; six of the seven current implementation items are merged.
+preceded #65; all seven implementation items are now merged.
 The [#65 preparation](comparison-workspace-preparation.md) records the accepted
 UI choices. Preparation PR #84 and #85 / PR #86 are merged. The
 [Swedish comparison workspace (#65)](comparison-workspace.md) is delivered through
@@ -96,9 +120,9 @@ merged as `72ded81784950860ab9ab186a5f4c30974ee2951`. The
 [#67 acceptance preparation](comparison-stage-3b-preparation.md) is followed by
 the [whole-stage verification report](comparison-stage-3b-verification-report.md):
 1,012 backend, 273 frontend and 69 Chromium tests, fresh PDF/native-print
-inspection and six joined lifecycle regressions. This is verified acceptance
-branch work; separate merge approval and final review of #12/milestone 3B
-remain. No later milestone is activated by this report.
+inspection and six joined lifecycle regressions. Acceptance was delivered
+through approved PR #91, with green merged-main CI. The final audit closed
+#12 and milestone 3B on 2026-09-09. No later milestone is activated by this report.
 
 - Build one dynamic workspace with a main selected-period total-cost table and
   detail tables for monthly/per-mil cost, financing, energy, service/repairs,
@@ -111,8 +135,8 @@ remain. No later milestone is activated by this report.
   fuel, body, drive, location, towing-capacity, inspection, and service criteria.
 - Use user-defined score anchors, weights 0-5, unknown score intervals and
   weighted coverage; retain rejected cars below other candidates.
-- Store only current evaluations and inputs; provide a downloadable PDF of the
-  current comparison and its assumptions.
+- Store current inputs, calculate evaluations on demand, and provide a printable
+  PDF of the current comparison and its assumptions without evaluation/report history.
 - Refine registry-source access independently of automatic discovery and
   finish with automated verification and practical comparison acceptance.
 

@@ -5,9 +5,10 @@
 Issue #63, merged through PR #82, implements deterministic Core buying rules,
 weighted score intervals, source-labelled signals and separate cost/preference
 ordering. Issue #64 delivered [storage and HTTP](comparison-api.md) through
-approved PR #83. Comparison UI remains #65 work, with its
-[preparation handoff](comparison-workspace-preparation.md). Stage 3B follows
-the shared household calculations in 3A.
+approved PR #83. The [comparison UI](comparison-workspace.md) is delivered through
+#65 / PR #87, followed by PDF #66 / PR #89 and acceptance #67 / PR #91.
+Stages 3A and 3B are complete; see the
+[acceptance and closure record](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure).
 The example semantics below remain an optional starting profile, never active
 defaults. The accepted catalogue, formulas, evidence,
 ordering, and HTTP contracts are normative in

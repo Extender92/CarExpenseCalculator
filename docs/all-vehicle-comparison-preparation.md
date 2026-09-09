@@ -15,8 +15,10 @@ Issue #85 progressed through `status:ready` to `status:in-progress` after explic
 assignment. Implementation was merged through approved
 [PR #86](https://github.com/Extender92/CarExpenseCalculator/pull/86) as
 `885826a9b367337fa3f7610365f69a8ffa1207bf`. The subsequent #65 dependency audit
-passed; its [workspace implementation](comparison-workspace.md) is now on its
-own PR branch, pending separate merge approval.
+passed; its [workspace implementation](comparison-workspace.md) was delivered
+through approved PR #87. PDF #66 / PR #89 and acceptance #67 / PR #91 are also
+merged. The [acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records stage closure; the handoff below preserves the original implementation scope.
 
 The [implemented extension](comparison-api.md#complete-set-comparison-85) defines
 baseline tokens, compact stored overlays, independent manual input, three-view

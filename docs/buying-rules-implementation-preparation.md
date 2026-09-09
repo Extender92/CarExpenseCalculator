@@ -9,8 +9,10 @@ then explicitly assigned implementation on `feature/63-buying-rules-scores`.
 `7e5514c376311863084c0c3201e9c263a0bcd884`. Core contracts, independent rule
 evaluation, weighted score intervals, ordering, Swedish signals and tests are
 on main. Issue #64 delivered [trusted storage/API composition](comparison-api.md)
-through approved PR #83. The next [workspace preparation](comparison-workspace-preparation.md)
-records #65's current handoff. See the
+through approved PR #83. The [workspace preparation](comparison-workspace-preparation.md)
+records the historical #65 handoff. All subsequent 3B items are now delivered;
+the [acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records approved PR #91 and final stage closure. See the
 [implemented contract](comparison-and-buying-scores.md#implemented-core-evaluation-63).
 
 The user confirmed one price clarification: current purchase cost input owns
@@ -26,9 +28,9 @@ expenses, so a negative complete ownership cost cannot be produced. Regression
 tests preserve that validation and exercise negative anchors without adding a
 cost-total injection route or broadening #63 into a 3A economic model change.
 
-The #63 implementation had no storage/API/UI changes. Its #64 successor adds
+The #63 implementation had no storage/API/UI changes. Its #64 successor added
 trusted mapping for persisted facts, confirmations and review impacts; #65–#67
-remain dependent on later delivery. The preparation audit below is a historical
+subsequently delivered UI, PDF and stage acceptance. The preparation audit below is a historical
 handoff, not the current issue status or an instruction to repeat its publication.
 
 ## Preparation readiness and authority (2026-09-07)

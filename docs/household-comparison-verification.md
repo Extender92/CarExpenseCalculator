@@ -8,9 +8,10 @@ automated coverage; the practical whole-stage #61 execution is recorded in the
 [stage 3B report](comparison-stage-3b-verification-report.md) records the fresh
 #67 execution against the [handoff](comparison-stage-3b-preparation.md):
 1,012 backend, 273 frontend and 69 Chromium tests, complete criterion/lifecycle
-evidence and new PDF/native-print inspection. That acceptance is verified on
-the PR branch; separate merge and tracker/milestone review remain. The 3A report
-records both tested branch
+evidence and new PDF/native-print inspection. Acceptance was approved and merged
+through PR #91 with green main CI; #67, tracker #12 and milestone 3B are closed.
+The report's [closure record](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+identifies final revisions and CI. The 3A report records both tested branch
 evidence and the approved PR #78 merge, including green merged-main CI.
 Use the normative [calculation](household-calculations.md) and
 [comparison](comparison-and-buying-scores.md) specifications. Existing v1 tests
@@ -55,18 +56,18 @@ implement B7 hard-rule evaluation or B1-B8 score/order behavior; #63 adds those
 separately as described below.
 
 The #62 implementation uses the ordinary backend/CI groups below. Full-stage
-3B browser/PDF acceptance remains #67; existing household and URL regressions
+3B browser/PDF acceptance is delivered through #67; existing household and URL regressions
 are retained without new product routes or external provider calls.
 The #62 merged baseline was 760 backend, 195 frontend and 33 Chromium tests.
 The [#63 preparation audit](buying-rules-implementation-preparation.md) maps B1-B8
-and the integration regressions to the next Core implementation. This preparation
-adds no new automated tests and does not claim rule/scoring behavior is verified.
+and the integration regressions to the subsequently delivered Core implementation.
+That historical preparation added no tests; the implementation evidence follows.
 
 ### Issue #63 Core evaluation evidence
 
 Issue #63, merged through approved PR #82, adds 114 Core cases to the #62
 baseline. These exercise the pure Core boundary; #64 adds storage and HTTP
-evidence below, while comparison UI and stage #67 acceptance remain later work.
+evidence below, followed by delivered comparison UI and stage #67 acceptance.
 Existing household and URL routes keep their regression suites.
 
 | Acceptance / boundary | Automated evidence |
@@ -118,7 +119,8 @@ Compose boundary validation, Chromium with one worker and the URL acceptance
 script. The generated schema should change only for the new routes/types and
 the scoped nullable-enum component separation. Backend totals are 938
 (551 Core, 213 API, 115 PostgreSQL, 16 Infrastructure unit, 39 extractor, four
-architecture), frontend 195 and Chromium 37. UI/PDF acceptance remains #65–#67.
+architecture), frontend 195 and Chromium 37 at #64 delivery. UI/PDF and stage
+acceptance were subsequently delivered through #65–#67, with evidence below.
 
 Issue #60 adds the [Swedish workspace](household-workspace.md), focused frontend
 tests under `features/household`, and the real
@@ -160,7 +162,8 @@ concurrency without racing the singleton fixtures.
 
 The user confirmed that all current saved cars must be compared without a fixed
 total count. [#85's backend handoff](all-vehicle-comparison-preparation.md#verification-and-readiness-evidence)
-is a prerequisite for #65 and specifies future tests, not executed evidence.
+was the prerequisite handoff for #65. This paragraph preserves its original
+test plan; executed evidence is in [the #85 results](#issue-85-complete-set-evidence).
 Verify 0/1/100/101/250 cars, full membership, grouping-independent exact order,
 global ties/overlaps/winners, more than 2 MiB of aggregate saved input, bounded
 transport errors, coherent membership/revisions across concurrent changes,
@@ -189,8 +192,9 @@ handoff, not executed #65 evidence. Baseline: 938 backend, 195 frontend and
 | Manual versus stored comparison | Explicit mode selection, no database dependency in manual mode, no inherited evidence, no automatic fallback after a stored request fails, registration-required transient candidates. |
 | Accepted UI choices and accessibility | **Jämförelse** at `/search`, initial cost order, expandable detail tables/**Öppna alla**, cost-editor deep links with retained edits, explicit today-initialized date, keyboard/focus, linked field errors, semantic headers, 390-pixel width and precise feature-status copy. |
 
-PDF layout/export remains #66, and the cross-stage practical report remains #67.
-The preparation PR only verifies documentation and existing prerequisite CI.
+At that preparation point, PDF layout/export (#66) and cross-stage acceptance
+(#67) were still later work. Both are now delivered, as recorded below. The
+preparation PR itself only verified documentation and existing prerequisite CI.
 
 ### Issue #65 workspace evidence
 
@@ -199,7 +203,8 @@ Implemented on `feature/65-comparison-workspace` from merged #85 / PR #86
 [PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87), merge
 `4ba0a0b0f386f7e077c4466a046726cdf3a9df97` on 2026-09-08.
 [Merged-main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34274854144)
-passed all ordinary checks. Whole-stage acceptance (#67) remains separate.
+passed all ordinary checks. Whole-stage acceptance was delivered separately
+through #67 / PR #91.
 [Workspace behavior and recovery](comparison-workspace.md) describe the delivered
 flows and module boundaries; the following local evidence remains unchanged.
 
@@ -388,7 +393,8 @@ legacy 50+50 transition/report/mapping; and URL deletion of compared facts,
 costs and a matching draft. The existing suites retain B1–B8, A1–A11,
 precision, full inventory, failure and manual-isolation coverage. No product
 code or acceptance rule changed. Read the report's warnings and exact deferred
-cleanup path; PR acceptance does not imply that the stage is already merged.
+cleanup path and the [approved merge/closure record](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure).
+The procedure below remains the reproducible acceptance specification.
 
 1. Use B1-B8 and the 3A fixtures. Confirm main/detail tables use the same profile,
    period, mode, and registration identity; every missing calculation is named.
@@ -415,11 +421,12 @@ manual example alone does not replace regression coverage.
 ## Issue #85 complete-set evidence
 
 Implementation branch: `feature/85-all-vehicle-comparison`, based on merged PR
-#84 (`1bf03875c6fa65a1cf477dff427e43c5758d0cf6`). This records verification of
-the PR work; it does not claim an approved merge or delivery of #65's UI.
+#84 (`1bf03875c6fa65a1cf477dff427e43c5758d0cf6`), subsequently delivered through
+approved PR #86. This records that feature's verification; #65's UI was
+delivered separately through PR #87.
 The [transport contract](comparison-api.md#complete-set-comparison-85) and
-[#65 handoff](comparison-workspace-preparation.md) define remaining publication
-and interaction work. No migration or version change to existing engines.
+[#65 handoff](comparison-workspace-preparation.md) identify the contracts and
+subsequent interaction work. No migration or version change to existing engines.
 
 | Acceptance boundary | Automated evidence |
 | --- | --- |

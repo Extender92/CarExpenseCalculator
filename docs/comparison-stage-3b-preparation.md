@@ -2,15 +2,18 @@
 
 ## Audit and delivery gate
 
-Execution update: the user subsequently assigned #67 after approved preparation
-PR #90 merged as `16f6981`. Dependencies and green main CI were rechecked;
-#67 is now `status:in-progress` on `chore/67-comparison-stage-acceptance`.
+Completion update: the user assigned #67 after approved preparation PR #90
+merged as `16f6981`, then approved the acceptance delivery through PR #91.
+#67 is closed; tracker #12 and milestone 3B were closed after the final audit.
 The [execution report](comparison-stage-3b-verification-report.md) records
 1,012 backend, 273 frontend and 69 Chromium passes and fresh PDF/native-print
-inspection. It supplies the evidence requested below. This remains a PR-branch
-delivery pending separate merge approval and stage/tracker review. The
-preparation-only statements below describe the earlier audit, not current
-implementation readiness.
+inspection, the approved merge and green merged-main CI. It supplies the evidence
+requested below. The preparation-only statements below preserve the earlier
+dated audit and its original gates; they are not outstanding work or current
+readiness instructions. Later planning remains at the
+[documented checkpoint](roadmap.md#current-planning-checkpoint).
+
+### Historical preparation audit
 
 Prepared on 2026-09-09 against clean `main`
 `72ded81784950860ab9ab186a5f4c30974ee2951`. The user assigned preparation,

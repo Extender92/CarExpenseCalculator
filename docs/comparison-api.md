@@ -8,13 +8,14 @@ Implemented for issue #64 through approved
 [green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34221394540).
 Core facts (#62 / PR #80) and evaluation (#63 /
 PR #82) are already merged. UI #65, PDF #66 and whole-stage acceptance #67
-remain separate deliveries. The [#65 workspace](comparison-workspace.md) is now
+were delivered separately through PRs #87, #89 and #91. The [#65 workspace](comparison-workspace.md) is
 merged through approved PR #87 and enables the existing availability flag. It
 does not change this HTTP contract or enable automatic discovery.
 
-The [#66 preparation](comparison-pdf-preparation.md) consumes the existing
-complete response for a frontend-only report. No PDF endpoint or additional
-source/input reads are planned.
+The [#66 PDF report](comparison-pdf.md) consumes the existing complete response
+in the frontend without a PDF endpoint or additional source/input reads. The
+[whole-stage acceptance report](comparison-stage-3b-verification-report.md#approved-merge-and-stage-closure)
+records final verification and closure of 3B.
 
 The [#65 preparation](comparison-workspace-preparation.md) distinguishes these
 implemented contracts from the accepted complete-set workspace. Issue #85 adds

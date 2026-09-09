@@ -2,7 +2,7 @@
 
 [![Build, test and verify](https://github.com/Extender92/CarExpenseCalculator/actions/workflows/ci.yml/badge.svg)](https://github.com/Extender92/CarExpenseCalculator/actions/workflows/ci.yml)
 
-Car Expense Calculator is a local-first web application for comparing used cars before purchase. It will combine deterministic ownership-cost calculations, configurable buying rules, listing and vehicle data, and an optional AI review.
+Car Expense Calculator is a local-first web application for comparing used cars before purchase. It combines deterministic ownership-cost calculations, configurable buying rules, and listing and vehicle data. Advisory AI review remains future work.
 
 The repository is a monorepo modernized from a console prototype. The old implementation is recoverable through the `legacy-console` Git tag.
 
@@ -10,13 +10,13 @@ The repository is a monorepo modernized from a console prototype. The old implem
 
 The repository foundation, manual-calculator milestone, and URL-analysis milestone are complete. The application includes deterministic calculations, automatic unsaved previews, Swedish calculator, comparison and URL-review interfaces, PostgreSQL-backed current scenarios and listings, private Codex extraction, and explicit listing-to-calculator linkage with outdated-version detection. Issue #65 is merged through PR #87; automatic discovery and advisory AI review remain future work.
 
-The current work is split into household calculations (stage 3A) and
-comparison with configurable buying scores (stage 3B). A common editable
+Household calculations (stage 3A) and comparison with configurable buying
+scores (stage 3B) are complete. A common editable
 household profile drives cost previews for all cars, including
 purchase financing from available cash and a separate leasing model. Current
 data remains registration-based with no calculation history. See the
 [Household calculations and comparison plan](docs/household-comparison-plan.md)
-for accepted decisions and normative target specifications. Stage 3A has its
+for accepted decisions and implemented specifications. Stage 3A has its
 Swedish workspace and a [stage acceptance report](docs/household-stage-3a-verification-report.md).
 Stage 3A acceptance was merged through [PR #78](https://github.com/Extender92/CarExpenseCalculator/pull/78)
 with green CI. Stage 3B's
@@ -33,8 +33,8 @@ changing it cannot inherit an older price's confirmation. Issue #64 delivered
 [PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83):
 current rule/fact storage, explicit evidence actions, cost confirmation and
 revision-checked stored previews alongside independent manual previews.
-PDF (#66) is merged through approved PR #89; #67 acceptance is verified on its
-PR branch and still requires separately approved merge. The
+PDF (#66) is merged through approved PR #89; whole-stage acceptance (#67)
+is merged through approved PR #91. The
 [#65 workspace preparation](docs/comparison-workspace-preparation.md) records
 the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
 all saved cars must be compared together without a fixed total vehicle-count
@@ -51,7 +51,7 @@ supports explicit manual candidates, rule/fact editing, separate saves and
 source/confirmation review. The existing `RuleBasedSearch` availability flag is
 enabled with this working screen; it does not enable automatic listing discovery.
 
-Six of seven stage 3B items are merged. The
+All seven stage 3B implementation items are merged. The
 [#66 PDF report](docs/comparison-pdf.md) is delivered through approved
 [PR #89](https://github.com/Extender92/CarExpenseCalculator/pull/89), following
 preparation PR #88. It captures the complete current comparison, including all
@@ -60,8 +60,19 @@ The [#67 acceptance report](docs/comparison-stage-3b-verification-report.md)
 records the new whole-stage execution: **1,012 backend, 273 frontend and 69
 Chromium tests**, the full criterion catalogue, source/confirmation and legacy
 lifecycles, plus fresh PDF and native-print inspection. No production changes
-were needed. This is verified PR-branch work, not a merged stage-completion
-claim; #67 and the 3B tracker/milestone remain open pending their delivery gates.
+were needed. [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91)
+was approved and merged on 2026-09-09 as
+`d096aecec539d44d231fecf1412a6fc4560e005b`, with
+[green main CI](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34397026629).
+Issue #67, [tracker #12](https://github.com/Extender92/CarExpenseCalculator/issues/12)
+and [milestone 3B](https://github.com/Extender92/CarExpenseCalculator/milestone/3)
+are closed after the final delivery audit.
+
+No later implementation issue is ready. AI review (#14/#69), registry access
+(#68), and mileage-based service planning (#70) still need refinement;
+automatic discovery (#13) and image review (#15) remain on hold. See the
+[current planning checkpoint](docs/roadmap.md#current-planning-checkpoint).
+Completing 3B does not start preparation or implementation of a later milestone.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

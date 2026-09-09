@@ -17,9 +17,9 @@ The initial complete local run used code and tests recorded in commit
 The later report-test timing correction and its verification are recorded below;
 production implementation remains unchanged. The report and tests are published in
 [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91).
-This is branch acceptance evidence; separate merge approval and a final review
-of #12 and milestone 3B are still required. Neither tracker nor milestone is
-closed by this report.
+The sections below preserve the actual branch acceptance evidence. The
+[approved merge and stage closure](#approved-merge-and-stage-closure) record
+the subsequent delivery and final audit separately.
 
 The [preparation matrix](comparison-stage-3b-preparation.md) and
 [acceptance procedure](household-comparison-verification.md#practical-stage-3b-acceptance)
@@ -38,10 +38,36 @@ Chromium run without retries. Migration, readiness, pinned CLI and URL
 acceptance passed there as well. The implementation/tests are identical to
 the tested commit above; this later revision adds the report/status documents.
 
-The final publication, including the test-harness correction below, is checked by the
-[current PR checks](https://github.com/Extender92/CarExpenseCalculator/pull/91/checks)
-before handoff. CI links deliberately identify the tested revision separately
-from the document that records it. The issue links both the PR and this report.
+The final publication, including the test-harness correction below, passed
+[PR CI 34372418504](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34372418504)
+and [push CI 34372413805](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34372413805)
+on `08e07adab226b033af808f2763c6f65059fa9e61`. CI links identify the tested
+revision separately from the document that records it. The issue links both
+the PR and this report.
+
+## Approved merge and stage closure
+
+The user approved [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91),
+which merged on **2026-09-09** as
+`d096aecec539d44d231fecf1412a6fc4560e005b`. Its tree was verified identical
+to the green final PR head above. [Post-merge main CI 34397026629](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34397026629)
+passed backend, frontend, OpenAPI and Docker/end-to-end jobs:
+**1,012 backend / 273 frontend / 69 Chromium tests**, zero failed/skipped,
+zero backend build warnings/errors. Chromium finished in 3.6 minutes without
+retries; URL acceptance also passed. Existing tooling advisories and the
+deferred cleanup below remain disclosed.
+
+The final audit verified all seven approved deliveries: #62 / PR #80,
+#63 / PR #82, #64 / PR #83, #85 / PR #86, #65 / PR #87, #66 / PR #89 and
+#67 / PR #91. All implementation issues are closed. The required fresh practical
+PDF/native-print session is recorded below. No product defect, unresolved
+decision or required acceptance check remains for 3B.
+
+[Tracker #12](https://github.com/Extender92/CarExpenseCalculator/issues/12)
+and [milestone 3B](https://github.com/Extender92/CarExpenseCalculator/milestone/3)
+were closed after this review. Stage 3B is complete. The
+[planning checkpoint](roadmap.md#current-planning-checkpoint) preserves later
+refinement and pause gates; this closure starts no later milestone or deployment.
 
 ## Environment and executed checks
 
@@ -246,7 +272,7 @@ route handlers to finish in `finally`. It strengthens the observed behavior;
 it neither suppresses callback errors nor changes the application.
 The corrected case passed **20/20 consecutive local runs, zero retries**;
 the entire **8/8 report suite** then passed without retries, including the
-250-car export. Frontend lint passed again. Final PR checks cover the corrected
+250-car export. Frontend lint passed again. Final PR and merged-main checks passed the corrected
 full suite. The second disposable verification stack and its volumes were
 removed afterward as well.
 
@@ -299,8 +325,8 @@ under the same directory. This is the complete new work-owned cleanup root.
 The three prior files in `temp/issue67/preparation/` and all older deferred
 inventories, including the read-only Node/PDF tools, remain untouched.
 
-Local acceptance, the practical session and the published acceptance CI run
-passed. All ordinary checks on the final PR head must also be green before
-handoff. After separate approval to merge, audit the stage and this evidence before closing
-tracker #12 and milestone 3B. Registry integration, advisory AI and later/paused
-work remain outside this acceptance.
+Local acceptance, the fresh practical session, final PR CI and merged-main CI
+passed. The approved delivery and final tracker/milestone closure are recorded
+above. The ignored cleanup files remain a disclosed manual housekeeping item,
+not an outstanding product or acceptance dependency. Registry integration,
+advisory AI and later/paused work remain outside this acceptance.
