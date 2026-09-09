@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { corruptOwnedLegacyResults } from "./legacy-test-data";
 import {
   expect,
   test,
@@ -849,45 +849,7 @@ test("atomic two-car legacy review recovers corrupt results and preserves every 
   }
   // Deliberately unreadable derived data is created only in the fake-only Compose
   // database, for our UUIDs. Never accept an arbitrary SQL target or public endpoint.
-  const project = process.env.COMPOSE_PROJECT_NAME ?? "car-expense-e2e";
-  expect(project).toBe("car-expense-e2e");
-  const docker = process.platform === "win32" ? "docker.exe" : "docker";
-  const compose = [
-    "compose",
-    "-p",
-    project,
-    "-f",
-    "compose.yaml",
-    "-f",
-    "compose.e2e.yaml",
-  ];
-  const services = execFileSync(
-    docker,
-    [...compose, "ps", "--services", "--status", "running"],
-    { cwd: "../..", encoding: "utf8" },
-  );
-  expect(services.split(/\r?\n/)).toContain("fake-codex-extractor");
-  expect(services.split(/\r?\n/)).not.toContain("codex-extractor");
-  for (const id of ids) expect(id).toMatch(/^[0-9a-f-]{36}$/);
-  execFileSync(
-    docker,
-    [
-      ...compose,
-      "exec",
-      "-T",
-      "postgres",
-      "psql",
-      "-U",
-      "car_expense_app",
-      "-d",
-      "car_expense_calculator",
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-c",
-      `UPDATE saved_cost_scenarios SET result_schema_version=999, result_snapshot='{}'::jsonb WHERE vehicle_id IN ('${ids[0]}','${ids[1]}')`,
-    ],
-    { cwd: "../..", encoding: "utf8" },
-  );
+  corruptOwnedLegacyResults(ids);
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/manual/transition");
   await expect(page.getByLabel("Årlig körsträcka (mil)")).toHaveValue("0");
