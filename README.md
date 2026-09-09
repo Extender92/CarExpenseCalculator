@@ -33,7 +33,7 @@ changing it cannot inherit an older price's confirmation. Issue #64 delivered
 [PR #83](https://github.com/Extender92/CarExpenseCalculator/pull/83):
 current rule/fact storage, explicit evidence actions, cost confirmation and
 revision-checked stored previews alongside independent manual previews.
-PDF (#66) is implemented on its review branch; stage acceptance (#67) remains. The
+PDF (#66) is merged through approved PR #89; stage acceptance (#67) remains. The
 [#65 workspace preparation](docs/comparison-workspace-preparation.md) records
 the accepted UI choices and [#85 backend prerequisite](docs/all-vehicle-comparison-preparation.md):
 all saved cars must be compared together without a fixed total vehicle-count
@@ -50,12 +50,15 @@ supports explicit manual candidates, rule/fact editing, separate saves and
 source/confirmation review. The existing `RuleBasedSearch` availability flag is
 enabled with this working screen; it does not enable automatic listing discovery.
 
-Five of seven stage 3B items are merged. The
-[#66 PDF report](docs/comparison-pdf.md) is implemented and locally verified on
-`feature/66-comparison-pdf`, following merged preparation PR #88. It captures the
-complete current comparison, including all cars, assumptions, sources and
-unsaved markers, for browser print-to-PDF. This branch delivery is not an approved
-merge; #67 remains the final whole-stage acceptance.
+Six of seven stage 3B items are merged. The
+[#66 PDF report](docs/comparison-pdf.md) is delivered through approved
+[PR #89](https://github.com/Extender92/CarExpenseCalculator/pull/89), following
+preparation PR #88. It captures the complete current comparison, including all
+cars, assumptions, sources and unsaved markers, for browser print-to-PDF.
+The [#67 acceptance preparation](docs/comparison-stage-3b-preparation.md) maps
+the remaining whole-stage checks to existing tests and practical evidence.
+Baseline: **1,012 backend, 273 frontend and 63 Chromium tests**. Preparation
+does not complete the stage; #67 and the 3B tracker/milestone remain open.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs

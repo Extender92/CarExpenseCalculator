@@ -56,9 +56,11 @@ independent extraction outcomes through manual review, saved-listing lifecycle,
 and listing-linked calculation versioning. Stage 3B facts, the deterministic
 rule/score engine and comparison persistence/API (#62–#64) are merged through
 PRs #80, #82 and #83. The all-car backend #85 / PR #86 and Swedish comparison
-interface #65 / PR #87 are also merged. PDF (#66) has a
-[preparation audit](comparison-pdf-preparation.md); PDF, whole-stage acceptance
-(#67), automatic discovery, advisory AI review and image review remain future work.
+interface #65 / PR #87 are also merged. The [PDF report](comparison-pdf.md)
+(#66 / PR #89) is merged, including feature-level PDF/native-print verification.
+The [#67 preparation](comparison-stage-3b-preparation.md) defines the remaining
+whole-stage acceptance. Automatic discovery, advisory AI review and image review
+remain future work.
 
 Stage 3A Core supports shared household assumptions, purchase financing and
 partial ownership costs, including energy, compound depreciation, separate

@@ -11,9 +11,9 @@ UI choices and the [#85 complete-set backend prerequisite](all-vehicle-compariso
 The #85 complete-set backend is merged through PR #86. The
 [Swedish comparison workspace](comparison-workspace.md) is delivered for #65
 through approved PR #87 with green merged-main CI. The
-[PDF report](comparison-pdf.md) is implemented and verified on the #66 review
-branch after preparation PR #88; its merge requires approval. Whole-stage
-acceptance remains #67. This stage depends on
+[PDF report](comparison-pdf.md) is merged through approved PR #89 after
+preparation PR #88. The [#67 preparation](comparison-stage-3b-preparation.md)
+maps the remaining whole-stage acceptance. This stage depends on
 accepted [household calculations](household-calculations.md), including shared
 assumptions, partial results, and current data. It evaluates manually entered
 or explicitly reviewed registered candidates from all three product modes.
@@ -430,7 +430,7 @@ screen's 50-car page or expanded sections, in the selected active-view API order
 Capture only a completely received current generation; preserve partial sections
 and their errors without inventing complete totals. Report rendering uses a
 separate immutable copy of that response and never rereads live editor values.
-Issue #66 implements this contract on `feature/66-comparison-pdf`:
+Issue #66 implements this contract, merged through approved PR #89:
 `ComparisonWorkspace.openReport()` checks freshness, accepted generation,
 pending work, conflicts and local errors again before capturing. The
 frontend-owned `ComparisonReportInput` uses `cloneExact` and recursive freezing;
