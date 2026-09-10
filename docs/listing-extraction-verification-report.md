@@ -2,6 +2,10 @@
 
 Status: **implementation under verification; complete live extraction is not accepted**.
 Branch: `fix/codex-login-status`, based on `fc7eefc138ed904e5eb4e2a916f48f530f15dc0f`.
+Implementation commit: [`f043686`](https://github.com/Extender92/CarExpenseCalculator/commit/f043686).
+Published as [draft PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93).
+The [PR checks](https://github.com/Extender92/CarExpenseCalculator/pull/93/checks)
+show CI for the current head; later documentation-only commits do not alter the tested implementation.
 This report describes the branch, not a merged or deployed release. No merge is authorized.
 
 ## Acceptance finding
