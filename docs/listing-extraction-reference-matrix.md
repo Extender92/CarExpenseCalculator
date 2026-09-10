@@ -166,4 +166,3 @@ Equipment order/count and source flags are checked separately from membership:
 Equipment order/count and source flags are checked separately from membership:
 - Final 1: 15 entries; exact sequence match: True; sourcePageObserved: False; status: partial; {"correct": 61, "missing": 1, "incorrect": 0}.
 - Final 2: 0 entries; exact sequence match: False; sourcePageObserved: False; status: partial; {"correct": 13, "missing": 49, "incorrect": 0}.
-
