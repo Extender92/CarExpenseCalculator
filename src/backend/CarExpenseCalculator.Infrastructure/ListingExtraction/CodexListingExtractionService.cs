@@ -10,7 +10,7 @@ using CarExpenseCalculator.Extraction.Contracts;
 
 namespace CarExpenseCalculator.Infrastructure.ListingExtraction;
 
-internal sealed class CodexListingExtractionService(
+internal sealed partial class CodexListingExtractionService(
     HttpClient httpClient,
     ListingDraftProcessor draftProcessor) : IListingExtractionService
 {
@@ -144,7 +144,9 @@ internal sealed class CodexListingExtractionService(
             || response.SchemaVersion != ListingExtractionContractVersions.Schema
             || response.AnalyzedAtUtc.Offset != TimeSpan.Zero
             || response.Sources is null
-            || response.Draft is null)
+            || response.Draft is null
+            || response.Draft.Details?.Specifications?.Any(x => x is null) == true
+            || response.Draft.Details?.SellerAnswers?.Any(x => x is null) == true)
         {
             return false;
         }
@@ -173,6 +175,7 @@ internal sealed class CodexListingExtractionService(
     {
         return new ListingDraft
         {
+            Details = MapDetails(source.Details, provenance),
             RegistrationNumber = TryRegistrationNumber(source.RegistrationNumber, provenance),
             Make = Value(source.Make, provenance),
             Model = Value(source.Model, provenance),

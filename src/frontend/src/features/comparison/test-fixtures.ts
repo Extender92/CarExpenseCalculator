@@ -152,7 +152,8 @@ export function response(
       favorable: view("favorable"),
       cautious: view("cautious"),
     },
-    transportVersion: n(1),
+    transportVersion: n(2),
+    listings: [],
   };
 }
 export const manualRequest = (count = 1): ComparisonRequest => ({

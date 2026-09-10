@@ -403,8 +403,8 @@ describe("ManualCalculatorPage", () => {
         vehicleTax: { amountSek: 2_400, cadence: "annual" as const },
       }, 4),
       vehicleId: listing.vehicleId,
-      sourceListingVersion: listing.listingVersion,
-      currentListingVersion: listing.listingVersion,
+      sourceListingVersion: Number(String(listing.listingVersion)),
+      currentListingVersion: Number(String(listing.listingVersion)),
       isListingOutdated: false,
       hasSavedListing: true,
     };
@@ -459,7 +459,7 @@ describe("ManualCalculatorPage", () => {
       ...createSavedResponse(completeScenario(), 3),
       vehicleId: listing.vehicleId,
       sourceListingVersion: 1,
-      currentListingVersion: listing.listingVersion,
+      currentListingVersion: Number(String(listing.listingVersion)),
       isListingOutdated: true,
       hasSavedListing: true,
     };

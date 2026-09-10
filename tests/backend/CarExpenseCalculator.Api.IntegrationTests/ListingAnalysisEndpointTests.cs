@@ -50,8 +50,8 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
             payload.Status);
         Assert.Equal(ListingAnalysisTestData.AnalyzedAtUtc, payload.AnalyzedAtUtc);
         Assert.Equal("gpt-5.6-luna", payload.RequestedModel);
-        Assert.Equal(2, payload.PromptVersion);
-        Assert.Equal(2, payload.SchemaVersion);
+        Assert.Equal(3, payload.PromptVersion);
+        Assert.Equal(3, payload.SchemaVersion);
         Assert.Equal([false, true], payload.Sources.Select(source => source.MatchesSubmittedUrl));
         Assert.Equal("ABC12D", payload.Listing.RegistrationNumber!.Value);
         Assert.Equal(89_900.50m, payload.Listing.PriceSek!.Value);
@@ -127,7 +127,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
                 "imageCount", "fuelTypes", "transmission", "drivetrain", "bodyType", "colour", "horsepower",
                 "engineDisplacementCubicCentimetres", "energyConsumptions", "annualVehicleTaxSek", "ownerCount",
                 "firstRegistrationDate", "lastInspectionDate", "nextInspectionDate", "towBar", "equipment",
-                "sellerClaims", "conditionNotes",
+                "sellerClaims", "conditionNotes", "details",
             ],
             listing.EnumerateObject().Select(property => property.Name));
         Assert.Equal(JsonValueKind.Null, listing.GetProperty("make").ValueKind);

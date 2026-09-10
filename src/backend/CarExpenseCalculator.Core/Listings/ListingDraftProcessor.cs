@@ -5,7 +5,7 @@ using CarExpenseCalculator.Core.Vehicles;
 
 namespace CarExpenseCalculator.Core.Listings;
 
-public sealed class ListingDraftProcessor
+public sealed partial class ListingDraftProcessor
 {
     private const decimal MaximumMoneySek = 100_000_000m;
     private const decimal MaximumOdometerKilometres = 10_000_000m;
@@ -48,8 +48,7 @@ public sealed class ListingDraftProcessor
 
         var errors = new List<ListingValidationError>();
         var sources = NormalizeSources(submittedUrl, returnedSources, errors);
-        var hasMatchedSource = sources.Any(source => source.MatchesSubmittedUrl);
-        var normalized = NormalizeDraft(draft, submittedUrl, hasMatchedSource, mode, errors);
+        var normalized = NormalizeDraft(draft, submittedUrl, mode, errors);
 
         if (errors.Count > 0)
         {
@@ -57,7 +56,7 @@ public sealed class ListingDraftProcessor
         }
 
         var missingFields = CreateMissingFields(normalized);
-        var status = Classify(normalized, hasMatchedSource);
+        var status = Classify(normalized);
         return new ListingProcessingResult(
             status,
             sources,
@@ -92,17 +91,16 @@ public sealed class ListingDraftProcessor
     private static ListingDraft NormalizeDraft(
         ListingDraft draft,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors)
     {
         return new ListingDraft
         {
+            Details = NormalizeDetails(draft.Details, submittedUrl, mode, errors),
             RegistrationNumber = NormalizeValue(
                 draft.RegistrationNumber,
                 "registrationNumber",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 NormalizeRegistrationNumber),
@@ -110,28 +108,24 @@ public sealed class ListingDraftProcessor
                 draft.Make,
                 "make",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Model = NormalizeGeneralLabel(
                 draft.Model,
                 "model",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Variant = NormalizeGeneralLabel(
                 draft.Variant,
                 "variant",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             ModelYear = NormalizeValue(
                 draft.ModelYear,
                 "modelYear",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeInteger(value, 1886, 2100)),
@@ -139,7 +133,6 @@ public sealed class ListingDraftProcessor
                 draft.Vin,
                 "vin",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 NormalizeVin),
@@ -147,7 +140,6 @@ public sealed class ListingDraftProcessor
                 draft.VehicleLabel,
                 "vehicleLabel",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 allowAi: false),
@@ -155,7 +147,6 @@ public sealed class ListingDraftProcessor
                 draft.PriceSek,
                 "priceSek",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeDecimal(value, 0m, MaximumMoneySek)),
@@ -163,7 +154,6 @@ public sealed class ListingDraftProcessor
                 draft.OdometerKilometres,
                 "odometerKilometres",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeDecimal(value, 0m, MaximumOdometerKilometres)),
@@ -171,42 +161,36 @@ public sealed class ListingDraftProcessor
                 draft.SellerType,
                 "sellerType",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Locality = NormalizeGeneralLabel(
                 draft.Locality,
                 "locality",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             County = NormalizeGeneralLabel(
                 draft.County,
                 "county",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             PublishedDate = NormalizeSimpleValue(
                 draft.PublishedDate,
                 "publishedDate",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             UpdatedDate = NormalizeSimpleValue(
                 draft.UpdatedDate,
                 "updatedDate",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             ImageCount = NormalizeValue(
                 draft.ImageCount,
                 "imageCount",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeInteger(value, 0, 10_000)),
@@ -214,42 +198,36 @@ public sealed class ListingDraftProcessor
                 draft.FuelTypes,
                 "fuelTypes",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Transmission = NormalizeEnumValue(
                 draft.Transmission,
                 "transmission",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Drivetrain = NormalizeEnumValue(
                 draft.Drivetrain,
                 "drivetrain",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             BodyType = NormalizeEnumValue(
                 draft.BodyType,
                 "bodyType",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Colour = NormalizeGeneralLabel(
                 draft.Colour,
                 "colour",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Horsepower = NormalizeValue(
                 draft.Horsepower,
                 "horsepower",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeInteger(value, 1, 10_000)),
@@ -257,7 +235,6 @@ public sealed class ListingDraftProcessor
                 draft.EngineDisplacementCubicCentimetres,
                 "engineDisplacementCubicCentimetres",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeDecimal(value, 1m, MaximumEngineDisplacement)),
@@ -265,14 +242,12 @@ public sealed class ListingDraftProcessor
                 draft.EnergyConsumptions,
                 "energyConsumptions",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             AnnualVehicleTaxSek = NormalizeValue(
                 draft.AnnualVehicleTaxSek,
                 "annualVehicleTaxSek",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeDecimal(value, 0m, MaximumMoneySek)),
@@ -280,7 +255,6 @@ public sealed class ListingDraftProcessor
                 draft.OwnerCount,
                 "ownerCount",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 value => NormalizeInteger(value, 0, 10_000)),
@@ -288,35 +262,30 @@ public sealed class ListingDraftProcessor
                 draft.FirstRegistrationDate,
                 "firstRegistrationDate",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             LastInspectionDate = NormalizeSimpleValue(
                 draft.LastInspectionDate,
                 "lastInspectionDate",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             NextInspectionDate = NormalizeSimpleValue(
                 draft.NextInspectionDate,
                 "nextInspectionDate",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             TowBar = NormalizeSimpleValue(
                 draft.TowBar,
                 "towBar",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors),
             Equipment = NormalizeStringCollection(
                 draft.Equipment,
                 "equipment",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 MaximumEquipmentCount,
@@ -325,7 +294,6 @@ public sealed class ListingDraftProcessor
                 draft.SellerClaims,
                 "sellerClaims",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 MaximumSellerClaimCount,
@@ -334,7 +302,6 @@ public sealed class ListingDraftProcessor
                 draft.ConditionNotes,
                 "conditionNotes",
                 submittedUrl,
-                hasMatchedSource,
                 mode,
                 errors,
                 MaximumConditionNoteCount,
@@ -346,7 +313,6 @@ public sealed class ListingDraftProcessor
         SourcedValue<string>? value,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors,
         bool allowAi = true)
@@ -355,7 +321,6 @@ public sealed class ListingDraftProcessor
             value,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors,
             input => NormalizeString(input, MaximumGeneralLabelLength),
@@ -366,7 +331,6 @@ public sealed class ListingDraftProcessor
         SourcedValue<T>? value,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors)
         where T : notnull
@@ -375,7 +339,6 @@ public sealed class ListingDraftProcessor
             value,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors,
             input => input is null
@@ -387,7 +350,6 @@ public sealed class ListingDraftProcessor
         SourcedValue<TEnum>? value,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors)
         where TEnum : struct, Enum
@@ -396,7 +358,6 @@ public sealed class ListingDraftProcessor
             value,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors,
             input => Enum.IsDefined(input)
@@ -408,7 +369,6 @@ public sealed class ListingDraftProcessor
         SourcedValue<T>? source,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors,
         Func<T, Normalization<T>> normalize,
@@ -424,7 +384,6 @@ public sealed class ListingDraftProcessor
             source.Provenance,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors,
             allowAi);
@@ -458,7 +417,6 @@ public sealed class ListingDraftProcessor
         SourcedCollection<TEnum>? source,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors)
         where TEnum : struct, Enum
@@ -472,7 +430,6 @@ public sealed class ListingDraftProcessor
             source.Provenance,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors);
         if (provenance is null)
@@ -517,7 +474,6 @@ public sealed class ListingDraftProcessor
         SourcedCollection<string>? source,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors,
         int maximumCount,
@@ -532,7 +488,6 @@ public sealed class ListingDraftProcessor
             source.Provenance,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors);
         if (provenance is null)
@@ -542,12 +497,7 @@ public sealed class ListingDraftProcessor
 
         if (source.Values.Count > maximumCount)
         {
-            HandleInvalidValue(
-                mode,
-                provenance,
-                errors,
-                $"{path}.values",
-                $"At most {maximumCount} values are allowed.");
+            AddError(errors, $"{path}.values", $"At most {maximumCount} values are allowed.");
         }
 
         var countToProcess = mode == ProcessingMode.Extraction
@@ -590,7 +540,6 @@ public sealed class ListingDraftProcessor
         SourcedCollection<EnergyConsumption>? source,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors)
     {
@@ -603,7 +552,6 @@ public sealed class ListingDraftProcessor
             source.Provenance,
             path,
             submittedUrl,
-            hasMatchedSource,
             mode,
             errors);
         if (provenance is null)
@@ -613,9 +561,7 @@ public sealed class ListingDraftProcessor
 
         if (source.Values.Count > MaximumEnergyConsumptionCount)
         {
-            HandleInvalidValue(
-                mode,
-                provenance,
+            AddError(
                 errors,
                 $"{path}.values",
                 $"At most {MaximumEnergyConsumptionCount} energy consumptions are allowed.");
@@ -712,7 +658,6 @@ public sealed class ListingDraftProcessor
         FieldProvenance? provenance,
         string path,
         ListingUrl submittedUrl,
-        bool hasMatchedSource,
         ProcessingMode mode,
         ICollection<ListingValidationError> errors,
         bool allowAi = true)
@@ -750,7 +695,7 @@ public sealed class ListingDraftProcessor
             return null;
         }
 
-        if (isAi && (!allowAi || !hasMatchedSource))
+        if (isAi && !allowAi)
         {
             return null;
         }
@@ -897,13 +842,8 @@ public sealed class ListingDraftProcessor
         }
     }
 
-    private static ListingAnalysisStatus Classify(ListingDraft listing, bool hasMatchedSource)
+    private static ListingAnalysisStatus Classify(ListingDraft listing)
     {
-        if (!hasMatchedSource)
-        {
-            return ListingAnalysisStatus.Unavailable;
-        }
-
         if (listing.RegistrationNumber is not null
             && listing.PriceSek is not null
             && listing.Make is not null
@@ -951,7 +891,9 @@ public sealed class ListingDraftProcessor
             || listing.TowBar is not null
             || listing.Equipment is not null
             || listing.SellerClaims is not null
-            || listing.ConditionNotes is not null;
+            || listing.ConditionNotes is not null
+            // An identifier copied from the requested address is not vehicle content.
+            || (listing.Details is { } details && (details with { ListingId = null }).HasValues);
     }
 
     private static void HandleInvalid(
@@ -973,7 +915,12 @@ public sealed class ListingDraftProcessor
         string path,
         string message)
     {
-        if (provenance.Origin == FieldOrigin.User)
+        // Explicit content limits must never silently discard an AI value.
+        if (message.StartsWith("Value cannot exceed ", StringComparison.Ordinal))
+        {
+            AddError(errors, path, message);
+        }
+        else if (provenance.Origin == FieldOrigin.User)
         {
             HandleInvalid(mode, errors, path, message);
         }

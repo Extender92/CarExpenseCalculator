@@ -1,3 +1,4 @@
+import { n } from "@/features/household/numbers";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -159,7 +160,7 @@ describe("Swedish URL analysis workspace", () => {
     deferred[1].reject(new ListingAnalysisApiError("Tillfälligt fel", 503, "listingAnalysisProviderUnavailable"));
     deferred[2].resolve({ ...completeListingAnalysisResponse, normalizedUrl: "https://cars.example/item/3" });
 
-    await waitFor(() => expect(screen.getAllByText("Komplett extraktion")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("Grunduppgifter kompletta")).toHaveLength(2));
     expect(screen.getByText("Tillfälligt fel")).toBeInTheDocument();
     expect(screen.getByText("Analysen misslyckades")).toBeInTheDocument();
   });
@@ -185,7 +186,7 @@ describe("Swedish URL analysis workspace", () => {
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
 
     await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(10));
-    expect(await screen.findAllByText("Komplett extraktion")).toHaveLength(9);
+    expect(await screen.findAllByText("Grunduppgifter kompletta")).toHaveLength(9);
     expect(screen.getByText("Delvis extraktion")).toBeInTheDocument();
   });
 
@@ -304,7 +305,7 @@ describe("Swedish URL analysis workspace", () => {
     await waitFor(() => expect(createSavedListing).toHaveBeenCalledTimes(1));
     expect(vi.mocked(createSavedListing).mock.calls[0][0]).toMatchObject({
       registrationNumber: "ABC123",
-      listing: { draft: { odometerKilometres: { value: 167100 } } },
+      listing: { draft: { odometerKilometres: { value: n("167100") } } },
     });
     expect(await screen.findByText("Bilen har sparats.")).toBeInTheDocument();
     expect(screen.getByText("Sparad")).toBeInTheDocument();

@@ -22,7 +22,10 @@ public sealed record SavedListingResponse(
     IReadOnlyList<ListingFieldCode> MissingFields,
     bool HasSavedCostScenario,
     long? SavedCostScenarioSourceListingVersion,
-    bool SavedCostScenarioOutdated);
+    bool SavedCostScenarioOutdated)
+{
+    public bool SourcePageObserved => Sources.Any(x => x.MatchesSubmittedUrl);
+}
 
 public sealed record SavedListingSummaryResponse(
     Guid VehicleId,

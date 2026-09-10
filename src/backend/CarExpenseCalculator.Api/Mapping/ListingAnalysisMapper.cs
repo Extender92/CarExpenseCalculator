@@ -62,7 +62,8 @@ internal static class ListingAnalysisMapper
             MapValue(listing.TowBar),
             MapCollection(listing.Equipment),
             MapCollection(listing.SellerClaims),
-            MapCollection(listing.ConditionNotes));
+            MapCollection(listing.ConditionNotes),
+            ListingDetailsMapper.ToResponse(listing.Details));
     }
 
     private static ApiContracts.SourcedValueResponse<T>? MapValue<T>(

@@ -18,6 +18,7 @@ internal static class HouseholdDraftListingMapper
 
     private static A.ListingDraftInput Draft(C.ListingDraft x) => new()
     {
+        Details = ListingDetailsMapper.ToInput(x.Details),
         RegistrationNumber = Value(x.RegistrationNumber, value => value.Value),
         Make = Value(x.Make, value => value),
         Model = Value(x.Model, value => value),

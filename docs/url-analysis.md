@@ -132,8 +132,9 @@ path comparison stays ordinal.
 
 The response retains the complete ordered source-URL list reported by Web
 Search and marks every entry with `matchesSubmittedUrl`. Source titles are not
-retained. If no source matches, every extracted value is discarded and the
-analysis is `unavailable`, even when the model returned plausible data.
+retained. Missing matches do not discard valid AI suggestions. They are marked
+unconfirmed with missing page metadata; `sourcePageObserved` is server-derived.
+The submitted URL remains the reference, not proof of independent verification.
 
 ## Analysis status
 
@@ -141,9 +142,9 @@ analysis is `unavailable`, even when the model returned plausible data.
 
 | Value | Meaning |
 | --- | --- |
-| `complete` | A source matches and registration number, price, make, model, model year, and odometer are all populated. |
-| `partial` | A source matches and at least one usable externally sourced fact is populated, but one or more essential fields are missing. |
-| `unavailable` | No source matches or no usable externally sourced fact remains after normalization. |
+| `complete` | Registration number, price, make, model, model year, and odometer are all populated. |
+| `partial` | At least one usable listing fact is populated, but one or more essential fields are missing. |
+| `unavailable` | No usable listing fact remains after normalization. |
 
 `unavailable` is a successful HTTP 200 preview result when the Codex turn itself
 succeeded. Runtime or configuration failures use the typed HTTP errors
@@ -371,7 +372,7 @@ Each request uses this policy:
 | Output | JSONL events and a final response constrained by versioned JSON Schema |
 | Session | Ephemeral, with no local rollout persistence |
 | Isolation | Read-only empty working directory, no repository, user instructions, project rules, plugins, apps, MCP servers, agents, or unrelated tools |
-| Timeout | 60 seconds for queueing, process startup, search, and parsing |
+| Timeout | 240 seconds for queueing, process startup, search, and parsing |
 | Concurrency | Process-wide maximum of two Codex turns |
 | Retries | None automatically |
 | Search-event limit | None; the one turn is bounded by timeout and concurrency |
@@ -379,10 +380,10 @@ Each request uses this policy:
 The pinned invocation is recorded as `requestedModel`. This is configuration
 evidence and does not claim to prove provider-side routing because the current
 Codex JSONL event contract contains no provider-reported model identifier.
-The current prompt and extraction-schema versions are both `2`. Version 2
-replaces the former general location field with independent nullable locality
-and county fields. Both versions are returned with every structurally successful
-Codex response, and incompatible versions are rejected.
+The current prompt and extraction-schema versions are both `3`, adding the
+[complete listing extension](complete-listing-extraction.md). The live runtime
+requires 3/3; persisted older 2/2 extraction metadata remains readable. Both
+versions are returned with every structurally successful Codex response.
 
 The instruction treats all page material as untrusted data and says to ignore
 instructions embedded in the page. It requests only supported listing facts and
@@ -451,7 +452,7 @@ Extraction failures use `application/problem+json` and these stable codes:
 | --- | --- | --- |
 | 429 | `listingAnalysisRateLimited` | Codex or ChatGPT rate limited the turn. No retry duration is returned because the runtime has no reliable value. |
 | 503 | `listingAnalysisNotConfigured` | The sidecar, ChatGPT authentication, or configured Codex model is unavailable. |
-| 503 | `listingAnalysisTimedOut` | The complete operation exceeded 60 seconds. |
+| 503 | `listingAnalysisTimedOut` | The complete operation exceeded 240 seconds. |
 | 503 | `listingAnalysisProviderUnavailable` | Sidecar connection, process, Codex service, or runtime availability failure. |
 | 503 | `listingAnalysisInvalidProviderResponse` | JSONL or the final structured response cannot satisfy the contract. |
 
@@ -505,7 +506,7 @@ vehicleId: UUID
 registrationNumber: normalized string
 revision: positive aggregate revision
 listingVersion: positive current-listing version
-listingSchemaVersion: integer, initially 1
+listingSchemaVersion: integer, current writes 2; older 1 remains readable
 createdAtUtc: UTC timestamp
 updatedAtUtc: UTC timestamp
 analyzedAtUtc: UTC timestamp
@@ -538,8 +539,8 @@ Create requires a valid normalized ordinary Swedish registration number and a
 reviewed listing draft. If the draft also contains registration-number
 provenance, its normalized value must equal the aggregate registration number.
 Extraction metadata may be null for a manually completed listing created while
-extraction was unavailable. AI provenance requires matching source and extraction
-version metadata.
+extraction was unavailable. AI provenance requires the submitted listing reference and valid extraction
+version metadata, but does not require an observed opened page.
 
 Requests never accept a vehicle UUID, aggregate revision override, listing
 version, listing schema version, status, missing codes, database timestamps, or
@@ -592,9 +593,10 @@ listing-only, scenario-only, or contain both current records.
 | `listing_equipment` | Ordered normalized equipment entries. |
 
 This relational/JSONB split is implemented by migration
-`20260904100409_AddCurrentVehicleListings`. It stores no raw Codex response,
-complete description, seller identity, contact data, street address, or listing
-history.
+`20260904100409_AddCurrentVehicleListings`, extended by
+`20260910132449_AddListingDetails` with nullable typed `details` JSONB. Complete
+relevant descriptions are allowed; raw Codex output, seller identity, contact
+data, street addresses and listing history remain excluded.
 
 The public `revision` is the vehicle aggregate optimistic-concurrency revision
 and changes after any aggregate write. `listingVersion` starts at 1 and changes
@@ -669,7 +671,7 @@ saving a calculation.
 Retain only current structured values needed for review, rules, comparison, and
 calculator prefilling. Do not retain:
 
-- complete listing descriptions or copied page text;
+- irrelevant page text, menus, advertising and contact information;
 - HTML, cookies, images, or image URLs;
 - seller names, phone numbers, email addresses, street addresses, or other
   contact data;
@@ -724,3 +726,15 @@ The automated suites and acceptance runbook cover:
 - safe calculator prefilling and outdated versus manual-only calculations; and
 - fake-extractor Compose and browser flows without live Codex calls or ChatGPT
   usage.
+
+## Complete listing extension (current branch)
+
+See [Complete listing input](complete-listing-extraction.md) for the full field
+catalogue, limits, source semantics, guarded migration rollback and comparison
+transport version 2. Descriptions retain paragraphs; original weight labels and
+seller claims are not promoted into stronger vehicle facts. Collection entries
+in the extension carry individual provenance. Content-limit violations are
+errors in extraction and review, never silent truncation. The URL client uses
+lossless numeric JSON for decimal inputs and revisions. Complete live extraction
+is not accepted until the [reference matrix](listing-extraction-verification-report.md)
+has no unexplained missing or incorrect fields.

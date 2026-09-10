@@ -1,3 +1,4 @@
+import { ListingContent } from "@/features/url-analysis/ListingContent";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -684,7 +685,7 @@ export function ComparisonTables({
         select={select}
       />
       <div className="flex flex-wrap gap-3">
-        <Button variant="secondary" onClick={() => onExpanded(detailPanels)}>
+        <Button variant="secondary" onClick={() => onExpanded([...detailPanels, "Annonsunderlag"])}>
           Öppna alla
         </Button>
         <Button variant="secondary" onClick={() => onExpanded([])}>
@@ -718,6 +719,17 @@ export function ComparisonTables({
           )}
         </details>
       ))}
+      <details className={`${panelClass} min-w-0`} open={expanded.includes("Annonsunderlag")}
+        onToggle={e => { if (e.currentTarget.open !== expanded.includes("Annonsunderlag")) onExpanded(e.currentTarget.open
+          ? [...expanded,"Annonsunderlag"] : expanded.filter(x => x !== "Annonsunderlag")); }}>
+        <summary>Annonsunderlag</summary>
+        {expanded.includes("Annonsunderlag") && rows.map(r => {
+          const listing = response?.listings?.find(x => x.vehicleId === r.vehicleId);
+          return <div key={r.vehicleId} className="mt-4">{listing
+            ? <ListingContent title={`${r.registrationNumber} – Annonsunderlag`} value={listing}/>
+            : <p>{r.registrationNumber}: Inget sparat annonsunderlag.</p>}</div>;
+        })}
+      </details>
     </div>
   );
 }

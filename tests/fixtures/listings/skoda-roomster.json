@@ -1,0 +1,87 @@
+{
+  "referenceUrl": "https://www.blocket.se/mobility/item/26434732?ci=3",
+  "referenceOrigin": "User-provided reference text, independently checked in Chromium on 2026-09-10",
+  "draft": {
+    "registrationNumber": null,
+    "make": "Skoda",
+    "model": "Roomster",
+    "variant": "Praktik 1.2 12v Manuell",
+    "modelYear": 2008,
+    "vin": "TMBTHB5J185009503",
+    "priceSek": 29500,
+    "odometerKilometres": 129090,
+    "sellerType": null,
+    "locality": "Norrköping",
+    "county": null,
+    "publishedDate": null,
+    "updatedDate": "2026-09-08",
+    "imageCount": 7,
+    "fuelTypes": [
+      "petrol"
+    ],
+    "transmission": "manual",
+    "drivetrain": "frontWheelDrive",
+    "bodyType": "van",
+    "colour": "Vit",
+    "horsepower": 69,
+    "engineDisplacementCubicCentimetres": 1200,
+    "energyConsumptions": null,
+    "annualVehicleTaxSek": null,
+    "ownerCount": 2,
+    "firstRegistrationDate": "2007-12-05",
+    "lastInspectionDate": "2026-04-21",
+    "nextInspectionDate": "2027-06-30",
+    "towBar": true,
+    "equipment": [
+      "ABS",
+      "Sidoairbags",
+      "Antispinn",
+      "ESC",
+      "Takrails",
+      "Servostyrning",
+      "Startspärr",
+      "Airbag fram",
+      "Uppvärmda säten, fram",
+      "Dragkrok, fast",
+      "Centrallås",
+      "12V-uttag",
+      "Klimatanläggning",
+      "AUX-ingång",
+      "CD-spelare"
+    ],
+    "sellerClaims": [
+      "Vinterdäck på ALU fälg ingår",
+      "Servad i egen verkstad varje år"
+    ],
+    "conditionNotes": null,
+    "details": {
+      "title": "Skoda Roomster",
+      "subtitle": "Praktik 1.2 12v Manuell",
+      "description": "Praktik 1.2, Drag, AC, Vinterdäck på ALU fälg ingår, 2 ägare, Servad i egen verkstad varje år",
+      "listingId": "26434732",
+      "seats": 2,
+      "doors": 4,
+      "luggageLitres": null,
+      "weightKilograms": 1240,
+      "weightLabel": "Vikt",
+      "weightCategory": "unspecified",
+      "trailerWeightKilograms": null,
+      "trailerWeightLabel": null,
+      "trailerWeightCategory": null,
+      "postalCode": "60209",
+      "country": "Sverige",
+      "feeClass": "Transportbil",
+      "saleForm": "Begagnad bil till salu",
+      "updatedLocalDateTime": "2026-09-08T20:15:00",
+      "updatedTimeZone": null,
+      "updatedUtcOffsetMinutes": null,
+      "specifications": null,
+      "sellerAnswers": [
+        {
+          "question": "Har bilen några skulder?",
+          "answer": "Nej"
+        }
+      ]
+    }
+  }
+}

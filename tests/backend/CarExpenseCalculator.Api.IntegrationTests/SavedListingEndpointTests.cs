@@ -32,7 +32,7 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         Assert.Equal("ABC12D", saved.RegistrationNumber);
         Assert.Equal(1, saved.Revision);
         Assert.Equal(1, saved.ListingVersion);
-        Assert.Equal(1, saved.ListingSchemaVersion);
+        Assert.Equal(2, saved.ListingSchemaVersion);
         Assert.Equal(SavedListingTestData.AnalyzedAtUtc, saved.AnalyzedAtUtc);
         Assert.Equal("https://example.com/listings/abc12d?campaign=Autumn", saved.NormalizedUrl);
         Assert.Equal("gpt-5.6-luna", saved.RequestedModel);
@@ -78,7 +78,7 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         Assert.Empty(saved.Listing.Equipment!.Values);
         Assert.Empty(saved.Listing.SellerClaims!.Values);
         Assert.Empty(saved.Listing.ConditionNotes!.Values);
-        Assert.Equal("unavailable", JsonName(saved.Status));
+        Assert.Equal("partial", JsonName(saved.Status));
         Assert.Contains(saved.MissingFields, field => JsonName(field) == "model");
     }
 
@@ -462,9 +462,9 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         finally
         {
             await factory.ExecuteDatabaseCommandAsync(
-                "UPDATE vehicle_listings SET listing_schema_version = 1; "
+                "UPDATE vehicle_listings SET listing_schema_version = 2; "
                 + "ALTER TABLE vehicle_listings ADD CONSTRAINT ck_vehicle_listings_versions "
-                + "CHECK (listing_version >= 1 AND listing_schema_version = 1)");
+                + "CHECK (listing_version >= 1 AND listing_schema_version IN (1, 2))");
         }
 
         using var restoredGet = await _client.GetAsync($"/api/saved-listings/{created.VehicleId}");

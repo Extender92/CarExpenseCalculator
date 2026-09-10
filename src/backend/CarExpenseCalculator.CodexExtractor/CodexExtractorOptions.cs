@@ -24,7 +24,7 @@ public sealed record CodexExtractorOptions
 
     public int SchemaVersion { get; init; } = ListingExtractionContractVersions.Schema;
 
-    internal TimeSpan OperationTimeout { get; init; } = TimeSpan.FromSeconds(60);
+    internal TimeSpan OperationTimeout { get; init; } = TimeSpan.FromSeconds(240);
 
     public bool HasValidOwnedConfiguration =>
         string.Equals(Model, RequiredModel, StringComparison.Ordinal)

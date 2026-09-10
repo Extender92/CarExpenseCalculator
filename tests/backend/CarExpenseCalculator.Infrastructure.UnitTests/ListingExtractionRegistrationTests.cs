@@ -7,7 +7,7 @@ namespace CarExpenseCalculator.Infrastructure.UnitTests;
 public sealed class ListingExtractionRegistrationTests
 {
     [Fact]
-    public void Typed_client_uses_the_private_sidecar_and_65_second_transport_timeout()
+    public void Typed_client_uses_the_private_sidecar_and_245_second_transport_timeout()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(
@@ -29,6 +29,6 @@ public sealed class ListingExtractionRegistrationTests
         var client = Assert.IsType<HttpClient>(clientField.GetValue(service));
 
         Assert.Equal(new Uri("http://codex-extractor:8080"), client.BaseAddress);
-        Assert.Equal(TimeSpan.FromSeconds(65), client.Timeout);
+        Assert.Equal(TimeSpan.FromSeconds(245), client.Timeout);
     }
 }

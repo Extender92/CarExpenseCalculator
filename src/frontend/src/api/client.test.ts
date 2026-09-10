@@ -1,3 +1,4 @@
+import { fromOrdinary } from "@/features/household/numbers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   analyzeListing,
@@ -166,7 +167,7 @@ describe("listing analysis API client", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(completeListingAnalysisResponse));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(analyzeListing("https://cars.example/item/1")).resolves.toEqual(completeListingAnalysisResponse);
+    await expect(analyzeListing("https://cars.example/item/1")).resolves.toEqual(fromOrdinary(completeListingAnalysisResponse));
     expect(new URL(requestUrl(fetchMock.mock.calls[0][0])).pathname).toBe("/api/listing-analyses");
     expect(requestMethod(fetchMock.mock.calls[0][0])).toBe("POST");
     expect(await requestBody(fetchMock.mock.calls[0][0])).toEqual({ url: "https://cars.example/item/1" });
@@ -241,9 +242,9 @@ describe("saved listing API client", () => {
       .mockResolvedValueOnce(jsonResponse(savedListingResponse));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(listSavedListings()).resolves.toEqual([savedListingSummary]);
-    await expect(getSavedListing(savedListingResponse.vehicleId)).resolves.toEqual(savedListingResponse);
-    await expect(getSavedListingByRegistration("ABC-123")).resolves.toEqual(savedListingResponse);
+    await expect(listSavedListings()).resolves.toEqual(fromOrdinary([savedListingSummary]));
+    await expect(getSavedListing(savedListingResponse.vehicleId)).resolves.toEqual(fromOrdinary(savedListingResponse));
+    await expect(getSavedListingByRegistration("ABC-123")).resolves.toEqual(fromOrdinary(savedListingResponse));
 
     expect(requestUrl(fetchMock.mock.calls[0][0])).toContain("/api/saved-listings");
     expect(requestUrl(fetchMock.mock.calls[1][0])).toContain(savedListingResponse.vehicleId);

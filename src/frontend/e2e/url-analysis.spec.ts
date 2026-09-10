@@ -20,9 +20,9 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   ].join("\n"));
   await page.getByRole("button", { name: "Analysera URL:er" }).click();
 
-  await expect(page.getByText("Komplett extraktion")).toBeVisible();
+  await expect(page.getByText("Grunduppgifter kompletta")).toHaveCount(2);
   await expect(page.getByText("Delvis extraktion")).toBeVisible();
-  await expect(page.getByText("Ingen verifierad extraktion")).toHaveCount(2);
+  await expect(page.getByText("Inga användbara annonsuppgifter")).toHaveCount(1);
   await expect(page.getByText("Analysen misslyckades")).toBeVisible();
   await expect.poll(() => listingRequests.length).toBe(5);
   for (const request of listingRequests) {
@@ -54,10 +54,10 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await expect(unavailableCard.getByText(/Användare · Manuell · Bekräftad/)).toBeVisible();
 
   const unmatchedCard = resultCards.nth(3);
-  await expect(unmatchedCard.getByText(/kunde inte bekräftas som källa/)).toBeVisible();
+  await expect(unmatchedCard.getByText(/Metadata om öppnad sida saknas/)).toBeVisible();
   await unmatchedCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
   await expect(unmatchedCard.getByText("Kompletterande källa")).toBeVisible();
-  await expect(unmatchedCard.getByText("Volvo V70 2.4")).toHaveCount(0);
+  await expect(unmatchedCard.getByText("Volvo V70 2.4")).toBeVisible();
 
   await page.reload();
   await expect(page.getByText("Inga annonsunderlag är öppna ännu.")).toBeVisible();
@@ -88,7 +88,7 @@ test("limits a ten-URL FIFO batch to two browser and extractor operations", asyn
   await page.getByLabel("URL:er").fill(urls.join("\n"));
   await page.getByRole("button", { name: "Analysera URL:er" }).click();
 
-  await expect(page.getByText("Komplett extraktion")).toHaveCount(10);
+  await expect(page.getByText("Grunduppgifter kompletta")).toHaveCount(10);
   expect(started).toEqual(urls);
   expect(maximumActive).toBe(2);
   expect(active).toBe(0);
@@ -135,7 +135,7 @@ test("maps every extraction failure and retries only after an explicit action", 
 
   const retryCard = page.locator('[data-testid^="listing-card-"]').filter({ hasText: cases.at(-1)!.name });
   await retryCard.getByRole("button", { name: "Analysera igen" }).click();
-  await expect(retryCard.getByText("Komplett extraktion")).toBeVisible();
+  await expect(retryCard.getByText("Grunduppgifter kompletta")).toBeVisible();
   expect(requests.get(urls.at(-1)!)).toBe(2);
   expect(statuses.get(urls.at(-1)!)).toEqual([503, 200]);
   for (const url of urls.slice(0, -1)) expect(requests.get(url)).toBe(1);

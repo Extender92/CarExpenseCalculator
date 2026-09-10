@@ -69,7 +69,8 @@ public sealed record SavedVehicleFacts(Guid VehicleId, RegistrationNumber Regist
 {
     public bool NeedsListingReview => CurrentListingVersion is not null && FactsReviewedListingVersion != CurrentListingVersion;
 }
-public sealed record ComparisonStoredVehicle(SavedVehicleFacts Facts, SavedVehicleCostInput Cost);
+public sealed record ComparisonStoredVehicle(SavedVehicleFacts Facts, SavedVehicleCostInput Cost,
+    CarExpenseCalculator.Infrastructure.Persistence.SavedListings.SavedListing? Listing = null);
 public sealed record ComparisonSnapshot(SavedHouseholdProfile Profile, SavedRuleProfile Rules,
     IReadOnlyList<ComparisonStoredVehicle> Vehicles);
 public sealed record ComparisonBaseline(SavedHouseholdProfile Profile, SavedRuleProfile Rules,

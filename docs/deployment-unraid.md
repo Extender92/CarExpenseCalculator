@@ -276,3 +276,24 @@ the backup. Lower rollback targets also remove comparison data before performing
 their documented actions. Upgrade/rollback/reapply verification uses only
 disposable PostgreSQL 18 databases, never Unraid user data. See the
 [comparison persistence contract](comparison-api.md#versions-and-persistence).
+
+### Complete-listing format upgrade and guarded rollback
+
+Migration `20260910132449_AddListingDetails` adds nullable typed JSONB and version
+constraints. Upgrade API, sidecar and frontend together: extraction is 3/3 and
+the complete comparison transport is 2. CLI 0.153.0 and the existing authentication
+volume remain unchanged. Use the explicit `api migrate` command; do not migrate
+at startup. Take and verify a PostgreSQL backup first.
+
+The previous schema target is:
+
+```bash
+docker compose -f compose.unraid.yaml run --rm api migrate 20260908103211_AddComparisonPersistence
+```
+
+Run this only in a controlled rollback with writes stopped. The command rejects
+new-format listing rows or new extraction/details in the shared draft and rolls
+back the operation. It never deletes that data or relabels extraction versions.
+Use a compatible backup when reverting an installation containing new-format
+content. Compatible old listings and household data are preserved by an allowed
+rollback. See [format and evidence rules](complete-listing-extraction.md).

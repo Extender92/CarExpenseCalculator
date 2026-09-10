@@ -61,7 +61,7 @@ the UTC analysis time, normalized concrete opened-source URLs, and the raw
 schema-constrained listing fields. The raw schema has no provenance, status,
 missing-field codes, vehicle label, source metadata, or trusted Core result.
 Every field is required but nullable; `null` means unknown and `[]` means a
-known-empty collection. The API-side transport timeout is 65 seconds, five
+known-empty collection. The API-side transport timeout is 245 seconds, five
 seconds beyond the sidecar's complete 60-second operation budget, and no retry
 handler is installed.
 
@@ -85,19 +85,24 @@ Codex CLI and every build/runtime base image are pinned:
 | Repository | None; use the explicit safe skip for the Git-repository check |
 | Instructions | Ignore user configuration and user/project execution rules |
 | Web search | Live and restricted to the submitted normalized host |
-| Search context | Medium |
+| Search context | High |
 | Output | JSONL events plus a final response constrained by versioned JSON Schema |
-| Timeout | 60 seconds including queueing, process startup, search, and parsing |
+| Timeout | 240 seconds including queueing, process startup, search, and parsing |
 | Concurrency | At most two turns across the complete sidecar process |
 | Retries | No application-level retry |
 
 The owned invocation uses `--ephemeral`, `--json`, `--output-schema`,
 `--sandbox read-only`, `--skip-git-repo-check`, `--ignore-user-config`, and
 `--ignore-rules`, together with controlled CLI configuration overrides for the
-model, reasoning effort, live web search, medium context, and one allowed
+model, reasoning effort, live web search, high context, and one allowed
 domain. The sidecar disables agents, apps, plugins, MCP servers, local shell
 network access, and every unrelated tool. Only the hosted web-search capability
 needed for extraction is available.
+
+For the pinned CLI, local image access is disabled with
+`features.view_image=false`. Its strict configuration parser rejects the
+`tools.view_image` key before starting extraction; removing strict validation
+is not a substitute for using the supported setting.
 
 There is no artificial limit on the number of web-search events inside the
 single turn. Cost and capacity are bounded by one turn per URL, the total
@@ -108,8 +113,10 @@ starts a replacement turn automatically.
 The prompt treats all page content as hostile data. It explicitly ignores page
 instructions and requests only the fields allowed by the
 [URL analysis specification](url-analysis.md). It excludes seller identities,
-contact details, street addresses, cookies, hidden content, complete listing
-descriptions, recommendations, purchase conclusions, and unsupported inference.
+contact details (including those inside descriptions), street addresses, cookies,
+hidden content, recommendations, purchase conclusions, and unsupported inference.
+It preserves complete relevant descriptions, specifications, equipment and seller
+questions/answers; see the [version 3 contract](complete-listing-extraction.md).
 Missing values are returned as null rather than guessed.
 
 ## Source evidence and output validation
@@ -120,11 +127,17 @@ the source list only from completed `web_search` items whose action is
 search-result snippets, citations, and model-authored URLs in the final
 structured response are never accepted as proof that a page was opened.
 
+The [2026-09-10 isolated CLI 0.154.0 check](listing-extraction-source-gate.md)
+returned schema-valid drafts for both supplied Blocket URLs, but only opaque
+and search actions without concrete opened-page URLs. That historical result does not upgrade the deployed 0.153.0 pin.
+The subsequent user decision permits unconfirmed suggestions without this metadata;
+the experiment is no longer a blocking source-evidence policy.
+
 Source URLs are retained in first-seen order and deduplicated by their complete
 normalized URL. Core parses and normalizes each source and applies its
-directional page-matching rules. If the submitted page is not represented by an
-opened source, all extracted values are discarded and the successful preview is
-classified as `unavailable`.
+directional page-matching rules. Missing opened-page metadata produces a review
+notice, while valid unconfirmed suggestions remain usable and saveable. It never
+creates user/registry verification or proves that every page field was retrieved.
 
 The final message must satisfy the pinned versioned JSON Schema. An incomplete
 JSONL stream, unknown required event shape, missing terminal event, malformed
@@ -132,8 +145,9 @@ JSON, non-schema output, or output that cannot be safely associated with the
 turn is an invalid-runtime response. Structurally valid individual listing
 values still pass through Core, which discards invalid AI fields independently.
 
-Prompt and schema versions are currently 2. This version replaces the former
-general location field with separately nullable locality and county facts. The
+Prompt and schema versions are currently 3. The typed complete-listing extension
+is described in [its contract](complete-listing-extraction.md). Version 2 remains
+readable in saved listings with separate nullable locality and county facts. The
 prompt forbids inferring a county from a locality and excludes street and seller
 addresses. The response records `requestedModel`, which proves the model
 requested by the pinned invocation but does not claim to prove provider-side
@@ -183,6 +197,12 @@ is requested. `GET /api/system/status` exposes the result as
 `integrations.codexListingExtractionConfigured` without changing the
 database-based overall health status.
 
+The pinned CLI writes a successful `login status` message to standard error.
+The installation probe accepts the ChatGPT login message on either output
+stream only after a zero exit code; oversized output remains unconfigured.
+Neither stream is logged or returned through the status endpoint. This probe
+does not start an extraction turn.
+
 ## Failure behavior and observability
 
 The sidecar and Infrastructure adapter preserve these provider-neutral outcomes:
@@ -191,7 +211,7 @@ The sidecar and Infrastructure adapter preserve these provider-neutral outcomes:
 | --- | --- |
 | Codex/ChatGPT rate limit | `listingAnalysisRateLimited` |
 | Sidecar, authentication, or configured model unavailable | `listingAnalysisNotConfigured` |
-| Total operation exceeds 60 seconds | `listingAnalysisTimedOut` |
+| Total operation exceeds 240 seconds | `listingAnalysisTimedOut` |
 | Process, connection, Codex service, or runtime availability failure | `listingAnalysisProviderUnavailable` |
 | JSONL or structured output cannot satisfy the contract | `listingAnalysisInvalidProviderResponse` |
 
@@ -219,7 +239,7 @@ fake processes, fake HTTP handlers, and deterministic JSONL fixtures to verify:
 
 - exact owned arguments and configuration;
 - schema/prompt versioning and hostile-content instructions;
-- ordered source extraction and Core source gating;
+- ordered source observations and independent unconfirmed-field retention;
 - complete, partial, unavailable, rate-limited, timeout, unavailable, and
   invalid-output outcomes;
 - concurrency, cancellation, process cleanup, and absence of retries;
@@ -243,3 +263,8 @@ home or depends on a ChatGPT session. The complete procedure is documented in
 - [Codex JSONL event contract](https://github.com/openai/codex/blob/main/codex-rs/exec/src/exec_events.rs)
 - [Codex model-metadata limitation](https://github.com/openai/codex/issues/39406)
 - [Codex source-metadata limitation](https://github.com/openai/codex/issues/35415)
+
+The final live checks and remaining retrieval gaps are recorded in the
+[acceptance report](listing-extraction-verification-report.md). Nginx allows 270
+seconds on the URL-analysis route, including its trailing-slash variant. JSONL
+limits are 4 MiB per line, 10 MiB stdout and 1 MiB stderr.

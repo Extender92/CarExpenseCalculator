@@ -1,3 +1,4 @@
+import { detailsErrors } from "./details";
 import type { ListingReviewDraft, ScalarFieldName } from "./review-model";
 
 export interface ParsedNumber {
@@ -78,6 +79,7 @@ export function validateReviewDraft(draft: ListingReviewDraft): Record<string, s
   validateStringCollection(draft.sellerClaims, "sellerClaims", 20, 200, errors);
   validateStringCollection(draft.conditionNotes, "conditionNotes", 10, 300, errors);
   validateEnergy(draft, errors);
+  if (draft.details) Object.assign(errors, detailsErrors(draft.details));
 
   return errors;
 }

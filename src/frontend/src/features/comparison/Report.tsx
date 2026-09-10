@@ -1,3 +1,4 @@
+import { ListingContent } from "@/features/url-analysis/ListingContent";
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatNumeric } from "@/features/household/numbers";
@@ -401,6 +402,8 @@ export const ReportDocument = memo(function ReportDocument({
                 exact={false}
               />
             ))}
+            {response.listings?.filter(l => l.vehicleId === r.vehicleId).map(l =>
+              <ListingContent key={l.vehicleId} title={`${r.registrationNumber} – Annonsunderlag`} value={l} />)}
             {months.length > 0 && <Calendar result={r} />}
             <DataTable
               title={`${r.registrationNumber} – Effektivt ekonomiskt underlag`}

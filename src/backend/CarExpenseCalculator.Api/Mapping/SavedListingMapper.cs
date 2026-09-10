@@ -100,6 +100,7 @@ internal static class SavedListingMapper
     {
         return new CoreContracts.ListingDraft
         {
+            Details = ListingDetailsMapper.ToCore(input.Details, errors),
             RegistrationNumber = MapRegistrationNumber(input.RegistrationNumber, errors),
             Make = MapValue(input.Make, "draft.make", errors),
             Model = MapValue(input.Model, "draft.model", errors),

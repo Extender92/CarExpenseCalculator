@@ -15,6 +15,8 @@ internal sealed class VehicleListingEntity
 
     public int ListingSchemaVersion { get; set; }
 
+    public string? DetailsJson { get; set; }
+
     public required string SubmittedUrl { get; set; }
 
     public required string NormalizedUrl { get; set; }

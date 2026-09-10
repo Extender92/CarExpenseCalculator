@@ -1,0 +1,564 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Listing extraction v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registrationNumber",
+    "make",
+    "model",
+    "variant",
+    "modelYear",
+    "vin",
+    "priceSek",
+    "odometerKilometres",
+    "sellerType",
+    "locality",
+    "county",
+    "publishedDate",
+    "updatedDate",
+    "imageCount",
+    "fuelTypes",
+    "transmission",
+    "drivetrain",
+    "bodyType",
+    "colour",
+    "horsepower",
+    "engineDisplacementCubicCentimetres",
+    "energyConsumptions",
+    "annualVehicleTaxSek",
+    "ownerCount",
+    "firstRegistrationDate",
+    "lastInspectionDate",
+    "nextInspectionDate",
+    "towBar",
+    "equipment",
+    "sellerClaims",
+    "conditionNotes",
+    "details"
+  ],
+  "properties": {
+    "registrationNumber": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "make": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "variant": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "modelYear": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "vin": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "priceSek": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "odometerKilometres": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "sellerType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "private",
+        "dealer",
+        null
+      ]
+    },
+    "locality": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "county": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "publishedDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updatedDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "imageCount": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "fuelTypes": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "petrol",
+              "diesel",
+              "electricity",
+              "ethanol",
+              "biogas",
+              "naturalGas",
+              "liquefiedPetroleumGas",
+              "hydrogen",
+              "other"
+            ]
+          }
+        }
+      ]
+    },
+    "transmission": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "manual",
+        "automatic",
+        null
+      ]
+    },
+    "drivetrain": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "frontWheelDrive",
+        "rearWheelDrive",
+        "allWheelDrive",
+        null
+      ]
+    },
+    "bodyType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "sedan",
+        "hatchback",
+        "wagon",
+        "suv",
+        "coupe",
+        "convertible",
+        "minivan",
+        "pickup",
+        "van",
+        "other",
+        null
+      ]
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "horsepower": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "engineDisplacementCubicCentimetres": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "energyConsumptions": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "unit",
+              "consumptionPer100Kilometres"
+            ],
+            "properties": {
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "litre",
+                  "kilowattHour",
+                  "kilogram",
+                  null
+                ]
+              },
+              "consumptionPer100Kilometres": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "annualVehicleTaxSek": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ownerCount": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "firstRegistrationDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lastInspectionDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "nextInspectionDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "towBar": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "equipment": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "sellerClaims": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "conditionNotes": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "details": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "subtitle",
+        "description",
+        "listingId",
+        "seats",
+        "doors",
+        "luggageLitres",
+        "weightKilograms",
+        "weightLabel",
+        "weightCategory",
+        "trailerWeightKilograms",
+        "trailerWeightLabel",
+        "trailerWeightCategory",
+        "postalCode",
+        "country",
+        "feeClass",
+        "saleForm",
+        "updatedLocalDateTime",
+        "updatedTimeZone",
+        "updatedUtcOffsetMinutes",
+        "specifications",
+        "sellerAnswers"
+      ],
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
+        "subtitle": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 32000
+        },
+        "listingId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "seats": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 100
+        },
+        "doors": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "luggageLitres": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "weightKilograms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "weightLabel": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "weightCategory": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "trailerWeightKilograms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "trailerWeightLabel": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "trailerWeightCategory": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "postalCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "feeClass": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "saleForm": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "updatedLocalDateTime": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "updatedTimeZone": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "updatedUtcOffsetMinutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": -840,
+          "maximum": 840
+        },
+        "specifications": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "value"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        "sellerAnswers": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "question",
+              "answer"
+            ],
+            "properties": {
+              "question": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "answer": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

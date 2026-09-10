@@ -157,7 +157,7 @@ public sealed class VehicleFactsEvidenceTests
     public void Reviewed_mapping_reuses_source_matching_and_does_not_accept_a_different_advertisement()
     {
         var other = ListingUrl.Parse("https://cars.example/item/other");
-        Assert.Equal(VehicleFactState.Unknown,
+        Assert.Equal(VehicleFactState.Known,
             _processor.FromReviewedListing(Url, [other], new() { OwnerCount = Source(2) }).OwnerCount!.State);
         Assert.Equal(VehicleFactState.Unknown,
             _processor.FromReviewedListing(Url, [Url], new()

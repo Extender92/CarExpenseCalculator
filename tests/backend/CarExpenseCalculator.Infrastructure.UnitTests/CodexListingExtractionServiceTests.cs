@@ -108,7 +108,7 @@ public sealed class CodexListingExtractionServiceTests
     }
 
     [Fact]
-    public async Task Missing_matching_source_discards_all_ai_values_and_returns_unavailable()
+    public async Task Missing_matching_source_preserves_unconfirmed_ai_values()
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
@@ -122,9 +122,25 @@ public sealed class CodexListingExtractionServiceTests
         var outcome = await service.ExtractAsync(ListingUrlValue);
 
         var success = Assert.IsType<ListingExtractionSuccess>(outcome);
-        Assert.Equal(ListingAnalysisStatus.Unavailable, success.ProcessingResult.Status);
-        Assert.Null(success.ProcessingResult.Listing.Make);
-        Assert.Null(success.ProcessingResult.Listing.Equipment);
+        Assert.Equal(ListingAnalysisStatus.Partial, success.ProcessingResult.Status);
+        Assert.Equal("Volvo", success.ProcessingResult.Listing.Make!.Value);
+        Assert.Equal(VerificationStatus.Unverified, success.ProcessingResult.Listing.Make.Provenance.Verification);
+        Assert.Empty(success.ProcessingResult.Listing.Equipment!.Values);
+    }
+
+    [Fact]
+    public async Task Malformed_detail_collection_is_an_invalid_response_not_an_unhandled_error()
+    {
+        var response = new ListingExtractionResponse(
+            "gpt-5.6-luna", ListingExtractionContractVersions.Prompt,
+            ListingExtractionContractVersions.Schema, DateTimeOffset.UtcNow, [],
+            new ExtractedListingDraft
+            {
+                Details = new ExtractedListingDetails { Specifications = [null!] }
+            });
+        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, response));
+        var result = Assert.IsType<ListingExtractionFailure>(await service.ExtractAsync(ListingUrlValue));
+        Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse, result.Code);
     }
 
     [Theory]
@@ -148,7 +164,7 @@ public sealed class CodexListingExtractionServiceTests
 
         var success = Assert.IsType<ListingExtractionSuccess>(outcome);
         Assert.Equal(
-            expectedMatch ? ListingAnalysisStatus.Partial : ListingAnalysisStatus.Unavailable,
+            ListingAnalysisStatus.Partial,
             success.ProcessingResult.Status);
         Assert.Equal(expectedMatch, success.ProcessingResult.Sources.Single().MatchesSubmittedUrl);
     }

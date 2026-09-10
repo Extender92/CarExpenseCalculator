@@ -46,7 +46,7 @@ public static class DependencyInjection
         services.AddHttpClient<IListingExtractionService, CodexListingExtractionService>(client =>
         {
             client.BaseAddress = new Uri(extractorAddress, UriKind.Absolute);
-            client.Timeout = TimeSpan.FromSeconds(65);
+            client.Timeout = TimeSpan.FromSeconds(245);
         });
 
         services.AddSingleton(new PostgresHealthCheck(connectionString));

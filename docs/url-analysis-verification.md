@@ -13,9 +13,9 @@ real Codex home, starts a live Codex turn, or consumes Codex allowance.
 | Layer | Verified behavior |
 | --- | --- |
 | Core unit tests | URL normalization and rejection, page identity, source matching, bounded listing values, missing fields, provenance, status, and reviewed-input validation. |
-| Codex sidecar tests | Owned CLI invocation, deterministic JSONL opened-page evidence, strict schema output, timeout, cancellation, concurrency two, failure classification, process cleanup, no retries, and safe logs. |
+| Codex sidecar tests | Owned CLI invocation, ChatGPT login on either output stream, bounded probes, concrete opened-page evidence (opaque actions and URL queries are not sources), strict schema output, timeout, cancellation, concurrency two, failure classification, process cleanup, no retries, and safe logs. |
 | Infrastructure tests | Private sidecar HTTP mapping, current-only PostgreSQL storage, versions, revisions, replacement, conflicts, cascade deletion, and forbidden-history boundaries. |
-| API tests | Unsaved and saved contracts, typed failures, configuration status, source gating, validation, optimistic concurrency, and operation without an available database where permitted. |
+| API tests | Unsaved and saved contracts, typed failures, configuration status, unconfirmed suggestion retention, validation, optimistic concurrency, and operation without an available database where permitted. |
 | Frontend tests | One-to-ten URL validation, FIFO scheduling, review/provenance, manual fallback, saved lifecycle, duplicate comparison, calculator prefilling, and outdated-link handling. |
 | OpenAPI verification | The generated TypeScript schema matches the public backend contract without drift. |
 | Compose verification | Only Nginx publishes a port; PostgreSQL, API, real sidecar, authentication state, and the private E2E fake remain isolated. |
@@ -86,8 +86,8 @@ contains data or Codex authentication that must be retained.
 - One through ten unique public URLs are accepted, with no more than two
   analysis requests in flight. Items complete independently in FIFO order.
 - Complete and partial source-matched results retain normalized facts and
-  unverified listing provenance. No-source and mismatched-source results are
-  unavailable and retain no unsupported extracted values.
+  unverified listing provenance. No-source and mismatched-source results retain valid unconfirmed AI suggestions
+  and expose missing page metadata separately.
 - Rate limiting, timeout, provider outage, and invalid output affect only their
   own cards. Nothing is retried automatically; a user action starts exactly one
   new request.
@@ -131,6 +131,40 @@ Follow [Unraid deployment](deployment-unraid.md) to prepare a dedicated
 Never paste authentication files into logs or issues. Re-authentication is
 safer than an unencrypted backup of the Codex home.
 
+## Local live-check finding: source evidence (2026-09-10)
+
+**Historical policy:** the behavior below was observed before the complete-listing
+change. The user superseded the source gate: missing metadata now leaves valid
+suggestions unconfirmed, not discarded. See the [new acceptance report](listing-extraction-verification-report.md).
+
+A user-authorized Audi listing check with Codex CLI `0.153.0` returned populated
+structured fields, including make, model, year, price and odometer matching the
+user's independently supplied reference. The pasted reference was not sent to
+the extraction model. A diagnostic run inspected event shapes in memory only;
+no raw JSONL, credentials or listing descriptions were retained.
+
+Completed web-search events included `action: { "type": "other" }` with a URL
+in `query`, and ordinary search actions. Neither carried an authoritative
+opened-page URL. The API therefore returned HTTP 200 `unavailable`, empty
+sources and missing fields. This is an unresolved live integration limitation,
+not evidence that the listing contains no vehicle information. Successful
+authentication and a completed Codex turn do not establish source availability.
+
+Do not promote `query` or model-authored URLs to opened-source evidence. The
+synthetic opaque-action regression preserves this boundary even when the draft
+contains usable-looking values. A source-transport correction (or a verified
+compatible CLI update) was originally required to demonstrate concrete opened-source evidence. That
+acceptance policy was subsequently replaced by field-by-field content verification.
+Changing action-name casing alone did not resolve this observed limitation.
+
+The user-approved upgrade checkpoint subsequently tested CLI `0.154.0` with
+both supplied URLs and the unchanged v2 prompt/schema. Both properly configured
+turns completed with populated drafts but no opened-source evidence. The
+[source-gate report](listing-extraction-source-gate.md) records the exact counts,
+anonymized event shape, failed setup attempts, 48 passing native sidecar tests,
+and cleanup inventory. The complete-listing expansion stopped at this gate;
+the running CLI and application contracts were not upgraded.
+
 ## Unraid acceptance checklist
 
 1. Back up and verify `car_expense_calculator` before applying migrations or
@@ -148,10 +182,17 @@ safer than an unencrypted backup of the Codex home.
    calculator linkage, outdated detection, and permanent deletion.
 8. Confirm the saved listing contains only current bounded structured values,
    sources, provenance, and versions. It must contain no raw Codex output,
-   complete description, seller identity, contact data, street address, or
+   seller identity, contact data, street address, or
    superseded history.
 
 Use disposable registration numbers for destructive smoke tests. Deletion is
 physical and cannot be restored by the application. Follow the backup and
 rollback warnings in [Unraid deployment](deployment-unraid.md); do not roll back
 persistent data merely to validate this runbook.
+
+## Complete listing acceptance
+
+The [new report](listing-extraction-verification-report.md) links reference fixtures,
+Core/schema limits, version compatibility, migration/draft protections, full
+comparison input, frozen PDF checks and every live attempt. Hosted retrieval
+limitations remain separate from the passing fake-extraction pipeline.

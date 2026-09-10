@@ -1,4 +1,7 @@
 import { createServer } from "node:http";
+import { readFileSync } from "node:fs";
+const references = Object.fromEntries(["audi-a4", "skoda-roomster"].map(name =>
+  [name, JSON.parse(readFileSync(new URL(`./references/${name}.json`, import.meta.url), "utf8")).draft]));
 
 const port = 8080;
 const maximumCapacity = 2;
@@ -40,6 +43,7 @@ const nullDraft = {
   equipment: null,
   sellerClaims: null,
   conditionNotes: null,
+  details: null,
 };
 
 const completeDraft = {
@@ -87,8 +91,8 @@ const server = createServer(async (request, response) => {
       requestedModel: "gpt-5.6-luna",
       reasoningEffort: "medium",
       codexCliVersion: "0.153.0",
-      promptVersion: 2,
-      schemaVersion: 2,
+      promptVersion: 3,
+      schemaVersion: 3,
     });
   }
   if (request.method === "GET" && request.url === "/internal/test-state") {
@@ -139,12 +143,13 @@ const server = createServer(async (request, response) => {
     const partial = testCase.outcome === "partial";
     const unavailable = testCase.outcome === "unavailable";
     const unmatched = testCase.outcome === "unmatchedSource";
-    const draft = unavailable
+    const reference = references[new URL(payload.normalizedUrl).pathname.split("/").at(-1)];
+    const draft = reference ? structuredClone(reference) : unavailable
       ? { ...nullDraft }
       : partial
         ? { ...nullDraft, make: "Volvo", locality: "Tenhult" }
         : { ...completeDraft };
-    const sources = unavailable
+    const sources = unavailable || reference
       ? []
       : unmatched
         ? ["https://unmatched.example/another-listing"]
@@ -152,8 +157,8 @@ const server = createServer(async (request, response) => {
 
     return json(response, 200, {
       requestedModel: "gpt-5.6-luna",
-      promptVersion: 2,
-      schemaVersion: 2,
+      promptVersion: 3,
+      schemaVersion: 3,
       analyzedAtUtc: "2026-09-03T08:00:00Z",
       sources,
       draft,

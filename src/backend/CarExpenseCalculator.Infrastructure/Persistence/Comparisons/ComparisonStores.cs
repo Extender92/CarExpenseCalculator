@@ -191,7 +191,8 @@ public sealed class ComparisonSnapshotStore(CarExpenseDbContext db) : ICompariso
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!byId.TryGetValue(entry.Id, out var vehicle))
                         throw new InvalidDataException("A comparison snapshot is incomplete.");
-                    result.Add(new(VehicleFactsStore.Read(vehicle), HouseholdStoreData.Vehicle(vehicle)));
+                    result.Add(new(VehicleFactsStore.Read(vehicle), HouseholdStoreData.Vehicle(vehicle),
+                    vehicle.Listing is null ? null : CarExpenseCalculator.Infrastructure.Persistence.SavedListings.SavedListingStore.ToSavedListing(vehicle)));
                 }
             }
             return new CompleteComparisonSnapshot(manifest.Baseline,
@@ -229,7 +230,8 @@ public sealed class ComparisonSnapshotStore(CarExpenseDbContext db) : ICompariso
             var vehicles = await HouseholdStoreData.Vehicles(db, false).Where(x => vehicleIds.Contains(x.Id)).ToListAsync(cancellationToken);
             var byId = vehicles.ToDictionary(x => x.Id);
             var result = vehicleIds.Select(id => byId.TryGetValue(id, out var vehicle)
-                ? new ComparisonStoredVehicle(VehicleFactsStore.Read(vehicle), HouseholdStoreData.Vehicle(vehicle))
+                ? new ComparisonStoredVehicle(VehicleFactsStore.Read(vehicle), HouseholdStoreData.Vehicle(vehicle),
+                    vehicle.Listing is null ? null : CarExpenseCalculator.Infrastructure.Persistence.SavedListings.SavedListingStore.ToSavedListing(vehicle))
                 : throw new ComparisonStoreException("vehicleNotFound", "Vehicle no longer exists.", id)).ToArray();
             return new ComparisonSnapshot(profile, rules, Array.AsReadOnly(result));
         }, cancellationToken);

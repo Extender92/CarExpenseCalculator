@@ -21,7 +21,7 @@ test("101 manual cars produce one complete three-view comparison through browser
     return { status: response.status, body: await response.json() };
   }, { route, body: manual(101) });
   expect(result.status).toBe(200);
-  expect(result.body).toMatchObject({ mode: "manual", candidateCount: 101, transportVersion: 1, baselineToken: null });
+  expect(result.body).toMatchObject({ mode: "manual", candidateCount: 101, transportVersion: 2, baselineToken: null, listings: [] });
   for (const key of ["baseline", "favorable", "cautious"]) {
     const view = result.body.views[key];
     expect(view.storageChecked).toBe(false);
@@ -81,7 +81,7 @@ for (const chunked of [false, true]) {
         : await request.post(route, { data: body, headers: { "Content-Type": "application/json" } }).then(async r => ({ status: r.status(), body: await r.json() }));
       expect(response.status).toBe(extra ? 413 : 200);
       if (extra) expect(response.body).toMatchObject({ code: "payloadTooLarge", maximumRequestBytes: maximum });
-      else expect(response.body).toMatchObject({ candidateCount: 0, transportVersion: 1 });
+      else expect(response.body).toMatchObject({ candidateCount: 0, transportVersion: 2 });
     }
   });
 }

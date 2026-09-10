@@ -19,6 +19,7 @@ public sealed class HouseholdMigrationTests(PostgreSqlFixture fixture) : Househo
         var car = await Legacy(db).CreateAsync(Reg(), ScenarioFactory.Complete());
         await Listings(db).ReplaceAsync(car.VehicleId, 1, ListingFactory.Complete());
         var migrator = db.Database.GetService<IMigrator>();
+        await MigrationTests.SeedLegacyListingFormatAsync(db);
         await migrator.MigrateAsync(PreviousMigration);
         var before = await ScalarAsync<string>("SELECT result_snapshot::text FROM saved_cost_scenarios");
         await migrator.MigrateAsync();
@@ -48,6 +49,7 @@ public sealed class HouseholdMigrationTests(PostgreSqlFixture fixture) : Househo
         await Legacy(db).CreateAsync(Reg("RST456"), ScenarioFactory.Replacement());
         await Drafts(db).SaveAsync(new(Reg(), Write(), BaseVehicleId: convertedOnly.VehicleId, BaseVehicleRevision: 2), 0);
         var migrator = db.Database.GetService<IMigrator>();
+        await MigrationTests.SeedLegacyListingFormatAsync(db);
         await migrator.MigrateAsync(PreviousMigration);
         Assert.Equal(3, await CountAsync("vehicles"));
         Assert.Equal(2, await CountAsync("vehicle_listings"));

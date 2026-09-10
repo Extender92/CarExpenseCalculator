@@ -1,3 +1,4 @@
+import { n } from "@/features/household/numbers";
 import { describe, expect, it } from "vitest";
 import { completeListingAnalysisResponse, savedListingResponse } from "@/test/listing-analysis";
 import { analysisResponseToDraft, editCollection, editScalarField } from "./review-model";
@@ -69,8 +70,8 @@ describe("saved listing review mapping", () => {
       sources: completeListingAnalysisResponse.sources.map((source) => source.url),
       draft: {
         registrationNumber: { value: "ABC12D" },
-        odometerKilometres: { value: 123.45 },
-        annualVehicleTaxSek: { value: 0 },
+        odometerKilometres: { value: n("123.45") },
+        annualVehicleTaxSek: { value: n("0") },
         towBar: { value: false },
         conditionNotes: { values: [] },
       },

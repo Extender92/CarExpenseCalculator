@@ -49,6 +49,7 @@ import { householdApi } from "@/features/household/api";
 import { vehicleStateLabels } from "@/features/household/labels";
 import { useOptionalWorkspace } from "@/features/household/use-workspace";
 import { readListingForHouseholdDraft } from "@/features/household/listing-read";
+import {canonicalNumber,n,shiftDecimal} from "@/features/household/numbers";
 
 type BatchMode = "analyze" | "manual";
 
@@ -69,7 +70,7 @@ interface PendingClose {
 interface PendingDelete {
   vehicleId: string;
   registrationNumber: string;
-  expectedRevision: number;
+  expectedRevision: import("@/features/url-analysis/exact").ListingNumber;
   hasSavedCostScenario: boolean;
 }
 
@@ -77,7 +78,7 @@ interface PendingAttach {
   itemId: string;
   vehicleId: string;
   registrationNumber: string;
-  expectedRevision: number;
+  expectedRevision: import("@/features/url-analysis/exact").ListingNumber;
 }
 
 interface ComparisonState {
@@ -430,7 +431,7 @@ export function UrlAnalysisPage() {
     itemId: string,
     registrationNumber: string,
     vehicleId: string,
-    expectedRevision: number,
+    expectedRevision: import("@/features/url-analysis/exact").ListingNumber,
   ) {
     try {
       const existing = await getSavedListing(vehicleId);
@@ -962,7 +963,7 @@ function summaryFromItem(item: ListingWorkspaceItem): SavedListingSummary {
     modelYear: numberOrNull(item.draft.fields.modelYear.input),
     priceSek: numberOrNull(item.draft.fields.priceSek.input),
     odometerKilometres: item.draft.fields.odometerKilometres.input
-      ? (numberOrNull(item.draft.fields.odometerKilometres.input) ?? 0) * 10
+      ? numberOrNull(item.draft.fields.odometerKilometres.input, 1)
       : null,
     status: item.phase === "failed" || item.phase === "queued" || item.phase === "analyzing" || item.phase === "retrying"
       ? "unavailable"
@@ -975,10 +976,9 @@ function summaryFromItem(item: ListingWorkspaceItem): SavedListingSummary {
   };
 }
 
-function numberOrNull(value: string) {
+function numberOrNull(value: string, shift = 0) {
   if (!value) return null;
-  const number = Number(value.replace(",", "."));
-  return Number.isFinite(number) ? number : null;
+  try { return n(shiftDecimal(canonicalNumber(value), shift)); } catch { return null; }
 }
 
 function analysisErrorMessage(error: unknown) {

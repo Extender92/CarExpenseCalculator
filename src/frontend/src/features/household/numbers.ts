@@ -8,9 +8,10 @@ import {
 /** Editable numeric text. It deliberately permits unfinished/invalid user input. */
 export class Numeric {
   constructor(public readonly text: string) {}
+  toString() { return this.text; }
 }
 
-export type Exact<T> = T extends number
+export type Exact<T> = T extends Numeric ? Numeric : T extends number
   ? Numeric
   : T extends readonly (infer U)[]
     ? Exact<U>[]
@@ -61,6 +62,7 @@ export function stringifyExact(value: unknown): string {
 }
 
 export function fromOrdinary<T>(value: T): Exact<T> {
+  if (value instanceof Numeric) return n(value.text) as Exact<T>;
   if (typeof value === "number") return n(value) as Exact<T>;
   if (Array.isArray(value)) return value.map(fromOrdinary) as Exact<T>;
   if (value !== null && typeof value === "object") {

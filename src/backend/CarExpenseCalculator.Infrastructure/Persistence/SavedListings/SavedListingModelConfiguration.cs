@@ -14,7 +14,7 @@ internal sealed class VehicleListingEntityConfiguration
             {
                 table.HasCheckConstraint(
                     "ck_vehicle_listings_versions",
-                    "listing_version >= 1 AND listing_schema_version = 1");
+                    "listing_version >= 1 AND listing_schema_version IN (1, 2)");
                 table.HasCheckConstraint(
                     "ck_vehicle_listings_urls",
                     "length(submitted_url) BETWEEN 1 AND 2048 AND length(normalized_url) BETWEEN 1 AND 2048");
@@ -28,8 +28,8 @@ internal sealed class VehicleListingEntityConfiguration
                     "ck_vehicle_listings_extraction_metadata",
                     "(requested_model IS NULL AND prompt_version IS NULL AND extraction_schema_version IS NULL) "
                     + "OR (requested_model IS NOT NULL AND length(btrim(requested_model)) BETWEEN 1 AND 100 "
-                    + "AND prompt_version IS NOT NULL AND prompt_version = 2 "
-                    + "AND extraction_schema_version IS NOT NULL AND extraction_schema_version = 2)");
+                    + "AND prompt_version IS NOT NULL AND prompt_version IN (2, 3) "
+                    + "AND extraction_schema_version IS NOT NULL AND extraction_schema_version = prompt_version)");
                 table.HasCheckConstraint(
                     "ck_vehicle_listings_model_year",
                     "model_year IS NULL OR model_year BETWEEN 1886 AND 2100");
@@ -88,6 +88,7 @@ internal sealed class VehicleListingEntityConfiguration
         builder.Property(entity => entity.VehicleId).HasColumnName("vehicle_id");
         builder.Property(entity => entity.ListingVersion).HasColumnName("listing_version");
         builder.Property(entity => entity.ListingSchemaVersion).HasColumnName("listing_schema_version");
+        builder.Property(entity => entity.DetailsJson).HasColumnName("details").HasColumnType("jsonb");
         Text(builder.Property(entity => entity.SubmittedUrl), "submitted_url", 2048, required: true);
         Text(builder.Property(entity => entity.NormalizedUrl), "normalized_url", 2048, required: true);
         builder.Property(entity => entity.Status)

@@ -85,6 +85,11 @@ general review service, retain superseded calculations, or override Core.
 
 ### Review package
 
+This future advisory package is separate from URL extraction. The current
+[listing extraction contract](complete-listing-extraction.md) returns complete
+relevant descriptions from the supplied URL; it does not send stored descriptions
+or the development reference fixtures to an additional AI reviewer.
+
 The backend may send all meaningful structured vehicle information: listing URL, reviewed listing fields, short seller claims and condition notes, registration number, registry facts, owner count, inspection and tax information, deterministic rule output, cost output, data provenance, and relevant user notes. It must never send complete listing descriptions, copied page text, API keys, database credentials, internal secrets, or unrelated application data.
 
 ### Execution policy

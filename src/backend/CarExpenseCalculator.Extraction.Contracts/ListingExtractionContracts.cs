@@ -2,9 +2,9 @@ namespace CarExpenseCalculator.Extraction.Contracts;
 
 public static class ListingExtractionContractVersions
 {
-    public const int Prompt = 2;
+    public const int Prompt = 3;
 
-    public const int Schema = 2;
+    public const int Schema = 3;
 }
 
 public static class ListingExtractionRuntime
@@ -57,6 +57,8 @@ public sealed record ExtractedEnergyConsumption(
 
 public sealed record ExtractedListingDraft
 {
+    public ExtractedListingDetails? Details { get; init; }
+
     public string? RegistrationNumber { get; init; }
 
     public string? Make { get; init; }

@@ -2687,9 +2687,10 @@ export interface components {
             views: components["schemas"]["CompleteComparisonViews"];
             /**
              * Format: int32
-             * @default 1
+             * @default 2
              */
             transportVersion: number;
+            listings?: components["schemas"]["SavedListingResponse"][];
         };
         CompleteComparisonStoredBase: {
             baselineToken: string;
@@ -3413,6 +3414,7 @@ export interface components {
             sources: components["schemas"]["ListingAnalysisSourceResponse"][];
             listing: components["schemas"]["ListingDraftResponse"];
             missingFields: components["schemas"]["ListingFieldCode"][];
+            sourcePageObserved?: boolean;
         };
         ListingAnalysisSourceResponse: {
             url: string;
@@ -3420,7 +3422,56 @@ export interface components {
         };
         /** @enum {unknown} */
         ListingAnalysisStatus: "complete" | "partial" | "unavailable";
+        ListingDetailsInput: {
+            title?: null | components["schemas"]["SourcedValueInputOfstring"];
+            subtitle?: null | components["schemas"]["SourcedValueInputOfstring"];
+            description?: null | components["schemas"]["SourcedValueInputOfstring"];
+            listingId?: null | components["schemas"]["SourcedValueInputOfstring"];
+            seats?: null | components["schemas"]["SourcedValueInputOfint"];
+            doors?: null | components["schemas"]["SourcedValueInputOfint"];
+            luggageLitres?: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            weightKilograms?: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            weightLabel?: null | components["schemas"]["SourcedValueInputOfstring"];
+            weightCategory?: null | components["schemas"]["SourcedValueInputOfstring"];
+            trailerWeightKilograms?: null | components["schemas"]["SourcedValueInputOfdecimal"];
+            trailerWeightLabel?: null | components["schemas"]["SourcedValueInputOfstring"];
+            trailerWeightCategory?: null | components["schemas"]["SourcedValueInputOfstring"];
+            postalCode?: null | components["schemas"]["SourcedValueInputOfstring"];
+            country?: null | components["schemas"]["SourcedValueInputOfstring"];
+            feeClass?: null | components["schemas"]["SourcedValueInputOfstring"];
+            saleForm?: null | components["schemas"]["SourcedValueInputOfstring"];
+            updatedLocalDateTime?: null | components["schemas"]["SourcedValueInputOfstring"];
+            updatedTimeZone?: null | components["schemas"]["SourcedValueInputOfstring"];
+            updatedUtcOffsetMinutes?: null | components["schemas"]["SourcedValueInputOfint"];
+            specifications?: null | components["schemas"]["SourcedValueInputOfListingSpecificationInput"][];
+            sellerAnswers?: null | components["schemas"]["SourcedValueInputOfSellerAnswerInput"][];
+        };
+        ListingDetailsResponse: {
+            title?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            subtitle?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            description?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            listingId?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            seats?: null | components["schemas"]["SourcedValueResponseOfint"];
+            doors?: null | components["schemas"]["SourcedValueResponseOfint"];
+            luggageLitres?: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            weightKilograms?: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            weightLabel?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            weightCategory?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            trailerWeightKilograms?: null | components["schemas"]["SourcedValueResponseOfdecimal"];
+            trailerWeightLabel?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            trailerWeightCategory?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            postalCode?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            country?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            feeClass?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            saleForm?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            updatedLocalDateTime?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            updatedTimeZone?: null | components["schemas"]["SourcedValueResponseOfstring"];
+            updatedUtcOffsetMinutes?: null | components["schemas"]["SourcedValueResponseOfint"];
+            specifications?: null | components["schemas"]["SourcedValueResponseOfListingSpecificationResponse"][];
+            sellerAnswers?: null | components["schemas"]["SourcedValueResponseOfSellerAnswerResponse"][];
+        };
         ListingDraftInput: {
+            details?: null | components["schemas"]["ListingDetailsInput"];
             registrationNumber: null | components["schemas"]["SourcedValueInputOfstring"];
             make: null | components["schemas"]["SourcedValueInputOfstring"];
             model: null | components["schemas"]["SourcedValueInputOfstring"];
@@ -3487,11 +3538,20 @@ export interface components {
             equipment: null | components["schemas"]["SourcedCollectionResponseOfstring"];
             sellerClaims: null | components["schemas"]["SourcedCollectionResponseOfstring"];
             conditionNotes: null | components["schemas"]["SourcedCollectionResponseOfstring"];
+            details?: null | components["schemas"]["ListingDetailsResponse"];
         };
         /** @enum {unknown} */
         ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "locality" | "county" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
         /** @enum {unknown} */
         ListingLinkMode: "preserve" | "current";
+        ListingSpecificationInput: {
+            name: string;
+            value: string;
+        };
+        ListingSpecificationResponse: {
+            name: string;
+            value: string;
+        };
         ListingVersionInput: {
             /** Format: int64 */
             version: null | number;
@@ -3877,6 +3937,7 @@ export interface components {
             /** Format: int64 */
             savedCostScenarioSourceListingVersion: null | number;
             savedCostScenarioOutdated: boolean;
+            sourcePageObserved?: boolean;
         };
         SavedListingSummaryResponse: {
             /** Format: uuid */
@@ -3933,6 +3994,14 @@ export interface components {
             lower: number;
             /** Format: double */
             upper: number;
+        };
+        SellerAnswerInput: {
+            question: string;
+            answer: string;
+        };
+        SellerAnswerResponse: {
+            question: string;
+            answer: string;
         };
         /** @enum {unknown} */
         SellerType: "private" | "dealer";
@@ -4001,6 +4070,14 @@ export interface components {
             value: number;
             provenance: components["schemas"]["FieldProvenanceInput"];
         };
+        SourcedValueInputOfListingSpecificationInput: {
+            value: components["schemas"]["ListingSpecificationInput"];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
+        SourcedValueInputOfSellerAnswerInput: {
+            value: components["schemas"]["SellerAnswerInput"];
+            provenance: components["schemas"]["FieldProvenanceInput"];
+        };
         SourcedValueInputOfSellerType: {
             value: components["schemas"]["SellerType"];
             provenance: components["schemas"]["FieldProvenanceInput"];
@@ -4038,6 +4115,14 @@ export interface components {
         SourcedValueResponseOfint: {
             /** Format: int32 */
             value: number;
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfListingSpecificationResponse: {
+            value: components["schemas"]["ListingSpecificationResponse"];
+            provenance: components["schemas"]["FieldProvenanceResponse"];
+        };
+        SourcedValueResponseOfSellerAnswerResponse: {
+            value: components["schemas"]["SellerAnswerResponse"];
             provenance: components["schemas"]["FieldProvenanceResponse"];
         };
         SourcedValueResponseOfSellerType: {

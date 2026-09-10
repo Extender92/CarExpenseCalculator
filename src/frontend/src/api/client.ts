@@ -1,4 +1,6 @@
+import { stringifyExact } from "@/features/household/numbers";
 import createClient from "openapi-fetch";
+import { listingRequest, listingNumberText, type ListingNumber, type Preserved } from "@/features/url-analysis/exact";
 import type { components, paths } from "./schema";
 
 export type SystemStatus = components["schemas"]["SystemStatusResponse"];
@@ -11,9 +13,9 @@ export type SavedCostScenarioProblemDetails = components["schemas"]["SavedCostSc
 export type SavedCostScenarioResponse = components["schemas"]["SavedCostScenarioResponse"];
 export type SavedCostScenarioSummary = components["schemas"]["SavedCostScenarioSummaryResponse"];
 export type ListingAnalysisRequest = components["schemas"]["ListingAnalysisRequest"];
-export type ListingAnalysisResponse = components["schemas"]["ListingAnalysisResponse"];
+export type ListingAnalysisResponse = Preserved<components["schemas"]["ListingAnalysisResponse"]>;
 export type ListingAnalysisProblemDetails = components["schemas"]["ListingAnalysisProblemDetails"];
-export type ListingDraftResponse = components["schemas"]["ListingDraftResponse"];
+export type ListingDraftResponse = Preserved<components["schemas"]["ListingDraftResponse"]>;
 export type ListingAnalysisSource = components["schemas"]["ListingAnalysisSourceResponse"];
 export type FieldProvenance = components["schemas"]["FieldProvenanceResponse"];
 export type ListingFieldCode = components["schemas"]["ListingFieldCode"];
@@ -24,13 +26,13 @@ export type Transmission = components["schemas"]["Transmission"];
 export type Drivetrain = components["schemas"]["Drivetrain"];
 export type BodyType = components["schemas"]["BodyType"];
 export type EnergyUnit = components["schemas"]["EnergyUnit"];
-export type CreateSavedListingRequest = components["schemas"]["CreateSavedListingRequest"];
-export type ReplaceSavedListingRequest = components["schemas"]["ReplaceSavedListingRequest"];
-export type ReviewedListingInput = components["schemas"]["ReviewedListingInput"];
-export type ListingDraftInput = components["schemas"]["ListingDraftInput"];
+export type CreateSavedListingRequest = Preserved<components["schemas"]["CreateSavedListingRequest"]>;
+export type ReplaceSavedListingRequest = Preserved<components["schemas"]["ReplaceSavedListingRequest"]>;
+export type ReviewedListingInput = Preserved<components["schemas"]["ReviewedListingInput"]>;
+export type ListingDraftInput = Preserved<components["schemas"]["ListingDraftInput"]>;
 export type SavedListingProblemDetails = components["schemas"]["SavedListingProblemDetails"];
-export type SavedListingResponse = components["schemas"]["SavedListingResponse"];
-export type SavedListingSummary = components["schemas"]["SavedListingSummaryResponse"];
+export type SavedListingResponse = Preserved<components["schemas"]["SavedListingResponse"]>;
+export type SavedListingSummary = Preserved<components["schemas"]["SavedListingSummaryResponse"]>;
 
 export class ManualCalculationApiError extends Error {
   constructor(
@@ -120,10 +122,7 @@ export async function analyzeListing(
   url: string,
   signal?: AbortSignal,
 ): Promise<ListingAnalysisResponse> {
-  const postListingAnalysis = () => api.POST("/api/listing-analyses", {
-    body: { url },
-    signal,
-  });
+  const postListingAnalysis = () => listingRequest<ListingAnalysisResponse>("POST", "/api/listing-analyses", {url}, signal);
   let result: Awaited<ReturnType<typeof postListingAnalysis>>;
   try {
     result = await postListingAnalysis();
@@ -171,7 +170,7 @@ export async function analyzeListing(
 
 export async function listSavedListings(): Promise<SavedListingSummary[]> {
   return runSavedListingRequest(async () => {
-    const { data, error, response } = await api.GET("/api/saved-listings");
+    const { data, error, response } = await listingRequest<SavedListingSummary[]>("GET", "/api/saved-listings");
     if (data !== undefined) return data;
     throw createSavedListingError(response.status, error);
   });
@@ -179,9 +178,7 @@ export async function listSavedListings(): Promise<SavedListingSummary[]> {
 
 export async function getSavedListing(vehicleId: string): Promise<SavedListingResponse> {
   return runSavedListingRequest(async () => {
-    const { data, error, response } = await api.GET("/api/saved-listings/{vehicleId}", {
-      params: { path: { vehicleId } },
-    });
+    const { data, error, response } = await listingRequest<SavedListingResponse>("GET", `/api/saved-listings/${encodeURIComponent(vehicleId)}`);
     if (data !== undefined) return data;
     throw createSavedListingError(response.status, error);
   });
@@ -191,10 +188,7 @@ export async function getSavedListingByRegistration(
   registrationNumber: string,
 ): Promise<SavedListingResponse> {
   return runSavedListingRequest(async () => {
-    const { data, error, response } = await api.GET(
-      "/api/saved-listings/by-registration/{registrationNumber}",
-      { params: { path: { registrationNumber } } },
-    );
+    const { data, error, response } = await listingRequest<SavedListingResponse>("GET", `/api/saved-listings/by-registration/${encodeURIComponent(registrationNumber)}`);
     if (data !== undefined) return data;
     throw createSavedListingError(response.status, error);
   });
@@ -204,7 +198,7 @@ export async function createSavedListing(
   request: CreateSavedListingRequest,
 ): Promise<SavedListingResponse> {
   return runSavedListingRequest(async () => {
-    const { data, error, response } = await api.POST("/api/saved-listings", { body: request });
+    const { data, error, response } = await listingRequest<SavedListingResponse>("POST", "/api/saved-listings", request);
     if (data !== undefined) return data;
     throw createSavedListingError(response.status, error);
   });
@@ -215,10 +209,7 @@ export async function replaceSavedListing(
   request: ReplaceSavedListingRequest,
 ): Promise<SavedListingResponse> {
   return runSavedListingRequest(async () => {
-    const { data, error, response } = await api.PUT("/api/saved-listings/{vehicleId}", {
-      params: { path: { vehicleId } },
-      body: request,
-    });
+    const { data, error, response } = await listingRequest<SavedListingResponse>("PUT", `/api/saved-listings/${encodeURIComponent(vehicleId)}`, request);
     if (data !== undefined) return data;
     throw createSavedListingError(response.status, error);
   });
@@ -226,12 +217,10 @@ export async function replaceSavedListing(
 
 export async function deleteSavedListing(
   vehicleId: string,
-  expectedRevision: number,
+  expectedRevision: ListingNumber,
 ): Promise<void> {
   return runSavedListingRequest(async () => {
-    const { error, response } = await api.DELETE("/api/saved-listings/{vehicleId}", {
-      params: { path: { vehicleId }, query: { expectedRevision } },
-    });
+    const { error, response } = await listingRequest<never>("DELETE", `/api/saved-listings/${encodeURIComponent(vehicleId)}?expectedRevision=${listingNumberText(expectedRevision)}`);
     if (response.status === 204) {
       window.dispatchEvent(new CustomEvent("vehicle-deleted", { detail: vehicleId }));
       return;
@@ -293,12 +282,14 @@ export async function createSavedCostScenario(
 
 export async function replaceSavedCostScenario(
   vehicleId: string,
-  request: ReplaceSavedCostScenarioRequest,
+  request: Omit<ReplaceSavedCostScenarioRequest, "expectedRevision"> & {expectedRevision: ListingNumber},
 ): Promise<SavedCostScenarioResponse> {
-  const { data, error, response } = await api.PUT("/api/saved-cost-scenarios/{vehicleId}", {
-    params: { path: { vehicleId } },
-    body: request,
-  });
+  const response = await fetch(new Request(new URL(`/api/saved-cost-scenarios/${encodeURIComponent(vehicleId)}`, window.location.origin), {
+    method: "PUT", headers: {"Content-Type": "application/json"}, body: stringifyExact(request),
+  }));
+  const payload = await response.json();
+  const data: SavedCostScenarioResponse | undefined = response.ok ? payload : undefined;
+  const error = response.ok ? undefined : payload;
 
   if (data !== undefined) {
     return data;

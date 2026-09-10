@@ -120,7 +120,7 @@ public sealed class CompleteComparisonEndpointTests
         using var client = isolated.CreateClient();
         var result = await Json(await client.PostAsJsonAsync(CompleteComparisonApiData.Route, CompleteComparisonApiData.Manual(count)));
         Assert.Equal(count, result["candidateCount"]!.GetValue<int>());
-        Assert.Equal(1, result["transportVersion"]!.GetValue<int>());
+        Assert.Equal(2, result["transportVersion"]!.GetValue<int>());
         Assert.NotEqual(Guid.Empty, result["generationId"]!.GetValue<Guid>());
         Assert.Null(result["baselineToken"]);
         var views = CompleteComparisonApiData.Views(result).ToArray();

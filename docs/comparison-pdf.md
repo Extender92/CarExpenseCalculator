@@ -193,3 +193,13 @@ background-installer logs/directories were preserved. Existing build outputs
 and dependencies are not report helpers. Deferred #64/#85/#65 inventories,
 including the previously installed pinned Node used read-only, remain untouched.
 No helper, PDF sample, screenshot or cache is committed.
+
+## Captured complete listing input
+
+Transport 2 adds saved listing content outside the three sensitivity views.
+The report captures this array with the existing exact immutable clone and
+prints descriptions, specifications, equipment, seller answers, original labels,
+current source versions and review notices. It does not fetch the latest ad
+when opened or printed. Long rows may span pages; no field or collection is
+silently truncated. [Current verification](listing-extraction-verification-report.md)
+distinguishes pipeline tests from incomplete hosted URL extraction.

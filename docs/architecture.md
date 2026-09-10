@@ -53,7 +53,7 @@ remains entirely in the API/Core. Only explicit user actions write data.
 The implementation is introduced incrementally as each feature milestone begins:
 
 - `Vehicle`: stable UUIDv7 technical identity with an immutable, normalized ordinary Swedish registration number. The persistence foundation currently stores its optional display label; specifications are added with later vehicle-data milestones.
-- `Listing`: a current bounded structured listing draft with field-level provenance, source URLs, advertised facts, history signals, and explicit missing values. Complete descriptions and seller contact data are excluded.
+- `Listing`: a current bounded structured listing draft with field-level provenance, source URLs, advertised facts, history signals, and explicit missing values. Complete relevant descriptions are retained in a typed extension; seller contact data is excluded.
 - `RegistrySnapshot`: time-stamped verified vehicle and ownership facts.
 - `SearchProfile`: user-defined hard requirements and preferences.
 - `RuleEvaluation`: explainable results tied to a rule version and data sources.
@@ -321,3 +321,14 @@ recovery. Saved listings can open the manual calculator through a reload-safe
 vehicle UUID query, and the UI requires explicit review before linking a saved
 scenario to the current listing version. Extractor configuration remains an
 independent integration status and does not affect overall database-based health.
+
+## Complete listing details (current branch)
+
+`ListingDetails` is an immutable sourced Core input. API-owned DTOs map explicitly
+to it; Infrastructure owns JSONB/draft DTOs and migration `AddListingDetails`.
+New listing writes use storage 2, extraction 3/3, while older 1 + 2/2 rows remain
+readable. Comparison snapshot records carry the saved listing from the same
+transaction; transport 2 returns those listings once outside the sensitivity
+views. Calculation/rule versions are unchanged. The frontend reuses exact
+numeric serialization and freezes listing content with the report. See the
+[contract](complete-listing-extraction.md) and [acceptance limitations](listing-extraction-verification-report.md).
