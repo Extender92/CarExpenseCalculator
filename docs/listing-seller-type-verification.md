@@ -13,7 +13,7 @@ numbers are unchanged. This is [PR #93](https://github.com/Extender92/CarExpense
 branch delivery, not a merge or deployment. The original [acceptance report](listing-extraction-verification-report.md)
 and its Audi/Skoda evidence remain applicable to the earlier implementation.
 Tested application commit: [`e5951fa`](https://github.com/Extender92/CarExpenseCalculator/commit/e5951fa69857aa9bb28ab0052d29d4c84d73ee63).
-The following documentation-only correction does not change that implementation.
+Subsequent test/report corrections do not change that implementation.
 
 ## Execution history
 
@@ -34,6 +34,15 @@ The corrected private template fixture first reproduced a failing parser test
 used an oversimplified private-panel fixture; that fixture was corrected rather
 than weakening the expectation. There were no automatic live retries, source
 rate limits or challenge bypasses.
+
+The earlier [e5951fa PR run](https://github.com/Extender92/CarExpenseCalculator/actions/runs/34581886310)
+also exposed a timing assumption in `Timeout_is_typed_and_releases_capacity`:
+it required two process starts within two 30 ms whole-operation budgets, although
+HTML parsing may consume that deadline first. The test now asserts the released
+gate after timeout and a successful subsequent caller using the same gate, with
+normal startup budget. Timeout behavior and production timing remain unchanged;
+no test was skipped. The later run of the unchanged application had already passed
+backend tests, but the timing-dependent test was corrected before final delivery.
 
 ## Final live checks
 

@@ -198,14 +198,21 @@ public sealed class CodexExtractionOrchestratorTests
     {
         var runner = FakeRunner.Blocking();
         var options = TestData.CreateOptions() with { OperationTimeout = TimeSpan.FromMilliseconds(30) };
-        var orchestrator = CreateOrchestrator(runner, options);
+        using var gate = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        var orchestrator = CreateOrchestrator(runner, options, concurrencyGate: gate);
 
         var first = await orchestrator.ExecuteAsync(ValidRequest, CancellationToken.None);
-        var second = await orchestrator.ExecuteAsync(ValidRequest, CancellationToken.None);
-
         Assert.Equal(CodexExecutionFailure.TimedOut, Assert.IsType<CodexExtractionFailed>(first).Failure);
-        Assert.Equal(CodexExecutionFailure.TimedOut, Assert.IsType<CodexExtractionFailed>(second).Failure);
-        Assert.Equal(2, runner.RunCalls);
+        Assert.Equal(1, gate.CurrentCount);
+
+        // The whole-operation deadline may expire during HTML parsing before RunAsync.
+        // Prove capacity can serve a successful next caller, without assuming a 30 ms startup.
+        var nextRunner = FakeRunner.Success();
+        var next = CreateOrchestrator(nextRunner, concurrencyGate: gate);
+        var second = await next.ExecuteAsync(ValidRequest, CancellationToken.None);
+        Assert.IsType<CodexExtractionSucceeded>(second);
+        Assert.Equal(1, nextRunner.RunCalls);
+        Assert.Equal(1, gate.CurrentCount);
     }
 
     [Fact]
