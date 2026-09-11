@@ -77,6 +77,24 @@ transport/calculation versions remain visible without dominating the summary.
 
 ## Verification evidence
 
+### Saved listing presentation follow-up
+
+The PR #93 local smoke run found that saved listing tables lacked the report's
+scroll wrapper (724px document width at a 390px viewport) and displayed raw
+seller-kind values. The focused `fix/listing-report-presentation` correction
+adds the same named, focusable local scrolling to `ListingContent` in comparison
+and report, with unrestricted print layout. A shared typed map supplies
+**Handlare**/**Privat** in both review and presentation; original listing text
+and evidence are preserved. The new stored-listing mobile regressions cover the
+gap in the earlier manual-mode test.
+
+The [presentation verification report](listing-report-presentation-verification.md)
+records the red/green regressions, 285 frontend/72 Chromium passes, a fresh
+79-page PDF inspection and native print/cancel/retry. This evidence is for the
+PR branch; merging and updating the existing local frontend remain separate.
+
+### Original feature acceptance
+
 Verified on 2026-09-09 from base main
 `d3115f106dbbf3a8995c4c9fe044c0f45d03e091`, with the implementation diff on
 `feature/66-comparison-pdf`. The PR supplies the final commit and CI run links.

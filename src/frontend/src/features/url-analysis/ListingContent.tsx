@@ -1,5 +1,6 @@
 import {inputRows, reportLabel} from "@/features/comparison/report-format";
 import {detailFields} from "./details";
+import {sellerTypeLabels} from "./presentation";
 import {Numeric} from "@/features/household/numbers";
 
 const names: Record<string,string> = {
@@ -23,6 +24,7 @@ const names: Record<string,string> = {
 };
 interface ContentRow {path:string; value:string; source?:string}
 const valueNames: Record<string, Record<string, string>> = {
+  sellerType: sellerTypeLabels,
   unit: {litre:"liter",kilowattHour:"kWh",kilogram:"kg"},
   status: {complete:"Grunduppgifter kompletta",partial:"Delvis känt",unavailable:"Inga användbara annonsuppgifter"},
   weightCategory: {unspecified:"Viktkategori inte angiven",curb:"Tjänstevikt",gross:"Totalvikt"},
@@ -64,12 +66,15 @@ export function ListingContent({value, title = "Annonsunderlag"}: {value: unknow
     <p className="text-sm">Annonsuppgifter och säljarpåståenden är källunderlag. De innebär ingen registerverifiering.</p>
     {!!value && typeof value === "object" && "requestedModel" in value && !!value.requestedModel && "sourcePageObserved" in value && value.sourcePageObserved === false &&
       <p className="text-sm">Metadata om öppnad sida saknas. AI-hämtade uppgifter är obekräftade annonsuppgifter.</p>}
-    <table className="w-full table-fixed text-left text-sm" aria-label={title}>
+    <div className="report-table-scroll max-w-full overflow-x-auto print:overflow-visible focus-visible:outline-2 focus-visible:outline-cyan-500"
+      tabIndex={0} role="region" aria-label={`${title} – rullbar tabell`}>
+    <table className="w-full min-w-[700px] print:min-w-0 table-fixed text-left text-sm" aria-label={title}>
       <thead><tr><th colSpan={2} className="report-table-title">{title}</th></tr><tr><th scope="col" className="w-1/3">Uppgift</th><th scope="col">Värde och källa</th></tr></thead>
       <tbody>{rows.map((row, i) => <tr key={i}><th scope="row" className="align-top break-words p-2">{fieldLabel(row.path)}</th>
         <td className="whitespace-pre-wrap break-words p-2" style={{overflowWrap:"anywhere"}}>{row.value}
           {row.source && <p className="mt-1 text-xs">Källa: {row.source}</p>}
         </td></tr>)}</tbody>
     </table>
+    </div>
   </section>;
 }

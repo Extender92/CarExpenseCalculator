@@ -1,5 +1,13 @@
 # Complete Blocket extraction: integration acceptance
 
+Post-merge follow-up: PR #93 was merged as `2488a89`. The
+[local upgrade report](https://github.com/Extender92/CarExpenseCalculator/pull/93#issuecomment-5632794141)
+confirmed retrieval/persistence but found mobile report overflow and untranslated
+seller-kind presentation. The [focused presentation verification](listing-report-presentation-verification.md)
+records their correction, regression tests and fresh PDF/print inspection on a
+separate branch. The original extraction evidence and failed attempts below
+remain unchanged as history.
+
 Status: **direct retrieval and all four live reference checks passed** on
 `fix/codex-login-status`, for [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93).
 This report covers branch delivery; merge and deployment require separate action.

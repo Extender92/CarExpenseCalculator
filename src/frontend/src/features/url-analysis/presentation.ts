@@ -1,10 +1,15 @@
-import type { FieldProvenance, ListingFieldCode } from "@/api/client";
+import type { FieldProvenance, ListingFieldCode, SellerType } from "@/api/client";
 import type { ScalarFieldName } from "./review-model";
 
 export interface SelectOption {
   value: string;
   label: string;
 }
+
+export const sellerTypeLabels: Readonly<Record<SellerType, string>> = {
+  private: "Privat",
+  dealer: "Handlare",
+};
 
 export interface ScalarFieldDefinition {
   name: ScalarFieldName;
@@ -27,7 +32,7 @@ export const identityFields: ScalarFieldDefinition[] = [
 export const advertisementFields: ScalarFieldDefinition[] = [
   { name: "priceSek", label: "Annonspris", kind: "decimal", suffix: "kr" },
   { name: "odometerKilometres", label: "Mätarställning", kind: "decimal", suffix: "mil" },
-  { name: "sellerType", label: "Säljartyp", kind: "select", options: options({ private: "Privat", dealer: "Handlare" }) },
+  { name: "sellerType", label: "Säljartyp", kind: "select", options: options(sellerTypeLabels) },
   { name: "locality", label: "Ort eller stad", kind: "text" },
   { name: "county", label: "Län", kind: "text" },
   { name: "publishedDate", label: "Publicerad", kind: "date" },
