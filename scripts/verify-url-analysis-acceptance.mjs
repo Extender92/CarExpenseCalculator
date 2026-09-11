@@ -89,9 +89,9 @@ function runDocker(args) {
   return execFileSync(docker, args, {
     cwd: repositoryRoot,
     encoding: "utf8",
-    // The household lifecycle suite produces more than Node's default 1 MiB
-    // of SQL/access logs. Inspect the complete output instead of truncating it.
-    maxBuffer: 32 * 1024 * 1024,
+    // Repeated full browser suites can exceed 32 MiB of SQL/access logs.
+    // Inspect all accumulated output; do not truncate or weaken the checks.
+    maxBuffer: 128 * 1024 * 1024,
     env: process.env,
     stdio: ["ignore", "pipe", "inherit"],
   });

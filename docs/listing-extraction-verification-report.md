@@ -4,7 +4,10 @@ Status: **direct retrieval and all four live reference checks passed** on
 `fix/codex-login-status`, for [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93).
 This report covers branch delivery; merge and deployment require separate action.
 The earlier hosted-retrieval failures are retained below as history, not current blockers.
-Publication commit and CI links are recorded after pushing the verified implementation.
+Tested application implementation: [`5bf0cfe`](https://github.com/Extender92/CarExpenseCalculator/commit/5bf0cfed3301ad6292b071f639290b89f8a8c8c3).
+Subsequent report/log-tool changes do not alter the tested application.
+The [current PR checks](https://github.com/Extender92/CarExpenseCalculator/pull/93/checks)
+identify the published head; merge remains separate.
 
 ## Final implementation and live results
 
@@ -98,6 +101,10 @@ After the session resumed, Docker was stopped; a post-run script attempt could
 not connect to its engine. Docker and the disposable fake were restarted and
 the full browser suite and safe-log acceptance were run again because the fake's
 in-memory counters had been reset. No new live AI calls were made.
+That run again passed 70/70 in 3.1 minutes. Its log scan exceeded the tool's
+32-MiB buffer (`ENOBUFS`) because several full runs had accumulated. Increasing
+the verification tool's buffer to 128 MiB allowed scanning the complete existing
+log without filtering, truncation or changing any forbidden-content assertion.
 
 `npm ci` still reports the two pre-existing high development-dependency audit
 entries described in the historical section. PDFium emits its text-range
@@ -129,10 +136,37 @@ real PDF generation, rendering and visual checks were performed.
 
 ## Cleanup and delivery
 
-Final cleanup inventory and publication links are recorded after verification.
+The development API on port 5090 was stopped. Both work-owned stacks
+(`car-expense-e2e`, `car-expense-listing-live`), their private networks and their
+own PostgreSQL/test-login volumes were removed. The live authentication copy
+existed only in tmpfs; the original login volume was mounted read-only. All four
+original `car-expense-calculator` containers and original data/authentication
+volumes were preserved. The disposable comparison baseline had zero candidates
+before teardown.
+
+Automatic policy review rejected both native PowerShell cleanup requests with
+`blocked by policy`. No alternate deletion mechanism was used. These exact new
+work-owned paths remain:
+
+```text
+C:\Users\dann_\Source\repos\CarExpenseCalculator\temp\listing-scraper-integration\
+C:\Users\dann_\Source\repos\CarExpenseCalculator\src\backend\CarExpenseCalculator.Api\temp\
+```
+
+The first contains ignored helpers, logs, response controls, PDF examples,
+screenshots and process/test caches (about 31 MiB at inventory). The second is an
+empty MSBuild temporary directory created during the last API startup because
+its process-local temp path was initially resolved from the API directory.
+Neither contains app login files or user database data. No temporary artifact
+is committed. Windows Temp was inventoried; no additional SDK log attributable
+to this integration was found there. Generic temporary items and background
+installer/editor logs were left intact where ownership could not be established.
+
 Earlier deferred inventories remain untouched, including the historical paths
-below, `temp/listing-text-probe/` and `temp/direct-listing-probe/`. Authentication
-and existing application data are preserved. This work does not authorize merge.
+below, `temp/listing-text-probe/` and `temp/direct-listing-probe/`. The prior probe
+reports and full matrices are now published with the implementation. PR #93 has
+the final title and scope; draft status is removed only after its current head's
+ordinary CI checks pass. This work does not authorize merge.
 
 ---
 
