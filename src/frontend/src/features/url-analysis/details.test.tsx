@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {render, screen} from "@testing-library/react";
+import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {fromOrdinary, n, stringifyExact} from "@/features/household/numbers";
 import {completeListingAnalysisResponse, savedListingResponse} from "@/test/listing-analysis";
@@ -14,6 +14,23 @@ import {ListingContent} from "./ListingContent";
 const url = completeListingAnalysisResponse.normalizedUrl;
 const provenance = completeListingAnalysisResponse.listing.priceSek!.provenance;
 describe("complete listing details", () => {
+  it.each([
+    ["dealer", "Handlare"],
+    ["private", "Privat"],
+    [null, "Okänt / ej angivet"],
+  ] as const)("presents seller type %s in Swedish without changing source content or evidence", (sellerType, label) => {
+    const listing = {sellerType: sellerType === null ? null : {value: sellerType, provenance},
+      details: {description: {value: "Originaltext: dealer och private.", provenance},
+        specifications: [{value: {name: "Originalbeteckning", value: "dealer"}, provenance}]}};
+    const before = stringifyExact(listing);
+    render(<ListingContent value={listing} />);
+    const row = screen.getByRole("rowheader", {name: "Säljartyp"}).closest("tr")!;
+    expect(within(row).getByRole("cell")).toHaveTextContent(label);
+    if (sellerType) expect(within(row).getByRole("cell")).toHaveTextContent("Obekräftat");
+    expect(screen.getByText("Originaltext: dealer och private.")).toBeVisible();
+    expect(screen.getByText(/Värde: dealer/)).toBeVisible();
+    expect(stringifyExact(listing)).toBe(before);
+  });
   it("retains exact numbers, paragraphs, absent timezones, negative answers and entry provenance through save", () => {
     const source = fromOrdinary(completeListingAnalysisResponse);
     source.sources = [];
