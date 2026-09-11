@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8">
+<!-- Minimal signed-out private panel structure observed on Blocket 2026-09-11.
+     No profile identity, scripts or contact details retained. -->
+<main>
+  <h1>Testbil</h1>
+  <trust-ad-profile-card-podlet-isolated>
+    <template shadowrootmode="open">
+      <script>fetch('https://example.invalid/profile')</script>
+      <div id="trust-ad-profile-card-podlet-isolated">
+        <h2 class="sr-only">Användarprofil</h2>
+        <div><p>Du måste vara inloggad för att se användarprofiler och skicka meddelanden.</p><a href="https://example.invalid/login">Logga in</a></div>
+      </div>
+    </template>
+  </trust-ad-profile-card-podlet-isolated>
+  <div><h2>Annonsinformation</h2><p>Annons-ID</p><p>1</p></div>
+</main>

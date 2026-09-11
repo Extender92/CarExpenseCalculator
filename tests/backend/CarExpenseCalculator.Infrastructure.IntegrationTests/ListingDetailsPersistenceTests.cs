@@ -144,10 +144,11 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
         await fixture.ResetDatabaseAsync();
         await using var db = fixture.CreateDbContext();
         var html = Ai with { ExtractionMethod = ExtractionMethod.Html };
+        var seller = new SourcedValue<SellerType>(adopt ? SellerType.Dealer : SellerType.Private, html);
         var details = Details() with { Description = new("Originaltext.\n\nOförändrat andra stycke.", html),
             SellerAnswers = [new(new SellerAnswer("Skulder?", "Nej"), html)] };
         var input = new SavedListingInput(Url.Value, new(2026, 9, 10, 12, 0, 0, TimeSpan.Zero),
-            "gpt-5.6-luna", 4, 3, [], new() { PriceSek = new(28888m, Ai), Details = details });
+            "gpt-5.6-luna", 4, 3, [], new() { PriceSek = new(28888m, Ai), SellerType = seller, Details = details });
         var drafts = new SharedVehicleDraftStore(db, new(), TimeProvider.System);
         var saved = await drafts.SaveAsync(new(RegistrationNumber.Parse("TST129"), Listing: input), 0);
         if (adopt) await drafts.AdoptAsync(saved.Revision);
@@ -162,8 +163,10 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
             Assert.Equal(4, listing.PromptVersion);
             Assert.Equal(3, listing.ExtractionSchemaVersion);
             Assert.Equivalent(details, listing.ProcessingResult.Listing.Details, strict: true);
+            Assert.Equal(seller, listing.ProcessingResult.Listing.SellerType);
             var snapshot = await new ComparisonSnapshotStore(reader).ReadAsync([listing.VehicleId]);
             Assert.Equivalent(details, Assert.Single(snapshot.Vehicles).Listing!.ProcessingResult.Listing.Details, strict: true);
+            Assert.Equal(seller, Assert.Single(snapshot.Vehicles).Listing!.ProcessingResult.Listing.SellerType);
         }
         else
         {
@@ -171,6 +174,7 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
             Assert.Equal(saved.Revision, reopened.Revision);
             Assert.Equal(4, reopened.Input!.Listing!.PromptVersion);
             Assert.Equivalent(details, reopened.Input.Listing.Listing.Details, strict: true);
+            Assert.Equal(seller, reopened.Input.Listing.Listing.SellerType);
         }
     }
 

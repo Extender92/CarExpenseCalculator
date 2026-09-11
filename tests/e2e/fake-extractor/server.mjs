@@ -163,6 +163,7 @@ const server = createServer(async (request, response) => {
       sellerAnswers: draft.details?.sellerAnswers ?? null,
       location: null,
       updated: null,
+      sellerType: draft.sellerType,
     };
 
     return json(response, 200, {

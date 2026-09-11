@@ -7,6 +7,42 @@ namespace CarExpenseCalculator.CodexExtractor.UnitTests;
 public sealed class BlocketContentParserTests
 {
     [Theory]
+    [InlineData("blocket-dealer-panel", "dealer")]
+    [InlineData("blocket-private-panel", "private")]
+    public async Task Seller_panel_retains_only_type_without_contact_or_login_content(string name, string expected)
+    {
+        var html = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "References", name + ".html"));
+        var result = await Parse(html);
+        Assert.Equal(expected, result.SellerType);
+        var prompt = ListingExtractionPrompt.Create(ListingUrl.Parse(result.SourceUrl), result);
+        Assert.Contains($"\"sellerType\":\"{expected}\"", prompt);
+        Assert.DoesNotContain("Testhandlaren", prompt);
+        Assert.DoesNotContain("Testgatan", prompt);
+        Assert.DoesNotContain("example.invalid", prompt);
+        Assert.DoesNotContain("Logga in", prompt);
+        Assert.DoesNotContain("5+ år", prompt);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("<p>Återförsäljarens uppgifter. Användarprofil. Testhandlaren AB.</p>")]
+    [InlineData("<section><h2>Användarprofil</h2></section>")]
+    [InlineData("<w-box><div><h2>Okänd profiltyp</h2></div></w-box>")]
+    [InlineData("<div id='trust-ad-profile-card-podlet-isolated' hidden><h2>Användarprofil</h2></div>")]
+    [InlineData("<template shadowrootmode='open'><div id='trust-ad-profile-card-podlet-isolated'><h2>Användarprofil</h2></div></template>")]
+    [InlineData("<section><h2>Beskrivning</h2><div data-testid='expandable-section'><div><w-box><div><h2>Återförsäljarens uppgifter</h2></div></w-box></div></div></section>")]
+    public async Task Missing_or_incidental_seller_text_does_not_guess_type(string content) =>
+        Assert.Null((await Parse(Page(content))).SellerType);
+
+    [Fact]
+    public async Task Conflicting_seller_panels_are_invalid_content()
+    {
+        var content = "<w-box><div><h2>Återförsäljarens uppgifter</h2></div></w-box><div id='trust-ad-profile-card-podlet-isolated'><h2>Användarprofil</h2></div>";
+        Assert.Equal(CodexExecutionFailure.SourceInvalidContent,
+            (await Assert.ThrowsAsync<ListingSourceException>(() => Parse(Page(content)))).Failure);
+    }
+
+    [Theory]
     [InlineData("audi-a4", "26427275", 25, 18, "4", "1999-11-24")]
     [InlineData("skoda-roomster", "26434732", 22, 15, "2", "2007-12-05")]
     public async Task Captured_html_preserves_original_sections_and_previously_missed_rows(

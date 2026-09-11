@@ -48,6 +48,13 @@ requires the latter and binds it to the fetched source before composition. It ne
 browser cookies, seller contact data, a trusted Core result, or persistence
 identifiers.
 
+`retrievedContent.sellerType` is nullable and accepts only `dealer` or `private`,
+derived from the explicit Blocket profile panel. The adapter uses this value
+with HTML provenance instead of the model's suggestion, including preserving
+null when no recognizable panel exists. Names and contact/profile contents are
+excluded. This is an internal protocol addition; public seller types and all
+existing version numbers remain unchanged.
+
 The sidecar listens on container port 8080 and exposes only these internal
 contracts:
 

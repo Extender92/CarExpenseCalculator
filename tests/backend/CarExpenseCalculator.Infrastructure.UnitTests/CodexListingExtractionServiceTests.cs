@@ -335,10 +335,63 @@ public sealed class CodexListingExtractionServiceTests
         Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse, result.Code);
     }
 
+    [Theory]
+    [InlineData("dealer", "private", SellerType.Dealer)]
+    [InlineData("private", "dealer", SellerType.Private)]
+    [InlineData("dealer", null, SellerType.Dealer)]
+    [InlineData(null, "dealer", null)]
+    public async Task Retrieved_seller_type_is_authoritative_and_remains_unverified(string? captured, string? model, SellerType? expected)
+    {
+        var content = new RetrievedListingContent(ListingUrlValue.Value, "Testbil", null, "1",
+            null, null, null, null, null, null, null, captured);
+        var response = new ListingExtractionResponse("gpt-5.6-luna", 4, 3, DateTimeOffset.UtcNow,
+            [ListingUrlValue.Value], new() { Make = "Test", SellerType = model }, content);
+        var result = Assert.IsType<ListingExtractionSuccess>(await CreateService(StubHandler.Json(HttpStatusCode.OK, response)).ExtractAsync(ListingUrlValue));
+        var seller = result.ProcessingResult.Listing.SellerType;
+        Assert.Equal(expected, seller?.Value);
+        if (expected is not null)
+        {
+            Assert.Equal(new FieldProvenance(FieldOrigin.Listing, ExtractionMethod.Html, VerificationStatus.Unverified, ListingUrlValue), seller!.Provenance);
+        }
+    }
+
+    [Fact]
+    public async Task Invalid_captured_seller_type_is_rejected_instead_of_silently_dropped()
+    {
+        var content = new RetrievedListingContent(ListingUrlValue.Value, "Testbil", null, "1",
+            null, null, null, null, null, null, null, "registryVerified");
+        var response = new ListingExtractionResponse("gpt-5.6-luna", 4, 3, DateTimeOffset.UtcNow,
+            [ListingUrlValue.Value], new() { Make = "Test" }, content);
+        var result = Assert.IsType<ListingExtractionFailure>(await CreateService(StubHandler.Json(HttpStatusCode.OK, response)).ExtractAsync(ListingUrlValue));
+        Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse, result.Code);
+    }
+
+    [Theory]
+    [InlineData("Testgatan 1, 60361 Norrköping", null, "60361")]
+    [InlineData("149 91 Nynäshamn", "99999", "14991")]
+    [InlineData("149\u00a091 Nynäshamn", null, "14991")]
+    [InlineData("Testgatan 12345", null, null)]
+    [InlineData("Norrköping", null, null)]
+    [InlineData("12345 Ort, 67890 Annan ort", null, null)]
+    public async Task Explicit_postcode_survives_model_omission_without_inferring_other_location_numbers(string location, string? model, string? expected)
+    {
+        var content = new RetrievedListingContent(ListingUrlValue.Value, "Testbil", null, "1",
+            null, null, null, null, null, location, null);
+        var response = new ListingExtractionResponse("gpt-5.6-luna", 4, 3, DateTimeOffset.UtcNow,
+            [ListingUrlValue.Value], new() { Make = "Test", Details = new() { PostalCode = model } }, content);
+        var result = Assert.IsType<ListingExtractionSuccess>(await CreateService(StubHandler.Json(HttpStatusCode.OK, response)).ExtractAsync(ListingUrlValue));
+        var postcode = result.ProcessingResult.Listing.Details!.PostalCode;
+        Assert.Equal(expected, postcode?.Value);
+        if (expected is not null)
+            Assert.Equal(new FieldProvenance(FieldOrigin.Listing, ExtractionMethod.Html, VerificationStatus.Unverified, ListingUrlValue), postcode!.Provenance);
+        Assert.Null(result.ProcessingResult.Listing.Locality);
+        Assert.Null(result.ProcessingResult.Listing.County);
+    }
+
     private static ListingExtractionResponse WithContent(ListingExtractionResponse response) => response with
     {
         RetrievedContent = new(response.Sources.FirstOrDefault() ?? ListingUrlValue.Value, "Testbil", null, "1",
-            null, null, null, response.Draft.Equipment, null, null, null),
+            null, null, null, response.Draft.Equipment, null, null, null, response.Draft.SellerType),
     };
 
     private static CodexListingExtractionService CreateService(HttpMessageHandler handler)

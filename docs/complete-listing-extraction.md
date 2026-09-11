@@ -41,6 +41,19 @@ equipment and seller-answer fields with the captured originals. Description-only
 winter tyres cannot silently become an equipment entry. No reference car values
 are present in the production parser or prompt.
 
+The seller profile panel contributes only its explicit kind: the Blocket dealer
+panel establishes `dealer`, and the identified private-profile panel establishes
+`private`. No seller name, contact details or login text enters the captured
+content. Missing/unrecognized panels remain unknown; absence of a dealer is not
+evidence of a private seller. Conflicting profile kinds produce an invalid-content
+error. The application preserves this captured kind as `listing/html/unverified`,
+overriding AI suggestions (including an unsupported model guess when the captured
+kind is null). This fixes the missing seller type found in the additional Saab
+and Opel checks; it does not alter public contracts, schema or storage versions.
+An explicit Swedish postcode immediately before the locality in the captured
+location row is also preserved with HTML provenance, preventing model omissions.
+Ambiguous/missing postcode patterns are not inferred from street numbers or cities.
+
 There is no pasted-text input, discovery, registry adapter, additional model,
 alternate paid provider, VPN rotation or challenge bypass.
 

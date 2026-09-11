@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using CarExpenseCalculator.Core.Listings;
 using CarExpenseCalculator.Extraction.Contracts;
@@ -54,9 +55,26 @@ internal sealed partial class BlocketContentParser : IListingContentParser
             .Select(i => new ExtractedSellerAnswer(Plain(answers[i * 2]) ?? throw Invalid(), Plain(answers[i * 2 + 1]) ?? throw Invalid())).ToArray();
         var price = Unique(main.QuerySelectorAll("p").Where(x => Plain(x) == "Totalt pris"));
         var subtitle = main.QuerySelector("h1")?.NextElementSibling;
+        // Only the actual profile-panel marker establishes type; never infer private from
+        // a missing dealer panel, a business name, or text inside the description.
+        bool ProfileContainer(IElement element) =>
+            element.Closest("[data-testid=expandable-section], [hidden], [aria-hidden=true]") is null;
+        bool ProfileHeading(IElement heading, string label) => Plain(heading) == label && ProfileContainer(heading);
+        var dealer = main.QuerySelectorAll("w-box > div > h2")
+            .Any(x => ProfileHeading(x, "Återförsäljarens uppgifter"));
+        var privateSeller = main.QuerySelectorAll("#trust-ad-profile-card-podlet-isolated > h2")
+            .Any(x => ProfileHeading(x, "Användarprofil"));
+        // Blocket also renders the private profile in a declarative shadow root.
+        // Inspect only that known template's inert DOM; no scripts/resources run.
+        privateSeller |= main.QuerySelectorAll("trust-ad-profile-card-podlet-isolated > template[shadowrootmode=open]")
+            .OfType<IHtmlTemplateElement>().Where(ProfileContainer)
+            .SelectMany(x => x.Content.QuerySelectorAll("#trust-ad-profile-card-podlet-isolated > h2"))
+            .Any(x => ProfileHeading(x, "Användarprofil"));
+        if (dealer && privateSeller) throw Invalid();
         var content = new RetrievedListingContent(page.Url.Value, title,
             subtitle?.LocalName == "p" ? Plain(subtitle) : null, id, Plain(price?.NextElementSibling), description,
-            specs, equipment, pairs, Plain(Heading("Plats")?.ParentElement?.QuerySelector("w-button[href]")), Info("Uppdaterad"));
+            specs, equipment, pairs, Plain(Heading("Plats")?.ParentElement?.QuerySelector("w-button[href]")), Info("Uppdaterad"),
+            dealer ? "dealer" : privateSeller ? "private" : null);
         Validate(content);
         cancellationToken.ThrowIfCancellationRequested();
         return content;
@@ -64,6 +82,7 @@ internal sealed partial class BlocketContentParser : IListingContentParser
 
     internal static void Validate(RetrievedListingContent content)
     {
+        if (content.SellerType is not (null or "dealer" or "private")) throw Invalid();
         Check(content.Title, ListingDetailLimits.TitleLength);
         Check(content.Subtitle, ListingDetailLimits.TitleLength);
         Check(content.Description, ListingDetailLimits.DescriptionLength);

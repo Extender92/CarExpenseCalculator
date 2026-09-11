@@ -36,6 +36,8 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await expect(completeCard.getByText("16710 mil")).toBeVisible();
   await expect(completeCard.getByText("Nej", { exact: true }).first()).toBeVisible();
   await completeCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await expect(completeCard.getByLabel("Säljartyp", { exact: true })).toHaveValue("private");
+  await expect(completeCard.getByLabel("Säljartyp", { exact: true }).locator("..")).toContainText("Annons · Direkt hämtat · Inte verifierad");
   await expect(completeCard.getByLabel("Ort eller stad")).toHaveValue("Tenhult");
   await expect(completeCard.getByLabel("Län")).toHaveValue("Jönköpings län");
   await completeCard.getByLabel("Län").fill("Östergötlands län");
@@ -50,6 +52,7 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   const resultCards = page.locator('[data-testid^="listing-card-"]');
   const unavailableCard = resultCards.nth(2);
   await unavailableCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await expect(unavailableCard.getByLabel("Säljartyp", { exact: true })).toHaveValue("");
   await unavailableCard.getByLabel("Registreringsnummer").fill("ABC123");
   await expect(unavailableCard.getByText(/Användare · Manuell · Bekräftad/)).toBeVisible();
 

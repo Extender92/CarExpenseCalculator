@@ -6,7 +6,7 @@ public sealed record RetrievedListingContent
     public RetrievedListingContent(string sourceUrl, string title, string? subtitle, string listingId,
         string? price, string? description, IReadOnlyList<ExtractedListingSpecification>? specifications,
         IReadOnlyList<string>? equipment, IReadOnlyList<ExtractedSellerAnswer>? sellerAnswers,
-        string? location, string? updated)
+        string? location, string? updated, string? sellerType = null)
     {
         SourceUrl = sourceUrl;
         Title = title;
@@ -19,6 +19,7 @@ public sealed record RetrievedListingContent
         SellerAnswers = sellerAnswers is null ? null : Array.AsReadOnly(sellerAnswers.ToArray());
         Location = location;
         Updated = updated;
+        SellerType = sellerType;
     }
 
     public string SourceUrl { get; }
@@ -32,4 +33,6 @@ public sealed record RetrievedListingContent
     public IReadOnlyList<ExtractedSellerAnswer>? SellerAnswers { get; }
     public string? Location { get; }
     public string? Updated { get; }
+    /// <summary>Explicit Blocket profile kind: dealer, private, or unknown (null). No contact data.</summary>
+    public string? SellerType { get; }
 }

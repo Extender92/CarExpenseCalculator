@@ -5,7 +5,10 @@ Status: **direct retrieval and all four live reference checks passed** on
 This report covers branch delivery; merge and deployment require separate action.
 The earlier hosted-retrieval failures are retained below as history, not current blockers.
 Tested application implementation: [`5bf0cfe`](https://github.com/Extender92/CarExpenseCalculator/commit/5bf0cfed3301ad6292b071f639290b89f8a8c8c3).
-Subsequent report/log-tool changes do not alter the tested application.
+The [Saab/Opel follow-up](listing-seller-type-verification.md) records a later
+seller-panel/postcode correction, its failed development attempts and final live
+checks. The results below describe the original four Audi/Skoda runs; the linked
+follow-up identifies the additional tests and current behavior.
 The [current PR checks](https://github.com/Extender92/CarExpenseCalculator/pull/93/checks)
 identify the published head; merge remains separate.
 

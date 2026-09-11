@@ -79,6 +79,8 @@ application-owned content separately from the schema-constrained AI draft.
 Infrastructure preserves original sections with `html` provenance and maps
 interpreted facts with `ai` provenance; both are listing/unverified. The actual
 retrieved URL supplies source observation. Model-written URLs never replace it.
+The explicit seller-panel kind also uses `html`; only dealer/private classification
+is retained, with unknown panels left unknown and all contact/profile text excluded.
 Core owns normalization, validation, source matching and completeness. User
 edits retain explicit confirmation semantics. The sidecar has no published port,
 database credentials or repository mount; advisory review remains separate.

@@ -156,6 +156,7 @@ internal sealed partial class CodexListingExtractionService(
             || !ListingUrl.TryParse(content.SourceUrl, out var fetchedUrl)
             || !fetchedUrl!.IsSourceMatchFor(submittedUrl)
             || !response.Sources.Contains(content.SourceUrl, StringComparer.Ordinal)
+            || content.SellerType is not (null or "dealer" or "private")
             || content.Specifications?.Any(x => x is null) == true
             || content.SellerAnswers?.Any(x => x is null) == true
             || response.Draft.Details?.Specifications?.Any(x => x is null) == true
