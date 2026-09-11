@@ -1,3 +1,5 @@
+import { detailsToInput, detailsDisplay } from "./details";
+import { cloneExact, stringifyExact, n, canonicalNumber, shiftDecimal } from "@/features/household/numbers";
 import type {
   BodyType,
   CreateSavedListingRequest,
@@ -27,7 +29,7 @@ import {
   type ScalarFieldName,
   type StringCollectionEntry,
 } from "./review-model";
-import { normalizeScalarInput, parseLocalizedNumber, validateReviewDraft } from "./validation";
+import { normalizeScalarInput, validateReviewDraft } from "./validation";
 
 export const collectionFieldNames = [
   "fuelTypes",
@@ -38,7 +40,7 @@ export const collectionFieldNames = [
 ] as const;
 
 export type CollectionFieldName = (typeof collectionFieldNames)[number];
-export type ComparisonFieldName = Exclude<ScalarFieldName, "registrationNumber"> | CollectionFieldName;
+export type ComparisonFieldName = Exclude<ScalarFieldName, "registrationNumber"> | CollectionFieldName | "details";
 export type ComparisonChoice = "existing" | "candidate";
 
 export interface SavedListingReviewState {
@@ -107,6 +109,7 @@ const fieldLabels: Record<ComparisonFieldName, string> = {
   equipment: "Utrustning",
   sellerClaims: "Säljarens påståenden",
   conditionNotes: "Skicknoteringar",
+  details: "Kompletterande annonsunderlag",
 };
 
 export function createManualReviewContext(now = new Date()): ListingReviewContext {
@@ -218,6 +221,8 @@ export function compareListingDrafts(
       });
     }
   }
+  if (stringifyExact(existing.details) !== stringifyExact(candidate.details)) differences.push({key:"details", label:fieldLabels.details,
+    existingValue: detailsDisplay(existing.details), candidateValue: detailsDisplay(candidate.details)});
   return differences;
 }
 
@@ -242,7 +247,9 @@ export function mergeListingComparison(
   const merged = cloneDraft(candidate);
   for (const difference of differences) {
     if (choices[difference.key] !== "existing") continue;
-    if (isCollectionField(difference.key)) {
+    if (difference.key === "details") {
+      merged.details = cloneExact(existing.details);
+    } else if (isCollectionField(difference.key)) {
       assignExistingCollection(merged, existing, difference.key, normalizedUrl);
     } else {
       const old = existing.fields[difference.key];
@@ -256,6 +263,7 @@ export function mergeListingComparison(
 
 function draftToInput(draft: ListingReviewDraft, normalizedUrl: string): ListingDraftInput {
   return {
+    details: detailsToInput(draft.details, normalizedUrl),
     registrationNumber: scalarInput(draft.fields.registrationNumber, normalizedUrl, normalizeRegistrationNumber),
     make: scalarInput(draft.fields.make, normalizedUrl, normalizeText),
     model: scalarInput(draft.fields.model, normalizedUrl, normalizeText),
@@ -267,7 +275,7 @@ function draftToInput(draft: ListingReviewDraft, normalizedUrl: string): Listing
     odometerKilometres: scalarInput(
       draft.fields.odometerKilometres,
       normalizedUrl,
-      (value) => parseNumber(value) * 10,
+      (value) => n(shiftDecimal(canonicalNumber(value), 1)),
     ),
     sellerType: scalarInput(draft.fields.sellerType, normalizedUrl, (value) => value as SellerType),
     locality: scalarInput(draft.fields.locality, normalizedUrl, normalizeText),
@@ -342,7 +350,7 @@ function normalizeText(value: string) {
 }
 
 function parseNumber(value: string) {
-  return parseLocalizedNumber(value).value!;
+  return n(canonicalNumber(value));
 }
 
 function translateValidationMessage(path: string, message: string) {
@@ -356,11 +364,14 @@ function translateValidationMessage(path: string, message: string) {
   return "Servern kunde inte godkänna värdet.";
 }
 
+function comparableNumber(value: string) {
+  try { return canonicalNumber(value); } catch { return normalizeText(value); }
+}
+
 function scalarComparable(field: ScalarDraftField, name: ScalarFieldName) {
   if (field.input === "") return "null";
   if (integerFields.has(name) || decimalFields.has(name)) {
-    const parsed = parseLocalizedNumber(field.input, integerFields.has(name));
-    return parsed.error ? normalizeText(field.input) : String(parsed.value);
+    return comparableNumber(field.input);
   }
   if (name === "registrationNumber") return normalizeRegistrationNumber(field.input);
   if (name === "vin") return normalizeText(field.input).toUpperCase();
@@ -383,7 +394,7 @@ function collectionComparable(
     return JSON.stringify((collection as CollectionDraft<EnergyConsumptionDraft>).values.map((value) => ({
       label: normalizeText(value.label),
       unit: value.unit,
-      consumption: parseLocalizedNumber(value.consumptionPer100Kilometres).value,
+      consumption: comparableNumber(value.consumptionPer100Kilometres),
     })));
   }
   if (name === "fuelTypes") return JSON.stringify(collection.values);
@@ -418,6 +429,7 @@ function cloneDraft(draft: ListingReviewDraft): ListingReviewDraft {
     equipment: cloneCollection(draft.equipment),
     sellerClaims: cloneCollection(draft.sellerClaims),
     conditionNotes: cloneCollection(draft.conditionNotes),
+    details: cloneExact(draft.details),
   };
 }
 

@@ -94,6 +94,8 @@ public sealed class VehicleFactsProcessor
         TowBar = Map(listing.TowBar),
         Transmission = Map(listing.Transmission),
         ModelYear = Map(listing.ModelYear),
+        Seats = Map(listing.Details?.Seats),
+        TowingCapacityKilograms = MapBrakedTowing(listing.Details),
         FuelTypes = listing.FuelTypes is null ? null : VehicleFact<FuelTypeSet>.Known(
             new FuelTypeSet(listing.FuelTypes.Values), Evidence(listing.FuelTypes.Provenance)),
         BodyType = Map(listing.BodyType),
@@ -106,6 +108,15 @@ public sealed class VehicleFactsProcessor
 
     private static VehicleFact<T>? Map<T>(SourcedValue<T>? value) where T : notnull => value is null
         ? null : VehicleFact<T>.Known(value.Value, Evidence(value.Provenance));
+
+    private static VehicleFact<int>? MapBrakedTowing(ListingDetails? details)
+    {
+        if (details?.TrailerWeightCategory is not { Value: "braked" } category ||
+            details.TrailerWeightKilograms is not { } weight ||
+            weight.Value is < 0 or > 100_000 || decimal.Truncate(weight.Value) != weight.Value ||
+            category.Provenance != weight.Provenance) return null;
+        return VehicleFact<int>.Known((int)weight.Value, Evidence(weight.Provenance));
+    }
 
     private static ComparisonEvidence Evidence(FieldProvenance? provenance) => provenance is null
         ? null! // Preserve invalid supplied metadata for the typed validator.
@@ -169,13 +180,13 @@ public sealed class VehicleFactsProcessor
             return;
         }
 
-        var listing = evidence.Origin == FieldOrigin.Listing && evidence.ExtractionMethod == ExtractionMethod.Ai &&
+        var listing = evidence.Origin == FieldOrigin.Listing && evidence.ExtractionMethod is ExtractionMethod.Ai or ExtractionMethod.Html &&
             evidence.Verification == VerificationStatus.Unverified;
         var manual = evidence.Origin == FieldOrigin.User && evidence.ExtractionMethod == ExtractionMethod.Manual &&
             evidence.Verification == VerificationStatus.UserConfirmed;
         if (!listing && !manual)
         {
-            Add(errors, path, "unsupportedEvidence", "Only listing/ai/unverified and user/manual/userConfirmed evidence is supported.");
+            Add(errors, path, "unsupportedEvidence", "Only listing/ai-or-html/unverified and user/manual/userConfirmed evidence is supported.");
         }
 
         if (listing && evidence.SourceUrl is null)

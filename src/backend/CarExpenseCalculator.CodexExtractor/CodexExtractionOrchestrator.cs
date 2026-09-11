@@ -12,20 +12,24 @@ internal sealed class CodexExtractionOrchestrator
     private readonly TimeProvider timeProvider;
     private readonly ILogger<CodexExtractionOrchestrator> logger;
     private readonly SemaphoreSlim concurrencyGate;
+    private readonly IListingPageFetcher pageFetcher;
+    private readonly IListingContentParser contentParser;
 
     public CodexExtractionOrchestrator(
         CodexExtractorOptions options,
         ICodexProcessRunner processRunner,
         CodexJsonlParser parser,
         TimeProvider timeProvider,
-        ILogger<CodexExtractionOrchestrator> logger)
+        ILogger<CodexExtractionOrchestrator> logger,
+        IListingPageFetcher pageFetcher,
+        IListingContentParser contentParser)
         : this(
             options,
             processRunner,
             parser,
             timeProvider,
             logger,
-            new SemaphoreSlim(initialCount: 2, maxCount: 2))
+            new SemaphoreSlim(initialCount: 1, maxCount: 1), pageFetcher, contentParser)
     {
     }
 
@@ -35,7 +39,9 @@ internal sealed class CodexExtractionOrchestrator
         CodexJsonlParser parser,
         TimeProvider timeProvider,
         ILogger<CodexExtractionOrchestrator> logger,
-        SemaphoreSlim concurrencyGate)
+        SemaphoreSlim concurrencyGate,
+        IListingPageFetcher pageFetcher,
+        IListingContentParser contentParser)
     {
         this.options = options;
         this.processRunner = processRunner;
@@ -43,6 +49,8 @@ internal sealed class CodexExtractionOrchestrator
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.concurrencyGate = concurrencyGate;
+        this.pageFetcher = pageFetcher;
+        this.contentParser = contentParser;
     }
 
     public async Task<CodexExtractionExecution> ExecuteAsync(
@@ -70,6 +78,12 @@ internal sealed class CodexExtractionOrchestrator
                 return new CodexExtractionFailed(CodexExecutionFailure.NotConfigured);
             }
 
+            if (!BlocketPageFetcher.Supports(listingUrl!))
+            {
+                outcome = CodexExecutionFailure.SourceUnsupported.ToString();
+                return new CodexExtractionFailed(CodexExecutionFailure.SourceUnsupported);
+            }
+
             using var operationTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             operationTimeout.CancelAfter(options.OperationTimeout);
 
@@ -86,7 +100,9 @@ internal sealed class CodexExtractionOrchestrator
                     return new CodexExtractionFailed(CodexExecutionFailure.NotConfigured);
                 }
 
-                var prompt = ListingExtractionPrompt.Create(listingUrl!);
+                var page = await pageFetcher.FetchAsync(listingUrl!, operationTimeout.Token);
+                var content = await contentParser.ParseAsync(page, operationTimeout.Token);
+                var prompt = ListingExtractionPrompt.Create(listingUrl!, content);
                 var processResult = await processRunner.RunAsync(
                     listingUrl!.Host,
                     prompt,
@@ -126,8 +142,14 @@ internal sealed class CodexExtractionOrchestrator
                         options.PromptVersion,
                         options.SchemaVersion,
                         timeProvider.GetUtcNow(),
-                        parsed.Sources,
-                        parsed.Draft));
+                        [page.Url.Value],
+                        parsed.Draft,
+                        content));
+            }
+            catch (ListingSourceException exception)
+            {
+                outcome = exception.Failure.ToString();
+                return new CodexExtractionFailed(exception.Failure, exception.RetryAfterSeconds);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {

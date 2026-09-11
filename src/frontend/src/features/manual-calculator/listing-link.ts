@@ -1,3 +1,4 @@
+import { listingNumberText, type ListingNumber } from "@/features/url-analysis/exact";
 import type { SavedListingResponse } from "@/api/client";
 import {
   createEnergySource,
@@ -36,14 +37,14 @@ export function listingToManualCalculationForm(
 
 export function applyListingPrice(
   form: ManualCalculationForm,
-  priceSek: number,
+  priceSek: ListingNumber,
 ): ManualCalculationForm {
   return { ...form, purchasePriceSek: inputNumber(priceSek) };
 }
 
 export function applyListingTax(
   form: ManualCalculationForm,
-  annualVehicleTaxSek: number,
+  annualVehicleTaxSek: ListingNumber,
 ): ManualCalculationForm {
   return {
     ...form,
@@ -90,6 +91,6 @@ export function applyListingEnergyConsumption(
   };
 }
 
-function inputNumber(value: number | null | undefined) {
-  return value === null || value === undefined ? "" : String(value);
+function inputNumber(value: ListingNumber | null | undefined) {
+  return value === null || value === undefined ? "" : listingNumberText(value);
 }

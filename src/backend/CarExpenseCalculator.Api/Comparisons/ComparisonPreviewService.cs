@@ -81,7 +81,11 @@ internal sealed class ComparisonPreviewService(TimeProvider timeProvider)
         var views = new CompleteComparisonViews(View(H.SensitivityMode.Baseline), View(H.SensitivityMode.Favorable), View(H.SensitivityMode.Cautious));
         ct.ThrowIfCancellationRequested();
         return new(request.RequestId, Guid.NewGuid(), request.Mode, baselineToken, prepared.Candidates.Count,
-            request.Profile.ActiveSensitivityMode, views);
+            request.Profile.ActiveSensitivityMode, views)
+        {
+            Listings = snapshot?.Vehicles.Where(x => x.Listing is not null)
+                .Select(x => SavedListingMapper.ToApi(x.Listing!)).ToArray() ?? [],
+        };
     }
 
     private static C.ComparisonInputValidationException OverrideErrors(C.ComparisonInputValidationException error, Func<int, int?> position)

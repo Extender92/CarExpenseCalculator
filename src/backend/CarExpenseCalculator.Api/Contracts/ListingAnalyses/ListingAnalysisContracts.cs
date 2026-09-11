@@ -19,7 +19,10 @@ public sealed record ListingAnalysisResponse(
     int SchemaVersion,
     IReadOnlyList<ListingAnalysisSourceResponse> Sources,
     ListingDraftResponse Listing,
-    IReadOnlyList<ListingFieldCode> MissingFields);
+    IReadOnlyList<ListingFieldCode> MissingFields)
+{
+    public bool SourcePageObserved => Sources.Any(x => x.MatchesSubmittedUrl);
+}
 
 public sealed record ListingAnalysisSourceResponse(
     string Url,
@@ -57,7 +60,8 @@ public sealed record ListingDraftResponse(
     SourcedValueResponse<bool>? TowBar,
     SourcedCollectionResponse<string>? Equipment,
     SourcedCollectionResponse<string>? SellerClaims,
-    SourcedCollectionResponse<string>? ConditionNotes);
+    SourcedCollectionResponse<string>? ConditionNotes,
+    ListingDetailsResponse? Details = null);
 
 public sealed record SourcedValueResponse<T>(
     T Value,

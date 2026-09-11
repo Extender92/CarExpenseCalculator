@@ -22,20 +22,20 @@ public sealed class CodexExtractorEndpointTests
         using var extraction = await client.PostAsJsonAsync(
             "/internal/listing-extractions",
             new ListingExtractionRequest(
-                "https://example.com/item/1",
+                "https://www.blocket.se/mobility/item/1",
                 ListingExtractionContractVersions.Prompt,
                 ListingExtractionContractVersions.Schema));
         var result = await extraction.Content.ReadFromJsonAsync<ListingExtractionResponse>();
 
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         Assert.True(status!.Configured);
-        Assert.Equal(2, status.PromptVersion);
-        Assert.Equal(2, status.SchemaVersion);
+        Assert.Equal(4, status.PromptVersion);
+        Assert.Equal(3, status.SchemaVersion);
         Assert.Equal(HttpStatusCode.OK, extraction.StatusCode);
         Assert.Equal("gpt-5.6-luna", result!.RequestedModel);
-        Assert.Equal(2, result.PromptVersion);
-        Assert.Equal(2, result.SchemaVersion);
-        Assert.Equal(["https://example.com/item/1"], result.Sources);
+        Assert.Equal(4, result.PromptVersion);
+        Assert.Equal(3, result.SchemaVersion);
+        Assert.Equal(["https://www.blocket.se/mobility/item/1"], result.Sources);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class CodexExtractorEndpointTests
 
         using var response = await client.PostAsJsonAsync(
             "/internal/listing-extractions",
-            new ListingExtractionRequest("https://example.com/item/1", 1, 1));
+            new ListingExtractionRequest("https://www.blocket.se/mobility/item/1", 1, 1));
         var problem = await response.Content.ReadFromJsonAsync<ListingExtractorProblem>();
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
@@ -65,6 +65,8 @@ public sealed class CodexExtractorEndpointTests
             {
                 services.RemoveAll<CodexExtractorOptions>();
                 services.RemoveAll<ICodexProcessRunner>();
+                services.RemoveAll<IListingPageFetcher>();
+                services.AddSingleton<IListingPageFetcher, FakeListingPageFetcher>();
                 services.AddSingleton(TestData.CreateOptions("/fake/codex-home"));
                 services.AddSingleton<ICodexProcessRunner, SuccessfulRunner>();
             });
@@ -85,7 +87,7 @@ public sealed class CodexExtractorEndpointTests
                     0,
                     TestData.SuccessfulJsonl(
                         TestData.EmptyDraftJson(),
-                        TestData.WebEvent("open_page", "https://example.com/item/1")),
+                        TestData.WebEvent("open_page", "https://www.blocket.se/mobility/item/1")),
                     string.Empty,
                     false));
     }

@@ -29,6 +29,11 @@ internal sealed record ParsedCodexOutput(
 
 internal enum CodexExecutionFailure
 {
+    SourceUnsupported,
+    SourceRateLimited,
+    SourceBlocked,
+    SourceUnavailable,
+    SourceInvalidContent,
     InvalidRequest,
     UnsupportedVersion,
     NotConfigured,
@@ -43,5 +48,5 @@ internal abstract record CodexExtractionExecution;
 internal sealed record CodexExtractionSucceeded(ListingExtractionResponse Response)
     : CodexExtractionExecution;
 
-internal sealed record CodexExtractionFailed(CodexExecutionFailure Failure)
+internal sealed record CodexExtractionFailed(CodexExecutionFailure Failure, int? RetryAfterSeconds = null)
     : CodexExtractionExecution;

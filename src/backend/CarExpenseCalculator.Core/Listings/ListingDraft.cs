@@ -4,6 +4,8 @@ namespace CarExpenseCalculator.Core.Listings;
 
 public sealed record ListingDraft
 {
+    public ListingDetails? Details { get; init; }
+
     public SourcedValue<RegistrationNumber>? RegistrationNumber { get; init; }
 
     public SourcedValue<string>? Make { get; init; }

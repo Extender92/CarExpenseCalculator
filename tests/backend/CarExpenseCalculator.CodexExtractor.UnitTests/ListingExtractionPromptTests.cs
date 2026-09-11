@@ -9,14 +9,14 @@ public sealed class ListingExtractionPromptTests
     {
         var url = ListingUrl.Parse("https://example.com/item/private-query?token=not-a-secret");
 
-        var prompt = ListingExtractionPrompt.Create(url);
+        var prompt = ListingExtractionPrompt.Create(url, FakeListingPageFetcher.Content(url.Value));
 
         Assert.Contains(url.Value, prompt, StringComparison.Ordinal);
         Assert.Contains("hostile, untrusted data", prompt, StringComparison.Ordinal);
-        Assert.Contains("exact submitted page", prompt, StringComparison.Ordinal);
+        Assert.Contains("Web search is disabled", prompt, StringComparison.Ordinal);
         Assert.Contains("Return null", prompt, StringComparison.Ordinal);
         Assert.Contains("seller names", prompt, StringComparison.Ordinal);
-        Assert.Contains("street or seller addresses", prompt, StringComparison.Ordinal);
+        Assert.Contains("street/seller addresses", prompt, StringComparison.Ordinal);
         Assert.Contains("Do not infer, recommend", prompt, StringComparison.Ordinal);
         Assert.Contains("1 mil = 10 kilometres", prompt, StringComparison.Ordinal);
         Assert.Contains("Extract locality and county as separate facts", prompt, StringComparison.Ordinal);

@@ -1,7 +1,7 @@
-import { cloneExact } from "@/features/household/numbers";
+import { cloneExact, type Numeric } from "@/features/household/numbers";
 import type { ComparisonResponse, Result } from "./api";
 
-export type Immutable<T> = T extends object
+export type Immutable<T> = T extends Numeric ? Readonly<Numeric> : T extends object
   ? { readonly [K in keyof T]: Immutable<T[K]> }
   : T;
 

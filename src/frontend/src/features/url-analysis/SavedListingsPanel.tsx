@@ -1,3 +1,4 @@
+import { shiftDecimal } from "@/features/household/numbers";
 import { Calculator, Database, FolderOpen, LoaderCircle, RefreshCw, Trash2 } from "lucide-react";
 import type { SavedListingSummary } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
@@ -109,14 +110,14 @@ export function SavedListingsPanel({
                       </div>
                       <p className="mt-1 text-sm text-slate-300">{model || "Modelluppgifter saknas"}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Uppdaterad {formatDateTime(listing.updatedAtUtc)} · revision {listing.revision} · annonsversion {listing.listingVersion}
+                        Uppdaterad {formatDateTime(listing.updatedAtUtc)} · revision {String(listing.revision)} · annonsversion {String(listing.listingVersion)}
                       </p>
                     </div>
                   </div>
 
                   <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                     <SummaryValue label="Pris" value={listing.priceSek === null ? "Okänt" : formatMoneyInput(String(listing.priceSek))} />
-                    <SummaryValue label="Mätarställning" value={listing.odometerKilometres === null ? "Okänd" : `${formatQuantity(listing.odometerKilometres / 10)} mil`} />
+                    <SummaryValue label="Mätarställning" value={listing.odometerKilometres === null ? "Okänd" : `${shiftDecimal(String(listing.odometerKilometres), -1)} mil`} />
                     <SummaryValue label="Saknade fält" value={String(listing.missingFieldCount)} />
                   </dl>
 
@@ -162,8 +163,4 @@ function statusLabel(status: SavedListingSummary["status"]) {
   if (status === "complete") return "Komplett";
   if (status === "partial") return "Delvis";
   return "Manuellt/otillgängligt";
-}
-
-function formatQuantity(value: number) {
-  return new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 3 }).format(value);
 }

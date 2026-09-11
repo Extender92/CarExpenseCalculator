@@ -283,8 +283,10 @@ is unchanged. The configuration uses the documented
 ## Complete-set comparison (#85)
 
 This extension adds no migration, stored session, cache, history or implicit
-write. Its enclosing `transportVersion` is **1**; existing comparison/rule
-versions remain **1**, household versions **2** and storage formats **1**.
+write. The baseline transport remains **1**. Complete response transport is
+**2** with current listing input included once per listed vehicle outside the
+three views. Comparison/rule versions remain **1**, household versions **2**,
+household/comparison storage **1**, and newly written listing storage **2**.
 
 | Route | Contract |
 | --- | --- |
@@ -435,3 +437,12 @@ Only disposable PostgreSQL 18 databases are used for migration tests.
 The [verification matrix](household-comparison-verification.md#issue-64-persistence-and-http-evidence)
 links implementation tests and commands. These HTTP/storage checks prepare #65;
 they do not complete the comparison UI, PDF or #67 acceptance.
+
+## Complete listing attachment
+
+`preview-all` returns `listings: SavedListingResponse[]` from its existing
+`RepeatableRead` snapshot. Manual mode returns an empty array. Each entry carries
+current vehicle/listing revisions and the full sourced `listing.details`; these
+are separate from versions retained by previously reviewed comparison facts.
+The client validates listing identity/revision/coverage before publishing the
+whole generation. See [complete listing input](complete-listing-extraction.md).

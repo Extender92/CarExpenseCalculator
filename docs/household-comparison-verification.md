@@ -2,6 +2,12 @@
 
 ## Status
 
+The subsequent complete-listing extension is tracked separately in the
+[listing verification report](listing-extraction-verification-report.md) and
+[reference matrix](listing-extraction-reference-matrix.md). It adds same-snapshot
+listing attachments and frozen report content without changing the completed
+3A/3B calculation or scoring rules. Full live URL extraction remains unaccepted.
+
 Acceptance specification for stages 3A/3B. The implementation notes below name
 automated coverage; the practical whole-stage #61 execution is recorded in the
 [stage 3A report](household-stage-3a-verification-report.md). The

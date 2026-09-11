@@ -29,7 +29,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         await using (var dbContext = fixture.CreateDbContext())
         {
             var applied = await dbContext.Database.GetAppliedMigrationsAsync();
-            Assert.Equal(5, applied.Count());
+            Assert.Equal(7, applied.Count());
             var migrator = dbContext.Database.GetService<IMigrator>();
             await migrator.MigrateAsync(Migration.InitialDatabase);
         }
@@ -102,6 +102,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
 
         await using (var context = fixture.CreateDbContext())
         {
+            await SeedLegacyListingFormatAsync(context);
             var migrator = context.Database.GetService<IMigrator>();
             await migrator.MigrateAsync(InitialScenarioMigration);
         }
@@ -223,6 +224,13 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
 
         await DatabaseMigrationRunner.RunAsync(services, Migration.InitialDatabase);
         Assert.False(await TableExistsAsync("vehicles"));
+    }
+
+    // Construct historical fixtures only; production rollback never rewrites versions.
+    internal static async Task SeedLegacyListingFormatAsync(CarExpenseDbContext db)
+    {
+        Assert.Equal(0, await db.Database.SqlQueryRaw<int>("SELECT count(*)::int AS \"Value\" FROM vehicle_listings WHERE details IS NOT NULL OR prompt_version = 3").SingleAsync());
+        await db.Database.ExecuteSqlRawAsync("UPDATE vehicle_listings SET listing_schema_version = 1");
     }
 
     private const string InitialScenarioMigration = "20260830181537_InitialSavedCostScenarios";

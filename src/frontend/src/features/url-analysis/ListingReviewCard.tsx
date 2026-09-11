@@ -1,3 +1,6 @@
+import { ListingDetailsEditor } from "./ListingDetailsEditor";
+import { emptyDetails } from "./details";
+import {canonicalNumber,formatNumeric,n,shiftDecimal} from "@/features/household/numbers";
 import {
   AlertTriangle,
   Calculator,
@@ -61,9 +64,9 @@ const phaseLabels: Record<ListingWorkspaceItem["phase"], string> = {
   queued: "Väntar",
   analyzing: "Analyserar",
   retrying: "Analyserar igen",
-  complete: "Komplett extraktion",
+  complete: "Grunduppgifter kompletta",
   partial: "Delvis extraktion",
-  unavailable: "Ingen verifierad extraktion",
+  unavailable: "Inga användbara annonsuppgifter",
   failed: "Analysen misslyckades",
 };
 
@@ -232,7 +235,7 @@ export function ListingReviewCard({
         )}
         {item.phase === "unavailable" && !item.error && item.context.requestedModel && (
           <Notice tone="warning">
-            Den inskickade annonssidan kunde inte bekräftas som källa. AI-värden har därför inte använts.
+            Analysen avslutades utan användbara fordonsuppgifter. Underlaget kan kompletteras manuellt.
           </Notice>
         )}
         {!item.saved && (
@@ -257,6 +260,9 @@ export function ListingReviewCard({
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {item.context.requestedModel && <p className="text-sm" role="note">Obekräftade annonsuppgifter. Fältens källor visar direkt hämtat eller AI-tolkat innehåll.
+          {!item.context.sources.some(s => s.matchesSubmittedUrl) && " Metadata om öppnad sida saknas. Annonsadressen är en referens; granska uppgifterna."}
+        </p>}
         <Summary draft={item.draft} />
 
         {retryConfirmation && (
@@ -296,6 +302,8 @@ export function ListingReviewCard({
               </div>
             )}
 
+            <ListingDetailsEditor value={item.draft.details ?? emptyDetails()} url={item.normalizedUrl} disabled={busy}
+              errors={item.validationErrors} onChange={details => updateDraft({...item.draft, details})} />
             <FieldSection title="Identitet">
               <ScalarFields definitions={identityFields} item={item} disabled={busy} onInput={updateScalar} onBlur={normalizeScalar} />
             </FieldSection>
@@ -304,7 +312,7 @@ export function ListingReviewCard({
               <ScalarFields definitions={advertisementFields} item={item} disabled={busy} onInput={updateScalar} onBlur={normalizeScalar} />
               {fields.odometerKilometres.input && !parseLocalizedNumber(fields.odometerKilometres.input).error && (
                 <p className="text-xs text-slate-500">
-                  Motsvarar {(parseLocalizedNumber(fields.odometerKilometres.input).value! * 10).toLocaleString("sv-SE", { maximumFractionDigits: 3 })} km.
+                  Motsvarar {formatNumeric(n(shiftDecimal(canonicalNumber(fields.odometerKilometres.input),1)),3)} km.
                 </p>
               )}
             </FieldSection>

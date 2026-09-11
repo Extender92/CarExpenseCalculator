@@ -55,8 +55,11 @@ These instructions apply to every agent working in this repository.
   calculation.
 - Deterministic normalization, rules, and calculations are the source of truth.
   AI may later review or explain results but must never override them.
-- Do not implement scraping, automatic marketplace discovery, or programmatic
-  listing ingestion without a documented and permitted data source.
+- User-triggered direct retrieval of individual Blocket car advertisements is
+  explicitly in scope under `docs/complete-listing-extraction.md`. Preserve its
+  host/path, DNS, redirect, content, concurrency and blocking controls. This
+  repository decision does not claim marketplace permission. Other sources,
+  automatic discovery and broader ingestion require a separate documented decision.
 - Missing external data must remain missing or require manual input. Do not guess
   registration facts, owner counts, mileage, prices, or vehicle history.
 - Do not add live OpenAI calls during work that is scoped to the foundation.

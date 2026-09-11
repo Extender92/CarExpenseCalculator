@@ -1,3 +1,4 @@
+import { n } from "@/features/household/numbers";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -62,6 +63,29 @@ beforeEach(() => {
 });
 
 describe("Swedish URL analysis workspace", () => {
+  it("pauses all later URLs on source blocking and resumes only by explicit action", async () => {
+    vi.mocked(analyzeListing).mockRejectedValueOnce(new ListingAnalysisApiError("Blocket nekade åtkomst.", 503, "listingSourceBlocked"))
+      .mockResolvedValue(completeListingAnalysisResponse);
+    const user = userEvent.setup();
+    render(<UrlAnalysisPage />);
+    await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
+    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await screen.findByRole("button", { name: "Fortsätt kön" });
+    expect(analyzeListing).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Fortsätt kön" }));
+    await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(2));
+  });
+
+  it("keeps the source queue paused until Retry-After has elapsed", async () => {
+    vi.mocked(analyzeListing).mockRejectedValueOnce(new ListingAnalysisApiError("Vänta på Blocket.", 429, "listingSourceRateLimited", undefined, 60));
+    const user = userEvent.setup();
+    render(<UrlAnalysisPage />);
+    await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
+    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(await screen.findByRole("button", { name: "Fortsätt kön" }));
+    expect(await screen.findByText(/innan kön återupptas/)).toBeInTheDocument();
+    expect(analyzeListing).toHaveBeenCalledTimes(1);
+  });
   it("starts safely and reports invalid, duplicate, local, and excessive URLs", async () => {
     const user = userEvent.setup();
     render(<UrlAnalysisPage />);
@@ -140,7 +164,7 @@ describe("Swedish URL analysis workspace", () => {
     expect(analyzeListing).not.toHaveBeenCalled();
   });
 
-  it("runs at most two independent requests and preserves success when another fails", async () => {
+  it("runs one complete request at a time and preserves success when another fails", async () => {
     const deferred = [createDeferred<ListingAnalysisResponse>(), createDeferred<ListingAnalysisResponse>(), createDeferred<ListingAnalysisResponse>()];
     deferred.forEach((promise) => vi.mocked(analyzeListing).mockImplementationOnce(() => promise.promise));
     const user = userEvent.setup();
@@ -152,14 +176,15 @@ describe("Swedish URL analysis workspace", () => {
       "https://cars.example/item/3",
     ].join("\n"));
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
-    await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(1));
 
     deferred[0].resolve(completeListingAnalysisResponse);
-    await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(2));
     deferred[1].reject(new ListingAnalysisApiError("Tillfälligt fel", 503, "listingAnalysisProviderUnavailable"));
+    await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(3));
     deferred[2].resolve({ ...completeListingAnalysisResponse, normalizedUrl: "https://cars.example/item/3" });
 
-    await waitFor(() => expect(screen.getAllByText("Komplett extraktion")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("Grunduppgifter kompletta")).toHaveLength(2));
     expect(screen.getByText("Tillfälligt fel")).toBeInTheDocument();
     expect(screen.getByText("Analysen misslyckades")).toBeInTheDocument();
   });
@@ -185,7 +210,7 @@ describe("Swedish URL analysis workspace", () => {
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
 
     await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(10));
-    expect(await screen.findAllByText("Komplett extraktion")).toHaveLength(9);
+    expect(await screen.findAllByText("Grunduppgifter kompletta")).toHaveLength(9);
     expect(screen.getByText("Delvis extraktion")).toBeInTheDocument();
   });
 
@@ -304,7 +329,7 @@ describe("Swedish URL analysis workspace", () => {
     await waitFor(() => expect(createSavedListing).toHaveBeenCalledTimes(1));
     expect(vi.mocked(createSavedListing).mock.calls[0][0]).toMatchObject({
       registrationNumber: "ABC123",
-      listing: { draft: { odometerKilometres: { value: 167100 } } },
+      listing: { draft: { odometerKilometres: { value: n("167100") } } },
     });
     expect(await screen.findByText("Bilen har sparats.")).toBeInTheDocument();
     expect(screen.getByText("Sparad")).toBeInTheDocument();

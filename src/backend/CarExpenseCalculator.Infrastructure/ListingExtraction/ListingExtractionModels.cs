@@ -4,6 +4,11 @@ namespace CarExpenseCalculator.Infrastructure.ListingExtraction;
 
 public enum ListingExtractionFailureCode
 {
+    SourceUnsupported,
+    SourceRateLimited,
+    SourceBlocked,
+    SourceUnavailable,
+    SourceInvalidContent,
     NotConfigured,
     RateLimited,
     TimedOut,
@@ -22,7 +27,7 @@ public sealed record ListingExtractionSuccess(
     ListingProcessingResult ProcessingResult)
     : ListingExtractionOutcome;
 
-public sealed record ListingExtractionFailure(ListingExtractionFailureCode Code)
+public sealed record ListingExtractionFailure(ListingExtractionFailureCode Code, int? RetryAfterSeconds = null)
     : ListingExtractionOutcome;
 
 public sealed record ListingExtractionConfigurationStatus(

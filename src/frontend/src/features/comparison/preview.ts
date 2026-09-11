@@ -115,7 +115,7 @@ export function validResponse(
       !/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(
         response.generationId,
       ) ||
-      response.transportVersion.text !== "1" ||
+      response.transportVersion.text !== "2" ||
       response.candidateCount.text !== String(expectedCount) ||
       response.activeSensitivityMode !==
         request.profile.activeSensitivityMode ||
@@ -144,6 +144,17 @@ export function validResponse(
       new Set(order).size === expectedCount &&
       order.every((id) => idsSet.has(id));
     const idsSet = new Set(ids);
+    if (!Array.isArray(response.listings) || (request.mode === "manual" && response.listings.length !== 0)) invalid();
+    const listings = response.listings!;
+    const listingIds = new Set(listings.map(l => l.vehicleId));
+    if (listingIds.size !== listings.length) invalid();
+    const candidatesById = new Map(first.map(c => [c.vehicleId, c]));
+    for (const l of listings) {
+      const c = candidatesById.get(l.vehicleId);
+      if (!c || c.registrationNumber !== l.registrationNumber || l.revision.text !== c.sourceRevisions.vehicle?.text ||
+          l.listingVersion.text !== c.sourceRevisions.listing?.text) invalid();
+    }
+    if (request.mode === "stored" && first.some(c => !!c.sourceRevisions.listing !== listingIds.has(c.vehicleId))) invalid();
     for (const mode of ["baseline", "favorable", "cautious"] as const) {
       const view = response.views[mode];
       if (

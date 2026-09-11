@@ -1272,8 +1272,8 @@ function ListingCalculationPanel({
 }: {
   context: ListingCalculationContext;
   form: ManualCalculationForm;
-  onApplyPrice: (value: number) => void;
-  onApplyTax: (value: number) => void;
+  onApplyPrice: (value: import("@/features/url-analysis/exact").ListingNumber) => void;
+  onApplyTax: (value: import("@/features/url-analysis/exact").ListingNumber) => void;
   onApplyEnergy: (source: AdvertisedEnergy, target: number | "new") => void;
 }) {
   const listing = context.listing;
@@ -1285,7 +1285,7 @@ function ListingCalculationPanel({
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>Annonsversion {listing.listingVersion}</Badge>
+          <Badge>Annonsversion {String(listing.listingVersion)}</Badge>
           <Badge variant={listing.savedCostScenarioOutdated ? "warning" : "muted"}>
             {listing.savedCostScenarioOutdated ? "Tidigare kalkyl är inaktuell" : "Granska före sparning"}
           </Badge>

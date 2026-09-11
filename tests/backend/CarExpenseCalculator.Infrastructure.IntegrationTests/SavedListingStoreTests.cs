@@ -34,7 +34,7 @@ public sealed class SavedListingStoreTests(PostgreSqlFixture fixture)
         Assert.Equal("ABC123", created.RegistrationNumber.Value);
         Assert.Equal(1, created.Revision);
         Assert.Equal(1, created.ListingVersion);
-        Assert.Equal(1, created.ListingSchemaVersion);
+        Assert.Equal(2, created.ListingSchemaVersion);
         Assert.Equal("https://EXAMPLE.com/listings/abc123?campaign=Autumn#details", created.SubmittedUrl);
         Assert.Equal("https://example.com/listings/abc123?campaign=Autumn", created.NormalizedUrl.Value);
         Assert.Equal("gpt-5.6-luna", created.RequestedModel);
@@ -115,7 +115,7 @@ public sealed class SavedListingStoreTests(PostgreSqlFixture fixture)
         Assert.DoesNotContain(ListingFieldCode.FuelTypes, saved.ProcessingResult.MissingFields);
         Assert.Contains(ListingFieldCode.Locality, saved.ProcessingResult.MissingFields);
         Assert.Contains(ListingFieldCode.County, saved.ProcessingResult.MissingFields);
-        Assert.Equal(ListingAnalysisStatus.Unavailable, saved.ProcessingResult.Status);
+        Assert.Equal(ListingAnalysisStatus.Partial, saved.ProcessingResult.Status);
         Assert.Null(saved.RequestedModel);
         Assert.Null(saved.PromptVersion);
         Assert.Null(saved.ExtractionSchemaVersion);
@@ -591,12 +591,12 @@ public sealed class SavedListingStoreTests(PostgreSqlFixture fixture)
         2)]
     [InlineData(
         "ALTER TABLE vehicle_listings DROP CONSTRAINT ck_vehicle_listings_extraction_metadata; UPDATE vehicle_listings SET prompt_version = 99",
-        1,
+        2,
         99,
         2)]
     [InlineData(
         "ALTER TABLE vehicle_listings DROP CONSTRAINT ck_vehicle_listings_extraction_metadata; UPDATE vehicle_listings SET extraction_schema_version = 99",
-        1,
+        2,
         2,
         99)]
     public async Task Stored_unsupported_versions_are_rejected(

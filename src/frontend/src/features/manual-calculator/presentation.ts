@@ -1,3 +1,4 @@
+import {Numeric, formatNumeric} from "@/features/household/numbers";
 import type { ValidationProblemDetails } from "@/api/client";
 import type { ValidationErrors } from "./validation";
 
@@ -44,12 +45,12 @@ const serverMessageTranslations: Record<string, string> = {
   "Value is not supported.": "Värdet stöds inte.",
 };
 
-export function formatSek(value: number) {
-  return moneyFormatter.format(value);
+export function formatSek(value: number | import("@/features/household/numbers").Numeric) {
+  return value instanceof Numeric ? `${formatNumeric(value, 2)} kr` : moneyFormatter.format(value);
 }
 
-export function formatQuantity(value: number) {
-  return quantityFormatter.format(value);
+export function formatQuantity(value: number | import("@/features/household/numbers").Numeric) {
+  return value instanceof Numeric ? formatNumeric(value, 3) : quantityFormatter.format(value);
 }
 
 export function formatInteger(value: number) {

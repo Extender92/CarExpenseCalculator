@@ -10,7 +10,7 @@ using CarExpenseCalculator.Extraction.Contracts;
 
 namespace CarExpenseCalculator.Infrastructure.ListingExtraction;
 
-internal sealed class CodexListingExtractionService(
+internal sealed partial class CodexListingExtractionService(
     HttpClient httpClient,
     ListingDraftProcessor draftProcessor) : IListingExtractionService
 {
@@ -46,7 +46,7 @@ internal sealed class CodexListingExtractionService(
             var extraction = await response.Content.ReadFromJsonAsync<ListingExtractionResponse>(
                 SerializerOptions,
                 cancellationToken);
-            if (!TryValidateResponse(extraction, out var sources))
+            if (!TryValidateResponse(extraction, listingUrl, out var sources))
             {
                 return InvalidResponse();
             }
@@ -60,6 +60,10 @@ internal sealed class CodexListingExtractionService(
             ListingProcessingResult processingResult;
             try
             {
+                var htmlProvenance = provenance with { ExtractionMethod = ExtractionMethod.Html };
+                // Strict validation of directly preserved fields prevents silent loss at normalization.
+                draftProcessor.ProcessReviewed(listingUrl, sources!, ApplyRetrievedContent(new ListingDraft(), extraction.RetrievedContent!, htmlProvenance));
+                draft = ApplyRetrievedContent(draft, extraction.RetrievedContent!, htmlProvenance);
                 processingResult = draftProcessor.ProcessExtraction(listingUrl, sources!, draft);
             }
             catch (ListingValidationException)
@@ -135,6 +139,7 @@ internal sealed class CodexListingExtractionService(
 
     private static bool TryValidateResponse(
         ListingExtractionResponse? response,
+        ListingUrl submittedUrl,
         out IReadOnlyList<ListingUrl>? sources)
     {
         sources = null;
@@ -144,7 +149,18 @@ internal sealed class CodexListingExtractionService(
             || response.SchemaVersion != ListingExtractionContractVersions.Schema
             || response.AnalyzedAtUtc.Offset != TimeSpan.Zero
             || response.Sources is null
-            || response.Draft is null)
+            || response.Draft is null
+            || response.RetrievedContent is not { } content
+            || string.IsNullOrWhiteSpace(content.Title)
+            || string.IsNullOrWhiteSpace(content.ListingId)
+            || !ListingUrl.TryParse(content.SourceUrl, out var fetchedUrl)
+            || !fetchedUrl!.IsSourceMatchFor(submittedUrl)
+            || !response.Sources.Contains(content.SourceUrl, StringComparer.Ordinal)
+            || content.SellerType is not (null or "dealer" or "private")
+            || content.Specifications?.Any(x => x is null) == true
+            || content.SellerAnswers?.Any(x => x is null) == true
+            || response.Draft.Details?.Specifications?.Any(x => x is null) == true
+            || response.Draft.Details?.SellerAnswers?.Any(x => x is null) == true)
         {
             return false;
         }
@@ -173,6 +189,7 @@ internal sealed class CodexListingExtractionService(
     {
         return new ListingDraft
         {
+            Details = MapDetails(source.Details, provenance),
             RegistrationNumber = TryRegistrationNumber(source.RegistrationNumber, provenance),
             Make = Value(source.Make, provenance),
             Model = Value(source.Model, provenance),
@@ -331,6 +348,12 @@ internal sealed class CodexListingExtractionService(
 
         return (response.StatusCode, problem?.Code) switch
         {
+            (HttpStatusCode.BadRequest, ListingExtractorProblemCodes.SourceUnsupported) => new ListingExtractionFailure(ListingExtractionFailureCode.SourceUnsupported),
+            (HttpStatusCode.TooManyRequests, ListingExtractorProblemCodes.SourceRateLimited) => new ListingExtractionFailure(ListingExtractionFailureCode.SourceRateLimited,
+                (int)Math.Clamp(Math.Ceiling(response.Headers.RetryAfter?.Delta?.TotalSeconds ?? 60), 1, int.MaxValue)),
+            (HttpStatusCode.ServiceUnavailable, ListingExtractorProblemCodes.SourceBlocked) => new ListingExtractionFailure(ListingExtractionFailureCode.SourceBlocked),
+            (HttpStatusCode.ServiceUnavailable, ListingExtractorProblemCodes.SourceUnavailable) => new ListingExtractionFailure(ListingExtractionFailureCode.SourceUnavailable),
+            (HttpStatusCode.ServiceUnavailable, ListingExtractorProblemCodes.SourceInvalidContent) => new ListingExtractionFailure(ListingExtractionFailureCode.SourceInvalidContent),
             (HttpStatusCode.ServiceUnavailable, ListingExtractorProblemCodes.NotConfigured) =>
                 new ListingExtractionFailure(ListingExtractionFailureCode.NotConfigured),
             (HttpStatusCode.TooManyRequests, ListingExtractorProblemCodes.RateLimited) =>

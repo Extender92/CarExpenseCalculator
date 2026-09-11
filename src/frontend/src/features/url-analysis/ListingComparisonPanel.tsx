@@ -127,7 +127,7 @@ function ComparisonChoiceCard({
       <input type="radio" name={name} checked={checked} onChange={onChange} className="mt-1" />
       <span>
         <span className="block font-semibold text-slate-100">{label}</span>
-        <span className="mt-1 block break-words text-slate-400">{value}</span>
+        <span className="mt-1 block whitespace-pre-wrap break-words text-slate-400">{value}</span>
       </span>
     </label>
   );

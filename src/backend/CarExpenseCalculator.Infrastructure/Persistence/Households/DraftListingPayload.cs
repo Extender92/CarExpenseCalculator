@@ -33,6 +33,8 @@ internal sealed record DraftCollection<T>(T[] Values, DraftProvenance Provenance
 
 internal sealed record DraftListingValues
 {
+    public DraftListingDetails? Details { get; init; }
+
     public DraftFact<string>? RegistrationNumber { get; init; }
     public DraftFact<string>? Make { get; init; }
     public DraftFact<string>? Model { get; init; }
@@ -68,6 +70,7 @@ internal sealed record DraftListingValues
 
     public static DraftListingValues FromCore(ListingDraft x) => new()
     {
+        Details = DraftListingDetails.FromCore(x.Details),
         RegistrationNumber = x.RegistrationNumber is null ? null : new(x.RegistrationNumber.Value.Value, DraftProvenance.FromCore(x.RegistrationNumber.Provenance)),
         Make = DraftFact<string>.FromCore(x.Make),
         Model = DraftFact<string>.FromCore(x.Model),
@@ -104,6 +107,7 @@ internal sealed record DraftListingValues
 
     public ListingDraft ToCore() => new()
     {
+        Details = Details?.ToCore(),
         RegistrationNumber = RegistrationNumber is null ? null : new(Core.Vehicles.RegistrationNumber.Parse(RegistrationNumber.Value), RegistrationNumber.Provenance.ToCore()),
         Make = Make?.ToCore(),
         Model = Model?.ToCore(),

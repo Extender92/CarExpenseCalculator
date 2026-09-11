@@ -43,8 +43,9 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     public async Task ResetDatabaseAsync()
     {
         await using var dbContext = CreateDbContext();
-        var migrator = dbContext.Database.GetService<IMigrator>();
-        await migrator.MigrateAsync(Migration.InitialDatabase);
+        // This fixture owns a disposable Testcontainers database. Product rollback deliberately
+        // refuses to discard newer listing formats, so resetting a fixture drops its test database.
+        await dbContext.Database.EnsureDeletedAsync();
         await dbContext.Database.MigrateAsync();
     }
 }

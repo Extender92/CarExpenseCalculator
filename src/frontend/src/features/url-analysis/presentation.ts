@@ -112,6 +112,7 @@ export function provenanceLabel(provenance: FieldProvenance | null) {
   if (!provenance) return "Okänt";
   if (provenance.origin === "user") return "Användare · Manuell · Bekräftad";
   if (provenance.verification === "registryVerified") return "Register · Verifierad";
+  if (provenance.extractionMethod === "html") return "Annons · Direkt hämtat · Inte verifierad";
   return "Annons · AI · Inte verifierad";
 }
 

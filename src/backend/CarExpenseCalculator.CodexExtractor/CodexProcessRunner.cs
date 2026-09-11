@@ -7,7 +7,7 @@ namespace CarExpenseCalculator.CodexExtractor;
 
 internal sealed class CodexProcessRunner : ICodexProcessRunner
 {
-    private const int MaximumJsonlLineBytes = 1 * 1024 * 1024;
+    private const int MaximumJsonlLineBytes = 4 * 1024 * 1024;
     private const int MaximumStandardOutputBytes = 10 * 1024 * 1024;
     private const int MaximumStandardErrorBytes = 1 * 1024 * 1024;
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
@@ -54,7 +54,8 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
             ],
             cancellationToken);
         var hasChatGptAuthentication = login.ExitCode == 0
-            && login.Output.Contains("ChatGPT", StringComparison.OrdinalIgnoreCase);
+            && (login.Output.Contains("ChatGPT", StringComparison.OrdinalIgnoreCase)
+                || login.Error.Contains("ChatGPT", StringComparison.OrdinalIgnoreCase));
 
         return new CodexInstallationStatus(true, hasChatGptAuthentication);
     }
@@ -119,7 +120,6 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
 
     internal IReadOnlyList<string> BuildArguments(string host, string workDirectory)
     {
-        var quotedHost = JsonSerializer.Serialize(host);
         return
         [
             "exec",
@@ -144,9 +144,7 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
             "-c",
             "approval_policy=\"never\"",
             "-c",
-            "web_search=\"live\"",
-            "-c",
-            $"tools.web_search={{context_size=\"medium\",allowed_domains=[{quotedHost}]}}",
+            "web_search=\"disabled\"",
             "-c",
             "forced_login_method=\"chatgpt\"",
             "-c",
@@ -160,7 +158,7 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
             "-c",
             "features.skill_mcp_dependency_install=false",
             "-c",
-            "tools.view_image=false",
+            "features.view_image=false",
             "-c",
             "allow_login_shell=false",
             "-c",
@@ -222,8 +220,10 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
                 timeout.Token);
             await process.WaitForExitAsync(timeout.Token);
             var output = await outputTask;
-            _ = await errorTask;
-            return new ProbeResult(process.ExitCode, output.Text);
+            var error = await errorTask;
+            return output.LimitExceeded || error.LimitExceeded
+                ? new ProbeResult(-1, string.Empty, string.Empty)
+                : new ProbeResult(process.ExitCode, output.Text, error.Text);
         }
         catch (Exception exception) when (
             exception is OperationCanceledException
@@ -235,7 +235,7 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
                 throw new OperationCanceledException(cancellationToken);
             }
 
-            return new ProbeResult(-1, string.Empty);
+            return new ProbeResult(-1, string.Empty, string.Empty);
         }
     }
 
@@ -401,7 +401,7 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
         }
     }
 
-    private sealed record ProbeResult(int ExitCode, string Output);
+    private sealed record ProbeResult(int ExitCode, string Output, string Error);
 
     internal sealed record BoundedLines(IReadOnlyList<string> Lines, bool LimitExceeded);
 

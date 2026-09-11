@@ -50,8 +50,8 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
             payload.Status);
         Assert.Equal(ListingAnalysisTestData.AnalyzedAtUtc, payload.AnalyzedAtUtc);
         Assert.Equal("gpt-5.6-luna", payload.RequestedModel);
-        Assert.Equal(2, payload.PromptVersion);
-        Assert.Equal(2, payload.SchemaVersion);
+        Assert.Equal(4, payload.PromptVersion);
+        Assert.Equal(3, payload.SchemaVersion);
         Assert.Equal([false, true], payload.Sources.Select(source => source.MatchesSubmittedUrl));
         Assert.Equal("ABC12D", payload.Listing.RegistrationNumber!.Value);
         Assert.Equal(89_900.50m, payload.Listing.PriceSek!.Value);
@@ -127,7 +127,7 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
                 "imageCount", "fuelTypes", "transmission", "drivetrain", "bodyType", "colour", "horsepower",
                 "engineDisplacementCubicCentimetres", "energyConsumptions", "annualVehicleTaxSek", "ownerCount",
                 "firstRegistrationDate", "lastInspectionDate", "nextInspectionDate", "towBar", "equipment",
-                "sellerClaims", "conditionNotes",
+                "sellerClaims", "conditionNotes", "details",
             ],
             listing.EnumerateObject().Select(property => property.Name));
         Assert.Equal(JsonValueKind.Null, listing.GetProperty("make").ValueKind);
@@ -201,6 +201,16 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
     }
 
     [Theory]
+    [InlineData(ListingExtractionFailureCode.SourceUnsupported, HttpStatusCode.BadRequest,
+        "listingSourceUnsupported", "Unsupported listing source.")]
+    [InlineData(ListingExtractionFailureCode.SourceRateLimited, HttpStatusCode.TooManyRequests,
+        "listingSourceRateLimited", "Listing source rate limited.")]
+    [InlineData(ListingExtractionFailureCode.SourceBlocked, HttpStatusCode.ServiceUnavailable,
+        "listingSourceBlocked", "Listing source denied access.")]
+    [InlineData(ListingExtractionFailureCode.SourceUnavailable, HttpStatusCode.ServiceUnavailable,
+        "listingSourceUnavailable", "Listing source unavailable.")]
+    [InlineData(ListingExtractionFailureCode.SourceInvalidContent, HttpStatusCode.ServiceUnavailable,
+        "listingSourceInvalidContent", "Listing source content could not be read.")]
     [InlineData(ListingExtractionFailureCode.RateLimited, HttpStatusCode.TooManyRequests,
         "listingAnalysisRateLimited", "Listing analysis is temporarily rate limited.")]
     [InlineData(ListingExtractionFailureCode.NotConfigured, HttpStatusCode.ServiceUnavailable,
@@ -238,6 +248,17 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
         Assert.DoesNotContain("private-listing", body, StringComparison.Ordinal);
         Assert.DoesNotContain("secret", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("codex-extractor", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, _extractionService.ExtractionCallCount);
+    }
+
+    [Fact]
+    public async Task Source_cooldown_is_forwarded_without_exposing_provider_content()
+    {
+        _extractionService.ExtractionHandler = (_, _) => Task.FromResult<ListingExtractionOutcome>(
+            new ListingExtractionFailure(ListingExtractionFailureCode.SourceRateLimited, 90));
+        using var response = await _client.PostAsJsonAsync("/api/listing-analyses", new { url = "https://www.blocket.se/mobility/item/1" });
+        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+        Assert.Equal(TimeSpan.FromSeconds(90), response.Headers.RetryAfter!.Delta);
         Assert.Equal(1, _extractionService.ExtractionCallCount);
     }
 

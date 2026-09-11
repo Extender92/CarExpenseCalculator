@@ -13,7 +13,7 @@ public sealed class SavedListingStore(
     ListingDraftProcessor processor,
     TimeProvider timeProvider) : ISavedListingStore
 {
-    internal const int CurrentListingSchemaVersion = 1;
+    internal const int CurrentListingSchemaVersion = 2;
 
     public async Task<SavedListing> CreateAsync(
         RegistrationNumber registrationNumber,
@@ -298,14 +298,14 @@ public sealed class SavedListingStore(
                 "Requested model must contain 1 through 100 characters after trimming."));
         }
 
-        if (input.PromptVersion != ListingExtractionContractVersions.Prompt)
+        if (input.PromptVersion is not (2 or 3 or 4))
         {
             errors.Add(new ListingValidationError(
                 "promptVersion",
                 $"Prompt version must be {ListingExtractionContractVersions.Prompt}."));
         }
 
-        if (input.ExtractionSchemaVersion != ListingExtractionContractVersions.Schema)
+        if (!ListingExtractionContractVersions.CanRead(input.PromptVersion, input.ExtractionSchemaVersion))
         {
             errors.Add(new ListingValidationError(
                 "schemaVersion",
@@ -359,6 +359,8 @@ public sealed class SavedListingStore(
         entity.SubmittedUrl = prepared.SubmittedUrl;
         entity.NormalizedUrl = prepared.NormalizedUrl.Value;
         entity.Status = prepared.Result.Status;
+        entity.ListingSchemaVersion = CurrentListingSchemaVersion;
+        entity.DetailsJson = SavedListingDetailsJson.Serialize(listing.Details);
         entity.MissingFields = prepared.Result.MissingFields.Select(value => value.ToString()).ToArray();
         entity.RequestedModel = prepared.RequestedModel;
         entity.PromptVersion = prepared.PromptVersion;
@@ -460,6 +462,7 @@ public sealed class SavedListingStore(
             VehicleLabel = vehicle.VehicleLabel is null
                 ? null
                 : new SourcedValue<string>(vehicle.VehicleLabel, Provenance("vehicleLabel")),
+            Details = SavedListingDetailsJson.Deserialize(entity.DetailsJson),
             Make = Wrap(entity.Make, "make", Provenance),
             Model = Wrap(entity.Model, "model", Provenance),
             Variant = Wrap(entity.Variant, "variant", Provenance),
@@ -565,7 +568,7 @@ public sealed class SavedListingStore(
         new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.UserConfirmed, sourceUrl);
 
     private static bool HasAiProvenance(ListingDraft listing) =>
-        EnumerateProvenance(listing).Any(value => value.ExtractionMethod == ExtractionMethod.Ai);
+        EnumerateProvenance(listing).Any(value => value.ExtractionMethod is ExtractionMethod.Ai or ExtractionMethod.Html);
 
     private static IEnumerable<FieldProvenance> EnumerateProvenance(ListingDraft listing)
     {
@@ -587,7 +590,7 @@ public sealed class SavedListingStore(
             listing.TowBar?.Provenance, listing.Equipment?.Provenance,
             listing.SellerClaims?.Provenance, listing.ConditionNotes?.Provenance,
         };
-        return values.OfType<FieldProvenance>();
+        return values.OfType<FieldProvenance>().Concat(listing.Details?.Provenances ?? []);
     }
 
     private static void EnsureSupportedVersions(VehicleEntity vehicle)
@@ -602,9 +605,8 @@ public sealed class SavedListingStore(
                 && listing.PromptVersion is null
                 && listing.ExtractionSchemaVersion is null
             || listing.RequestedModel is not null
-                && listing.PromptVersion == ListingExtractionContractVersions.Prompt
-                && listing.ExtractionSchemaVersion == ListingExtractionContractVersions.Schema;
-        if (listing.ListingSchemaVersion != CurrentListingSchemaVersion
+                && ListingExtractionContractVersions.CanRead(listing.PromptVersion, listing.ExtractionSchemaVersion);
+        if (listing.ListingSchemaVersion is not (1 or 2)
             || !extractionMetadataIsSupported)
         {
             throw new UnsupportedSavedListingVersionException(

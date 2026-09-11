@@ -2,6 +2,48 @@ namespace CarExpenseCalculator.CodexExtractor.UnitTests;
 
 public sealed class CodexProcessRunnerTests
 {
+    [Theory]
+    [InlineData("", "Logged in using ChatGPT\n", 0, true)]
+    [InlineData("Logged in using ChatGPT\n", "", 0, true)]
+    [InlineData("", "Logged in using ChatGPT\n", 1, false)]
+    [InlineData("", "Not logged in\n", 1, false)]
+    [InlineData("", "Logged in using an API key\n", 0, false)]
+    [InlineData("", "", 0, false)]
+    public async Task Installation_status_recognizes_successful_ChatGPT_login_on_either_stream(
+        string standardOutput,
+        string standardError,
+        int exitCode,
+        bool expectedAuthentication)
+    {
+        var runner = new CodexProcessRunner(
+            TestData.CreateOptions(),
+            new ProbeProcessFactory(standardOutput, standardError, exitCode));
+
+        var status = await runner.GetInstallationStatusAsync(CancellationToken.None);
+
+        Assert.True(status.HasRequiredVersion);
+        Assert.Equal(expectedAuthentication, status.HasChatGptAuthentication);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Oversized_login_probe_output_cannot_authenticate(bool oversizedStandardError)
+    {
+        var oversized = "Logged in using ChatGPT\n" + new string('x', 1024 * 1024);
+        var runner = new CodexProcessRunner(
+            TestData.CreateOptions(),
+            new ProbeProcessFactory(
+                oversizedStandardError ? "" : oversized,
+                oversizedStandardError ? oversized : "Logged in using ChatGPT\n",
+                0));
+
+        var status = await runner.GetInstallationStatusAsync(CancellationToken.None);
+
+        Assert.True(status.HasRequiredVersion);
+        Assert.False(status.HasChatGptAuthentication);
+    }
+
     [Fact]
     public void Invocation_is_owned_isolated_and_does_not_put_the_url_in_arguments()
     {
@@ -21,13 +63,14 @@ public sealed class CodexProcessRunnerTests
         Assert.Contains("--ignore-user-config", arguments);
         Assert.Contains("--ignore-rules", arguments);
         Assert.Contains("approval_policy=\"never\"", arguments);
-        Assert.Contains("web_search=\"live\"", arguments);
-        Assert.Contains("tools.web_search={context_size=\"medium\",allowed_domains=[\"example.com\"]}", arguments);
+        Assert.Contains("web_search=\"disabled\"", arguments);
+        Assert.DoesNotContain(arguments, x => x.StartsWith("tools.web_search=", StringComparison.Ordinal));
         Assert.Contains("agents.enabled=false", arguments);
         Assert.Contains("apps._default.enabled=false", arguments);
         Assert.Contains("features.shell_tool=false", arguments);
         Assert.Contains("features.skill_mcp_dependency_install=false", arguments);
-        Assert.Contains("tools.view_image=false", arguments);
+        Assert.Contains("features.view_image=false", arguments);
+        Assert.DoesNotContain("tools.view_image=false", arguments);
         Assert.Contains("allow_login_shell=false", arguments);
         Assert.Contains("forced_login_method=\"chatgpt\"", arguments);
         Assert.Contains("cli_auth_credentials_store=\"file\"", arguments);
@@ -120,6 +163,40 @@ public sealed class CodexProcessRunnerTests
         Assert.True(process.ProcessTreeKilled);
         Assert.Equal("private prompt", process.StandardInputText);
         Assert.Empty(Directory.EnumerateDirectories(workRoot));
+    }
+
+    private sealed class ProbeProcessFactory(string standardOutput, string standardError, int exitCode)
+        : IOwnedProcessFactory
+    {
+        public IOwnedProcess Start(System.Diagnostics.ProcessStartInfo startInfo) =>
+            startInfo.ArgumentList[0] == "--version"
+                ? new CompletedProbeProcess("codex-cli 0.153.0\n", "", 0)
+                : new CompletedProbeProcess(standardOutput, standardError, exitCode);
+    }
+
+    private sealed class CompletedProbeProcess(string standardOutput, string standardError, int exitCode)
+        : IOwnedProcess
+    {
+        public StreamWriter StandardInput { get; } = new(new MemoryStream());
+
+        public Stream StandardOutput { get; } =
+            new MemoryStream(System.Text.Encoding.UTF8.GetBytes(standardOutput));
+
+        public StreamReader StandardError { get; } =
+            new(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(standardError)));
+
+        public int ExitCode => exitCode;
+
+        public Task WaitForExitAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void KillTree() { }
+
+        public void Dispose()
+        {
+            StandardInput.Dispose();
+            StandardOutput.Dispose();
+            StandardError.Dispose();
+        }
     }
 
     private sealed class FakeOwnedProcessFactory(BlockingOwnedProcess process) : IOwnedProcessFactory

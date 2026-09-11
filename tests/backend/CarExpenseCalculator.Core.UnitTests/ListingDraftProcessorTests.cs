@@ -48,7 +48,7 @@ public sealed class ListingDraftProcessorTests
             Make = Value("  Volvo  ", provenance),
             PriceSek = Value(-1m, provenance),
             Equipment = Collection(
-                [" AC ", "ac", new string('x', 101), "Dragkrok"],
+                [" AC ", "ac", " ", "Dragkrok"],
                 provenance),
             FuelTypes = Collection(
                 [FuelType.Petrol, FuelType.Petrol, (FuelType)999],
@@ -83,7 +83,7 @@ public sealed class ListingDraftProcessorTests
         var draft = new ListingDraft
         {
             Locality = Value("  Te\u006Ehult  ", provenance),
-            County = Value(new string('x', 101), provenance),
+            County = Value(" ", provenance),
         };
 
         var result = _processor.ProcessExtraction(_submittedUrl, [_submittedUrl], draft);
@@ -158,43 +158,42 @@ public sealed class ListingDraftProcessorTests
     }
 
     [Fact]
-    public void Process_extraction_truncates_overlong_collections_in_input_order()
+    public void Process_extraction_rejects_overlong_collections_without_silent_truncation()
     {
-        var provenance = AiProvenance();
-        var equipment = Enumerable.Range(0, 101).Select(index => $"Equipment {index}").ToArray();
-        var result = _processor.ProcessExtraction(
-            _submittedUrl,
-            [_submittedUrl],
-            new ListingDraft
-            {
-                Equipment = Collection(equipment, provenance),
-                EnergyConsumptions = Collection(
-                    [
-                        new EnergyConsumption("First", EnergyUnit.Litre, 1m),
-                        new EnergyConsumption("Second", EnergyUnit.KilowattHour, 2m),
-                        new EnergyConsumption("Third", EnergyUnit.Kilogram, 3m),
-                    ],
-                    provenance),
-            });
-
-        Assert.Equal(100, result.Listing.Equipment!.Values.Count);
-        Assert.Equal("Equipment 0", result.Listing.Equipment.Values[0]);
-        Assert.Equal("Equipment 99", result.Listing.Equipment.Values[^1]);
-        Assert.Equal(["First", "Second"], result.Listing.EnergyConsumptions!.Values.Select(value => value.Label));
+        var draft = new ListingDraft { Equipment = Collection(Enumerable.Range(0, 101).Select(i => $"Equipment {i}"), AiProvenance()) };
+        var error = Assert.Throws<ListingValidationException>(() => _processor.ProcessExtraction(_submittedUrl, [], draft));
+        Assert.Contains(error.Errors, x => x.Path == "equipment.values");
     }
 
     [Fact]
-    public void Process_extraction_without_matching_source_discards_all_ai_values()
+    public void Content_length_and_energy_count_limits_reject_instead_of_discarding_ai_data()
+    {
+        var source = AiProvenance();
+        var draft = new ListingDraft
+        {
+            County = Value(new string('x', 101), source),
+            Equipment = Collection([new string('x',101)], source),
+            EnergyConsumptions = Collection(Enumerable.Range(0,3).Select(i => new EnergyConsumption($"Fuel {i}", EnergyUnit.Litre,1)), source),
+        };
+        var error = Assert.Throws<ListingValidationException>(() => _processor.ProcessExtraction(_submittedUrl, [], draft));
+        Assert.Contains(error.Errors, x => x.Path == "county.value");
+        Assert.Contains(error.Errors, x => x.Path == "equipment.values[0]");
+        Assert.Contains(error.Errors, x => x.Path == "energyConsumptions.values");
+    }
+
+    [Fact]
+    public void Process_extraction_without_matching_source_preserves_unconfirmed_ai_values()
     {
         var result = _processor.ProcessExtraction(
             _submittedUrl,
             [ListingUrl.Parse("https://cars.example/item/other")],
             CompleteDraft(AiProvenance()));
 
-        Assert.Equal(ListingAnalysisStatus.Unavailable, result.Status);
-        Assert.Equal(31, result.MissingFields.Count);
-        Assert.Null(result.Listing.Make);
-        Assert.Null(result.Listing.Equipment);
+        Assert.Equal(ListingAnalysisStatus.Complete, result.Status);
+        Assert.NotNull(result.Listing.Make);
+        Assert.NotNull(result.Listing.Equipment);
+        Assert.Equal(VerificationStatus.Unverified, result.Listing.Make.Provenance.Verification);
+        Assert.DoesNotContain(result.Sources, x => x.MatchesSubmittedUrl);
     }
 
     [Fact]
@@ -214,12 +213,12 @@ public sealed class ListingDraftProcessorTests
                 Make = Value("AI", AiProvenance()),
                 Model = Value("Manual", ManualProvenance()),
             });
-        Assert.Null(reviewed.Listing.Make);
+        Assert.Equal("AI", reviewed.Listing.Make!.Value);
         Assert.Equal("Manual", reviewed.Listing.Model!.Value);
     }
 
     [Fact]
-    public void Process_reviewed_without_matching_source_retains_manual_values_but_stays_unavailable()
+    public void Process_reviewed_without_matching_source_preserves_manual_partial_data()
     {
         var provenance = ManualProvenance(ListingUrl.Parse("http://cars.example/item/123/"));
         var result = _processor.ProcessReviewed(
@@ -232,7 +231,7 @@ public sealed class ListingDraftProcessorTests
                 PriceSek = Value(0m, provenance),
             });
 
-        Assert.Equal(ListingAnalysisStatus.Unavailable, result.Status);
+        Assert.Equal(ListingAnalysisStatus.Partial, result.Status);
         Assert.Equal("Volvo", result.Listing.Make!.Value);
         Assert.Equal("Sommarbil", result.Listing.VehicleLabel!.Value);
         Assert.Equal(0m, result.Listing.PriceSek!.Value);
@@ -564,7 +563,7 @@ public sealed class ListingDraftProcessorTests
         Assert.Equal(
             [FieldOrigin.Listing, FieldOrigin.User, FieldOrigin.Registry],
             Enum.GetValues<FieldOrigin>());
-        Assert.Equal([ExtractionMethod.Ai, ExtractionMethod.Manual], Enum.GetValues<ExtractionMethod>());
+        Assert.Equal([ExtractionMethod.Ai, ExtractionMethod.Manual, ExtractionMethod.Html], Enum.GetValues<ExtractionMethod>());
         Assert.Equal(
             [VerificationStatus.Unverified, VerificationStatus.UserConfirmed, VerificationStatus.RegistryVerified],
             Enum.GetValues<VerificationStatus>());

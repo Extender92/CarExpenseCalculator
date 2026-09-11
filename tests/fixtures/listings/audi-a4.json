@@ -1,0 +1,98 @@
+{
+  "referenceUrl": "https://www.blocket.se/mobility/item/26427275?ci=3",
+  "referenceOrigin": "User-provided reference text, independently checked in Chromium on 2026-09-10",
+  "draft": {
+    "registrationNumber": null,
+    "make": "Audi",
+    "model": "A4",
+    "variant": "1.8",
+    "modelYear": 2000,
+    "vin": "WAUZZZ8DZYA044660",
+    "priceSek": 28888,
+    "odometerKilometres": 130000,
+    "sellerType": null,
+    "locality": "Västerhaninge",
+    "county": null,
+    "publishedDate": null,
+    "updatedDate": "2026-09-08",
+    "imageCount": 10,
+    "fuelTypes": [
+      "petrol"
+    ],
+    "transmission": "manual",
+    "drivetrain": "frontWheelDrive",
+    "bodyType": "sedan",
+    "colour": "Röd",
+    "horsepower": 125,
+    "engineDisplacementCubicCentimetres": 1800,
+    "energyConsumptions": [
+      {
+        "label": "Bränsleförbrukning (NEDC)",
+        "unit": "litre",
+        "consumptionPer100Kilometres": 8.5
+      }
+    ],
+    "annualVehicleTaxSek": null,
+    "ownerCount": 4,
+    "firstRegistrationDate": "1999-11-24",
+    "lastInspectionDate": "2026-08-14",
+    "nextInspectionDate": "2027-09-14",
+    "towBar": true,
+    "equipment": [
+      "ABS",
+      "Sidoairbags",
+      "El-sidospeglar m. värme",
+      "ESC",
+      "Servostyrning",
+      "Startspärr",
+      "Airbag fram",
+      "Aircondition",
+      "Uppvärmda säten, fram",
+      "Fällbart baksäte",
+      "Dragkrok, fast",
+      "Centrallås",
+      "Färddator",
+      "12V-uttag",
+      "Mörktonade rutor",
+      "Justerbart svankstöd",
+      "Klimatanläggning",
+      "Elektriska fönster"
+    ],
+    "sellerClaims": [
+      "Säljarens retroprojekt",
+      "All service är gjord",
+      "Mycket har bytts ut under säljarens ägartid",
+      "Servicebok finns",
+      "Bilen kommer med 2 uppsättningar hjul"
+    ],
+    "conditionNotes": [
+      "Bilen uppges vara i väldigt fint skick",
+      "Bilen uppges vara nyligen besiktigad och ha gått igenom utan problem",
+      "Bilen uppges vara välskött för sin ålder"
+    ],
+    "details": {
+      "title": "Audi A4",
+      "subtitle": "Sedan 1.8 Manuell",
+      "description": "Säljer min Audi A4 som varit mitt lilla retroprojekt. Bilen är i väldigt fint skick och har endast gått ca 13 000 mil.\n\nAll service är gjord och mycket har bytts ut under tiden jag haft bilen. Servicebok finns.\n\nBilen kommer med 2 uppsättningar hjul.\n\nNyligen besiktigad och gick igenom utan några som helst problem.\n\nEn riktigt fin och välskött bil för sin ålder, perfekt för någon som uppskattar äldre Audi och vill ha ett fint retroprojekt.",
+      "listingId": "26427275",
+      "seats": 5,
+      "doors": 4,
+      "luggageLitres": 440,
+      "weightKilograms": 1370,
+      "weightLabel": "Vikt",
+      "weightCategory": "unspecified",
+      "trailerWeightKilograms": 1300,
+      "trailerWeightLabel": "Max trailervikt",
+      "trailerWeightCategory": "unspecified",
+      "postalCode": "13738",
+      "country": "Sverige",
+      "feeClass": "Personbil",
+      "saleForm": "Begagnad bil till salu",
+      "updatedLocalDateTime": "2026-09-08T16:35:00",
+      "updatedTimeZone": null,
+      "updatedUtcOffsetMinutes": null,
+      "specifications": null,
+      "sellerAnswers": null
+    }
+  }
+}

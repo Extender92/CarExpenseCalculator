@@ -1,3 +1,6 @@
+import { listingNumberText, type ListingNumber } from "./exact";
+import { shiftDecimal } from "@/features/household/numbers";
+import { emptyDetails, detailsFromResponse, type DetailsForm } from "./details";
 import type {
   FieldProvenance,
   ListingAnalysisResponse,
@@ -64,6 +67,7 @@ export interface CollectionDraft<T> {
 }
 
 export interface ListingReviewDraft {
+  details?: DetailsForm;
   fields: Record<ScalarFieldName, ScalarDraftField>;
   fuelTypes: CollectionDraft<string>;
   energyConsumptions: CollectionDraft<EnergyConsumptionDraft>;
@@ -75,21 +79,21 @@ export interface ListingReviewDraft {
 export interface ListingReviewContext {
   analyzedAtUtc: string;
   requestedModel: string | null;
-  promptVersion: number | null;
-  schemaVersion: number | null;
+  promptVersion: ListingNumber | null;
+  schemaVersion: ListingNumber | null;
   sources: ListingAnalysisSource[];
 }
 
 export interface OpenedSavedListing {
   vehicleId: string;
   registrationNumber: string;
-  revision: number;
-  listingVersion: number;
-  listingSchemaVersion: number;
+  revision: ListingNumber;
+  listingVersion: ListingNumber;
+  listingSchemaVersion: ListingNumber;
   createdAtUtc: string;
   updatedAtUtc: string;
   hasSavedCostScenario: boolean;
-  savedCostScenarioSourceListingVersion: number | null;
+  savedCostScenarioSourceListingVersion: ListingNumber | null;
   savedCostScenarioOutdated: boolean;
 }
 
@@ -155,6 +159,7 @@ export function createEmptyReviewDraft(): ListingReviewDraft {
 
   return {
     fields,
+    details: emptyDetails(),
     fuelTypes: emptyCollection(),
     energyConsumptions: emptyCollection(),
     equipment: emptyCollection(),
@@ -169,6 +174,7 @@ export function analysisResponseToDraft(response: ListingAnalysisResponse): List
 
 export function listingResponseToDraft(listing: ListingDraftResponse): ListingReviewDraft {
   return {
+    details: detailsFromResponse(listing.details),
     fields: {
       registrationNumber: valueField(listing.registrationNumber),
       make: valueField(listing.make),
@@ -178,7 +184,7 @@ export function listingResponseToDraft(listing: ListingDraftResponse): ListingRe
       vin: valueField(listing.vin),
       vehicleLabel: valueField(listing.vehicleLabel),
       priceSek: valueField(listing.priceSek),
-      odometerKilometres: valueField(listing.odometerKilometres, (value) => formatInputNumber(value / 10)),
+      odometerKilometres: valueField(listing.odometerKilometres, (value) => shiftDecimal(listingNumberText(value), -1)),
       sellerType: valueField(listing.sellerType),
       locality: valueField(listing.locality),
       county: valueField(listing.county),
@@ -319,9 +325,9 @@ export const allMissingFieldCodes: ListingFieldCode[] = [
   "sellerClaims", "conditionNotes",
 ];
 
-function valueField<T extends string | number | boolean>(
+function valueField<T extends string | ListingNumber | boolean>(
   value: { value: T; provenance: FieldProvenance } | null,
-  transform: (value: T) => string = (input) => String(input),
+  transform: (value: T) => string = (input) => typeof input === "object" ? listingNumberText(input) : String(input),
 ): ScalarDraftField {
   return value
     ? { input: transform(value.value), provenance: { ...value.provenance } }
@@ -370,6 +376,6 @@ function emptyCollection<T>(): CollectionDraft<T> {
   return { mode: "unknown", values: [], provenance: null };
 }
 
-function formatInputNumber(value: number) {
+function formatInputNumber(value: ListingNumber) {
   return String(value);
 }

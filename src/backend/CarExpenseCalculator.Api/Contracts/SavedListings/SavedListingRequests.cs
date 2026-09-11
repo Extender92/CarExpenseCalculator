@@ -44,6 +44,8 @@ public sealed record ReviewedListingInput
 
 public sealed record ListingDraftInput
 {
+    public ListingDetailsInput? Details { get; init; }
+
     public required SourcedValueInput<string>? RegistrationNumber { get; init; }
 
     public required SourcedValueInput<string>? Make { get; init; }

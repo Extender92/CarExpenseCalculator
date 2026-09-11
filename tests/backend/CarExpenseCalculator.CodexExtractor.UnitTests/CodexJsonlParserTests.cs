@@ -34,6 +34,35 @@ public sealed class CodexJsonlParserTests
     }
 
     [Fact]
+    public void Parse_does_not_promote_url_queries_from_opaque_actions_to_opened_sources()
+    {
+        const string url = "https://example.com/item/1";
+        var webEvent = JsonSerializer.Serialize(new
+        {
+            type = "item.completed",
+            item = new
+            {
+                id = "item_1",
+                type = "web_search",
+                query = url,
+                action = new { type = "other" },
+            },
+        });
+        var draft = JsonSerializer.Serialize(
+            new ExtractedListingDraft { Make = "Example", PriceSek = 20_000m },
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var lines = TestData.SuccessfulJsonl(
+            draft,
+            webEvent,
+            TestData.WebEvent("search", url));
+
+        Assert.True(parser.TryParse(lines, out var output, out _));
+        Assert.Empty(output!.Sources);
+        Assert.Equal("Example", output.Draft.Make);
+        Assert.Equal(20_000m, output.Draft.PriceSek);
+    }
+
+    [Fact]
     public void Parse_rejects_model_authored_sources_as_additional_output()
     {
         using var document = JsonDocument.Parse(TestData.EmptyDraftJson());

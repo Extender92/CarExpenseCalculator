@@ -2,9 +2,11 @@ namespace CarExpenseCalculator.Extraction.Contracts;
 
 public static class ListingExtractionContractVersions
 {
-    public const int Prompt = 2;
+    public const int Prompt = 4;
 
-    public const int Schema = 2;
+    public const int Schema = 3;
+
+    public static bool CanRead(int? prompt, int? schema) => (prompt, schema) is (2, 2) or (3, 3) or (4, 3);
 }
 
 public static class ListingExtractionRuntime
@@ -18,6 +20,11 @@ public static class ListingExtractionRuntime
 
 public static class ListingExtractorProblemCodes
 {
+    public const string SourceUnsupported = "listingSourceUnsupported";
+    public const string SourceRateLimited = "listingSourceRateLimited";
+    public const string SourceBlocked = "listingSourceBlocked";
+    public const string SourceUnavailable = "listingSourceUnavailable";
+    public const string SourceInvalidContent = "listingSourceInvalidContent";
     public const string InvalidRequest = "invalidListingExtractionRequest";
     public const string UnsupportedVersion = "unsupportedListingExtractionVersion";
     public const string NotConfigured = "codexNotConfigured";
@@ -38,7 +45,8 @@ public sealed record ListingExtractionResponse(
     int SchemaVersion,
     DateTimeOffset AnalyzedAtUtc,
     IReadOnlyList<string> Sources,
-    ExtractedListingDraft Draft);
+    ExtractedListingDraft Draft,
+    RetrievedListingContent? RetrievedContent = null);
 
 public sealed record ListingExtractorStatusResponse(
     bool Configured,
@@ -57,6 +65,8 @@ public sealed record ExtractedEnergyConsumption(
 
 public sealed record ExtractedListingDraft
 {
+    public ExtractedListingDetails? Details { get; init; }
+
     public string? RegistrationNumber { get; init; }
 
     public string? Make { get; init; }

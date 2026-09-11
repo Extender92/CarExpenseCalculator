@@ -62,7 +62,8 @@ internal static class ListingAnalysisMapper
             MapValue(listing.TowBar),
             MapCollection(listing.Equipment),
             MapCollection(listing.SellerClaims),
-            MapCollection(listing.ConditionNotes));
+            MapCollection(listing.ConditionNotes),
+            ListingDetailsMapper.ToResponse(listing.Details));
     }
 
     private static ApiContracts.SourcedValueResponse<T>? MapValue<T>(
@@ -160,6 +161,7 @@ internal static class ListingAnalysisMapper
         return method switch
         {
             CoreContracts.ExtractionMethod.Ai => ApiContracts.ExtractionMethod.Ai,
+            CoreContracts.ExtractionMethod.Html => ApiContracts.ExtractionMethod.Html,
             CoreContracts.ExtractionMethod.Manual => ApiContracts.ExtractionMethod.Manual,
             _ => throw Unsupported(method),
         };

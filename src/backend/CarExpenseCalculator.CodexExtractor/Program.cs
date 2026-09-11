@@ -13,7 +13,7 @@ public sealed class Program
         var schemaPath = Path.Combine(
             builder.Environment.ContentRootPath,
             "Schemas",
-            "listing-extraction-v2.schema.json");
+            "listing-extraction-v3.schema.json");
         var options = new CodexExtractorOptions
         {
             Model = builder.Configuration["CODEX_MODEL"] ?? CodexExtractorOptions.RequiredModel,
@@ -37,6 +37,10 @@ public sealed class Program
         builder.Services.AddSingleton<IExtractionOutputValidator, ExtractionOutputValidator>();
         builder.Services.AddSingleton<CodexJsonlParser>();
         builder.Services.AddSingleton<ICodexProcessRunner, CodexProcessRunner>();
+        builder.Services.AddSingleton<IListingPageFetcher>(services => new BlocketPageFetcher(
+            new HttpClient(BlocketPageFetcher.CreateHandler()) { Timeout = Timeout.InfiniteTimeSpan },
+            services.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton<IListingContentParser, BlocketContentParser>();
         builder.Services.AddSingleton<CodexExtractionOrchestrator>();
 
         var app = builder.Build();
@@ -51,13 +55,14 @@ public sealed class Program
             async (
                 ListingExtractionRequest request,
                 CodexExtractionOrchestrator orchestrator,
+                HttpContext context,
                 CancellationToken cancellationToken) =>
             {
                 var execution = await orchestrator.ExecuteAsync(request, cancellationToken);
                 return execution switch
                 {
                     CodexExtractionSucceeded success => Results.Ok(success.Response),
-                    CodexExtractionFailed failure => MapFailure(failure.Failure),
+                    CodexExtractionFailed failure => MapFailure(failure, context),
                     _ => throw new UnreachableException(),
                 };
             });
@@ -65,10 +70,18 @@ public sealed class Program
         await app.RunAsync();
     }
 
-    private static IResult MapFailure(CodexExecutionFailure failure)
+    private static IResult MapFailure(CodexExtractionFailed execution, HttpContext context)
     {
+        var failure = execution.Failure;
+        if (execution.RetryAfterSeconds is int retry)
+            context.Response.Headers.RetryAfter = retry.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var (statusCode, code, title) = failure switch
         {
+            CodexExecutionFailure.SourceUnsupported => (400, ListingExtractorProblemCodes.SourceUnsupported, "This listing source is unsupported."),
+            CodexExecutionFailure.SourceRateLimited => (429, ListingExtractorProblemCodes.SourceRateLimited, "The listing source is rate limited."),
+            CodexExecutionFailure.SourceBlocked => (503, ListingExtractorProblemCodes.SourceBlocked, "The listing source denied access."),
+            CodexExecutionFailure.SourceUnavailable => (503, ListingExtractorProblemCodes.SourceUnavailable, "The listing source is unavailable."),
+            CodexExecutionFailure.SourceInvalidContent => (503, ListingExtractorProblemCodes.SourceInvalidContent, "The listing source returned unsupported content."),
             CodexExecutionFailure.InvalidRequest => (
                 StatusCodes.Status400BadRequest,
                 ListingExtractorProblemCodes.InvalidRequest,

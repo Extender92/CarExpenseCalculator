@@ -6,28 +6,31 @@
 - Missing data remains missing; parsers and AI must not guess.
 - Provider-specific code lives behind infrastructure adapters.
 - The application stores only data permitted by the applicable source agreement.
-- Raw source responses, copied page content, and seller contact data are not retained for URL analysis.
+- Raw HTML is transient. Selected original listing sections and interpreted facts
+  are retained only on explicit save; identified seller contact data is masked.
 - Advertised locality and county may be retained as separate optional sourced
   facts. Street and seller addresses are excluded, and a missing county is never
   inferred from the locality.
 
 ## Listing marketplaces
 
-Blocket is the first desired marketplace. Its documented Pro Import API manages a dealer's own advertisements and is not a general marketplace search API. Blocket also restricts automated and systematic use without permission. Direct scraping, marketplace-specific programmatic ingestion, and automatic discovery therefore remain disabled until a permitted API, partnership, or other approved source is available.
+The explicitly selected first source is a user-submitted Blocket car page at
+`https://blocket.se/mobility/item/{id}` or the `www` alias, including `?ci=3`.
+The private sidecar fetches the HTML document, parses its relevant sections and
+passes that captured input to Codex without web access. No browser resources,
+contact functions, discovery, scheduled refresh, VPN rotation or challenge
+bypass are involved. Other automatic sources return `listingSourceUnsupported`.
 
-Milestone 2 uses one user-triggered, ChatGPT-authenticated Codex turn for each
-URL the user selects. The private runtime, adapter, one-URL public preview
-endpoint, Swedish review flow, current-only saved-listing lifecycle, and
-calculator linkage are implemented and covered by fake-only acceptance. The internal
-sidecar gives Codex access only to host-restricted hosted web search. The browser, API, and sidecar
-do not directly download or scrape the page, and the application contains no
-Blocket-specific parser. Hosted search is an extraction aid, not proof of permission or
-availability: applicable source terms still govern use, and an inaccessible or
-unmatched page produces an unavailable result with manual fallback rather than
-a workaround. See [Codex listing extraction](codex-extraction.md) for the
-runtime and authentication boundary and
-[URL analysis verification](url-analysis-verification.md) for the synthetic
-source, same-origin, persistence, and manual-fallback acceptance boundary.
+This implementation decision is not evidence of a marketplace agreement. The
+application uses a visible identification and reports blocking/CAPTCHA or rate
+limits; it never substitutes another access route. A shared cooldown respects
+`Retry-After`, and the browser queue requires explicit resume. The source's
+statements remain advertised input, including debt and service claims, rather
+than registry facts. Full original description/equipment/question sections are
+preserved separately from AI-interpreted values. See the
+[complete listing contract](complete-listing-extraction.md),
+[runtime boundary](codex-extraction.md) and
+[live acceptance evidence](listing-extraction-verification-report.md).
 
 The architecture must allow additional providers, such as Bytbil, without changing rules or calculations.
 
@@ -60,4 +63,4 @@ does not establish a particular vehicle's condition or repair bill. See the
 
 ## Manual fallback
 
-All external fields can be entered or corrected manually. The UI must retain the distinction between AI-extracted listing values, user-entered values, seller claims, and reserved future registry-verified values. See the [URL analysis specification](url-analysis.md) for the exact provenance contract.
+All external fields can be entered or corrected manually. The UI must retain the distinction between directly retrieved and AI-interpreted listing values, user-entered values, seller claims, and reserved future registry-verified values. See the [URL analysis specification](url-analysis.md) for the exact provenance contract.
