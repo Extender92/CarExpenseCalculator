@@ -12,23 +12,24 @@ complete fake-only acceptance procedure is documented in
 [URL analysis verification](url-analysis-verification.md).
 
 URL analysis is a user-triggered ingestion aid. It accepts public listing URLs,
-uses a private ChatGPT-authenticated Codex sidecar with hosted web search to
+uses a private ChatGPT-authenticated Codex sidecar to retrieve Blocket HTML and
 extract a bounded structured draft, and lets the user correct or complete that
 draft. Deterministic normalization and validation remain authoritative.
 Extraction is separate from the advisory AI review planned for milestone 5.
 
-The backend and browser never fetch listing pages directly. There is no
-marketplace-specific scraper or parser.
+The private sidecar fetches supported Blocket HTML and parses it with AngleSharp;
+the browser never fetches the page. Codex interprets only the captured text.
+See the [complete listing contract](complete-listing-extraction.md).
 
 ## User flow and request scheduling
 
 - The Swedish interface accepts 1–10 unique listing URLs.
 - Each URL is analyzed independently with one
   `POST /api/listing-analyses` request.
-- The browser allows at most two analysis requests in flight. Remaining items
-  stay queued and one failed item does not cancel another.
-- The API and Codex sidecar also enforce a process-wide extraction concurrency
-  limit of two.
+- The browser runs one analysis at a time. Remaining items stay queued.
+- The sidecar serializes the entire fetch/interpretation operation across
+  clients. Source blocks and rate limits pause the browser queue until explicit
+  resume; source 429 also starts a shared Retry-After cooldown.
 - Failed, partial, or unavailable extraction leaves the listing editable so the
   user can complete it manually.
 - Preview analysis never reads from or writes to PostgreSQL.
@@ -116,10 +117,10 @@ For IPv6 literals, use this conservative deny list:
 
 IPv4-mapped IPv6 cannot bypass the IPv4 rules.
 
-The backend does not resolve DNS during validation. This avoids introducing a
-direct network fetch and DNS-dependent validation. The accepted design rejects
-private or reserved IP literals; it does not claim that a hostname will always
-resolve publicly when Codex later searches it.
+Core normalization is network-free. Before a real fetch the sidecar resolves
+only the supported Blocket host, rejects non-public addresses, connects to a
+validated literal IP and checks the actual remote address. HTTPS, exact listing
+path, same-ad redirects and decompressed body limits are enforced separately.
 
 ### Returned-source matching
 
@@ -130,11 +131,12 @@ HTTPS submission never matches an HTTP downgrade. When either URL has a
 non-default port, scheme and port must both match exactly. Host and remaining
 path comparison stays ordinal.
 
-The response retains the complete ordered source-URL list reported by Web
-Search and marks every entry with `matchesSubmittedUrl`. Source titles are not
-retained. Missing matches do not discard valid AI suggestions. They are marked
-unconfirmed with missing page metadata; `sourcePageObserved` is server-derived.
-The submitted URL remains the reference, not proof of independent verification.
+New analyses retain the actual retrieved URL and expose `matchesSubmittedUrl`
+and server-derived `sourcePageObserved`. HTTPS Blocket bare/www aliases match
+the same ad; unrelated hosts, ads and HTTP downgrades do not. Model URLs and
+search events cannot replace the captured source. Old saved analyses retain
+their original source observations, including absent metadata, without gaining
+confirmation. A fetched page is still an unverified advertisement.
 
 ## Analysis status
 
@@ -171,7 +173,7 @@ SourcedCollection<T>
 
 FieldProvenance
   origin: listing | user | registry
-  extractionMethod: ai | manual
+  extractionMethod: ai | manual | html
   verification: unverified | userConfirmed | registryVerified
   sourceUrl: normalized absolute URL
 ```
@@ -182,7 +184,8 @@ AI-extracted field in that analysis. It is stored with a saved current listing.
 `registry` and `registryVerified` are reserved for a later approved registry
 integration. They are not produced in milestone 2.
 
-An AI-extracted field is `listing`, `ai`, and `unverified`. Editing a scalar,
+An interpreted field is `listing`/`ai`/`unverified`; a preserved original field
+is `listing`/`html`/`unverified`. Editing a scalar,
 structured value, or collection replaces that complete value's provenance with
 `user`, `manual`, and `userConfirmed`. Its source URL remains the normalized
 listing URL that the user was reviewing. Untouched values keep their original
@@ -365,24 +368,22 @@ Each request uses this policy:
 | --- | --- |
 | Model | `gpt-5.6-luna` by default; optional server-only override through `CODEX_MODEL` |
 | Reasoning | `medium`, configurable through `CODEX_REASONING_EFFORT` |
-| Search | Live hosted web search |
-| Search context | Medium |
-| Domain filter | One allowed domain derived from the submitted normalized host, without scheme or path |
-| Source evidence | Completed JSONL web-search events that opened a page |
+| Search | Disabled; model input is the cleaned captured listing only |
+| Source evidence | Actual page URL from application-owned HTTP retrieval |
+
 | Output | JSONL events and a final response constrained by versioned JSON Schema |
 | Session | Ephemeral, with no local rollout persistence |
 | Isolation | Read-only empty working directory, no repository, user instructions, project rules, plugins, apps, MCP servers, agents, or unrelated tools |
-| Timeout | 240 seconds for queueing, process startup, search, and parsing |
-| Concurrency | Process-wide maximum of two Codex turns |
+| Timeout | 240 seconds for queueing, fetching/parsing, process startup and interpretation |
+| Concurrency | One complete analysis across the sidecar process |
 | Retries | None automatically |
-| Search-event limit | None; the one turn is bounded by timeout and concurrency |
 
 The pinned invocation is recorded as `requestedModel`. This is configuration
 evidence and does not claim to prove provider-side routing because the current
 Codex JSONL event contract contains no provider-reported model identifier.
-The current prompt and extraction-schema versions are both `3`, adding the
+The current prompt version is `4` and schema version is `3`, carrying the
 [complete listing extension](complete-listing-extraction.md). The live runtime
-requires 3/3; persisted older 2/2 extraction metadata remains readable. Both
+requires 4/3; persisted older 2/2 and 3/3 metadata remain readable. Both
 versions are returned with every structurally successful Codex response.
 
 The instruction treats all page material as untrusted data and says to ignore
@@ -393,7 +394,7 @@ unsupported inference. It requests locality and county separately, and county
 must remain null when it would require a geographic lookup or inference.
 Missing values must be null.
 
-Codex receives the normalized listing URL and the sidecar request. It does not
+Codex receives the normalized listing URL and cleaned, captured original sections. It does not
 receive authentication data as prompt content, database credentials, unrelated
 application data, or the browser's direct connection. Authentication state,
 URL-bearing prompts, JSONL output, final structured output, and credentials are
@@ -685,8 +686,8 @@ only when the user saves the listing.
 
 ## Explicit exclusions
 
-Milestone 2 does not include direct scraping, browser extensions, scheduled or
-automatic discovery, background refresh, marketplace-specific parsing,
+The later approved Blocket direct-retrieval extension is included. Browser
+extensions, scheduled/automatic discovery, background refresh, other marketplaces,
 registry integration, rule evaluation, comparison, broad model research,
 advisory purchase recommendations, or image analysis.
 
@@ -710,7 +711,7 @@ The automated suites and acceptance runbook cover:
   fragments, escaped paths, and preserved queries;
 - every rejected hostname and IPv4/IPv6 category, including mapped IPv4;
 - unique and duplicate URL batches, one through ten items, and concurrency of
-  no more than two;
+  one complete analysis at a time;
 - page-identity duplicates, query-insensitive matching, one-trailing-slash
   equivalence, directional HTTP-to-HTTPS matching, strict non-default ports,
   and no requested-page source;

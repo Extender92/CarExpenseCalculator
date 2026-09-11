@@ -132,18 +132,20 @@ retain their gaps; stale comparisons require **Beräkna nu** first. Returning
 keeps unsaved editing but releases the report; reloading the report requires a
 new capture. See the [report guide and verification](docs/comparison-pdf.md).
 
-Open **URL-analys** to analyze one through ten public listing URLs with at most two requests in flight. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing or explicitly save it to the shared household draft slot. A saved listing opens the household workspace through a reload-safe link. Advertised values and listing-version review require explicit choices. Transient URL cards disappear on reload; the explicitly saved shared draft survives. A missing Codex login disables automatic extraction without disabling manual entry or saved data.
+Open **URL-analys** to analyze one through ten Blocket car listing URLs, processing one complete analysis at a time. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing or explicitly save it to the shared household draft slot. A saved listing opens the household workspace through a reload-safe link. Advertised values and listing-version review require explicit choices. Transient URL cards disappear on reload; the explicitly saved shared draft survives. A missing Codex login disables automatic extraction without disabling manual entry or saved data.
 
-The current `fix/codex-login-status` work adds complete typed listing details,
-review/draft persistence, comparison input and frozen PDF content. Valid AI
-suggestions remain **unconfirmed** even without opened-page metadata. The prior
-[source-gate experiment](docs/listing-extraction-source-gate.md) is historical;
-its blocking policy has been superseded. CLI 0.153.0, the model and ChatGPT login
-remain unchanged. See the [complete-listing contract](docs/complete-listing-extraction.md)
-and [field-by-field acceptance report](docs/listing-extraction-verification-report.md).
-Full live extraction remains unverified: the supplied advertisements contain
-specification rows that Codex's hosted retrieval repeatedly omits. This work
-must not be presented as a completed automatic-extraction delivery.
+The current [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93)
+retrieves the Blocket HTML document directly, preserves original descriptions,
+specifications, equipment and seller answers, then asks Codex to interpret the
+captured text with web search disabled. Sources distinguish **directly retrieved**
+from **AI-interpreted** values; both remain unconfirmed. Blocks and rate limits
+pause the URL queue until an explicit user action. Other automatic sources are
+not yet supported. CLI 0.153.0, `gpt-5.6-luna`, medium reasoning and ChatGPT login
+remain unchanged. Four sequential live checks passed all **576** reference and
+provenance assertions. See the [contract](docs/complete-listing-extraction.md)
+and [acceptance report](docs/listing-extraction-verification-report.md), including
+earlier failed hosted-retrieval attempts. This is verified branch work, pending
+separate merge approval; it is not a deployment to existing user installations.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 

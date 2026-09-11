@@ -121,6 +121,8 @@ public sealed class VehicleFactsEvidenceTests
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Ai, VerificationStatus.RegistryVerified)]
     [InlineData(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified)]
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Ai, VerificationStatus.UserConfirmed)]
+    [InlineData(FieldOrigin.Listing, ExtractionMethod.Html, VerificationStatus.UserConfirmed)]
+    [InlineData(FieldOrigin.Listing, ExtractionMethod.Html, VerificationStatus.RegistryVerified)]
     [InlineData(FieldOrigin.User, ExtractionMethod.Ai, VerificationStatus.UserConfirmed)]
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Manual, VerificationStatus.Unverified)]
     [InlineData((FieldOrigin)999, ExtractionMethod.Manual, VerificationStatus.UserConfirmed)]
@@ -191,6 +193,20 @@ public sealed class VehicleFactsEvidenceTests
         })).Errors);
         Assert.Equal("purchasePriceSek.observations[0].evidence", error.Path);
         Assert.Equal("required", error.Code);
+    }
+
+    [Fact]
+    public void Direct_html_remains_unverified_listing_evidence_after_mapping()
+    {
+        var result = _processor.FromReviewedListing(Url, [Url], new()
+        {
+            OwnerCount = new(2, Listing with { ExtractionMethod = ExtractionMethod.Html }),
+        });
+        var observation = Observation(result.OwnerCount);
+        Assert.Equal(2, observation.Value);
+        Assert.Equal(new ComparisonEvidence(FieldOrigin.Listing, ExtractionMethod.Html,
+            VerificationStatus.Unverified, Url), observation.Evidence);
+        Assert.Null(observation.Evidence.ConfirmedAt);
     }
 
     private static SourcedValue<T> Source<T>(T value) where T : notnull => new(value, Listing);

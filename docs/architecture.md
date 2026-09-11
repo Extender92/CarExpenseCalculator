@@ -13,7 +13,8 @@ Browser
                  -> Infrastructure adapters
                       -> PostgreSQL
                       -> internal Codex extraction sidecar
-                           -> hosted Codex web search
+                           -> Blocket HTML (HttpClient + AngleSharp)
+                           -> Codex interpretation of captured text (web disabled)
                       -> future registry/listing providers
                       -> future advisory OpenAI review
 ```
@@ -34,7 +35,8 @@ The production browser sees one HTTP origin. Nginx serves the React build and pr
 - React Router owns the dashboard and the three usage-mode routes.
 - A small OpenAPI-typed client owns same-origin API calls. The URL-analysis
   workspace keeps independent reviewed drafts in React memory and uses a FIFO
-  browser scheduler capped at two extraction requests.
+  browser scheduler capped at one complete extraction request, with explicit
+  resume after a source block or rate limit.
 - Tailwind CSS defines design tokens and shadcn/ui provides accessible component patterns.
 - User-visible copy is Swedish.
 
@@ -62,23 +64,24 @@ The implementation is introduced incrementally as each feature milestone begins:
 
 ## URL-analysis flow
 
-The implemented `POST /api/listing-analyses` endpoint accepts one URL per
-request. The browser interface submits separate requests through a FIFO
-scheduler limited to two concurrent requests. The API normalizes the URL through Core and
-calls an application-owned Infrastructure adapter. That adapter uses a typed
-internal HTTP client to a private ASP.NET Core `codex-extractor`
-sidecar. The sidecar runs one ChatGPT-authenticated `codex exec` turn with
-host-restricted hosted web search; neither the browser nor application services
-fetch the listing page directly.
+The implemented `POST /api/listing-analyses` accepts one URL per request. A
+browser FIFO and a sidecar-wide gate serialize the complete retrieval and
+interpretation operation, including requests from different browser sessions.
+The API normalizes through Core and calls the private Infrastructure adapter.
+Inside the sidecar, `IListingPageFetcher` retrieves only a supported Blocket HTML
+document; `IListingContentParser` uses AngleSharp 1.7.0 without scripts or resource
+loading. The fetcher checks HTTPS host/path, DNS and the connected public IP,
+same-ad redirects, timeout and actual decompressed size.
 
-The implemented sidecar has no published port, database credentials, repository
-mount, or application-source mount. Codex output is untrusted ingestion input.
-Only completed `open_page` and `find_in_page` events with concrete URLs provide
-source evidence, while Core owns source matching,
-normalization, validation, provenance, missing-field codes, and analysis status.
-Extracted facts remain unverified until the user changes them, at which point
-the complete edited value becomes manually entered and user-confirmed. Advisory
-AI review is a separate milestone and never shares authority with extraction.
+An immutable `RetrievedListingContent` carries original sections into one Codex
+turn with web search disabled. The final internal response includes that
+application-owned content separately from the schema-constrained AI draft.
+Infrastructure preserves original sections with `html` provenance and maps
+interpreted facts with `ai` provenance; both are listing/unverified. The actual
+retrieved URL supplies source observation. Model-written URLs never replace it.
+Core owns normalization, validation, source matching and completeness. User
+edits retain explicit confirmation semantics. The sidecar has no published port,
+database credentials or repository mount; advisory review remains separate.
 
 The complete feature contracts and implemented runtime boundary are defined in the
 [URL analysis specification](url-analysis.md) and
@@ -326,9 +329,10 @@ independent integration status and does not affect overall database-based health
 
 `ListingDetails` is an immutable sourced Core input. API-owned DTOs map explicitly
 to it; Infrastructure owns JSONB/draft DTOs and migration `AddListingDetails`.
-New listing writes use storage 2, extraction 3/3, while older 1 + 2/2 rows remain
+New listing writes use storage 2, extraction 4/3; the follow-up
+`AllowHtmlListingExtraction` migration accepts 2/2, 3/3 and 4/3. Older rows remain
 readable. Comparison snapshot records carry the saved listing from the same
 transaction; transport 2 returns those listings once outside the sensitivity
 views. Calculation/rule versions are unchanged. The frontend reuses exact
 numeric serialization and freezes listing content with the report. See the
-[contract](complete-listing-extraction.md) and [acceptance limitations](listing-extraction-verification-report.md).
+[contract](complete-listing-extraction.md) and [acceptance report](listing-extraction-verification-report.md).

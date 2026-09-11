@@ -280,7 +280,9 @@ disposable PostgreSQL 18 databases, never Unraid user data. See the
 ### Complete-listing format upgrade and guarded rollback
 
 Migration `20260910132449_AddListingDetails` adds nullable typed JSONB and version
-constraints. Upgrade API, sidecar and frontend together: extraction is 3/3 and
+constraints. Follow-up `20260910214541_AllowHtmlListingExtraction` admits metadata
+pairs 2/2, 3/3 and 4/3 without relabeling rows. Upgrade API, sidecar and frontend
+together: new extraction is 4/3 and
 the complete comparison transport is 2. CLI 0.153.0 and the existing authentication
 volume remain unchanged. Use the explicit `api migrate` command; do not migrate
 at startup. Take and verify a PostgreSQL backup first.
@@ -297,3 +299,17 @@ back the operation. It never deletes that data or relabels extraction versions.
 Use a compatible backup when reverting an installation containing new-format
 content. Compatible old listings and household data are preserved by an allowed
 rollback. See [format and evidence rules](complete-listing-extraction.md).
+
+The sidecar retrieves only supported Blocket HTML, then interprets captured text
+with web disabled. Keep outbound HTTPS/DNS available for Blocket and Codex;
+there is no extra container or proxy. One full analysis runs at a time, with
+30 seconds/10 MiB for source retrieval and 240/245/270-second total
+sidecar/client/Nginx budgets. Source 429 respects Retry-After (60-second fallback);
+403 or CAPTCHA is reported without bypass. Resuming the browser queue is explicit.
+
+To roll back only the follow-up migration, the previous target is
+`20260910132449_AddListingDetails`. The command rejects prompt-4 metadata or
+HTML provenance in current listings, shared drafts or comparison facts. Restore
+a compatible backup if those values must survive; do not relabel them as AI or
+older extraction. The earlier details rollback guard still applies to lower
+targets. Apply migrations explicitly with writes controlled, never at API startup.

@@ -34,7 +34,7 @@ public sealed class ListingAnalysesController(IListingExtractionService extracti
         return outcome switch
         {
             ListingExtractionSuccess success => Ok(ListingAnalysisMapper.ToApi(success)),
-            ListingExtractionFailure failure => ExtractionProblem(failure.Code),
+            ListingExtractionFailure failure => ExtractionProblem(failure),
             _ => throw new InvalidOperationException("Unsupported listing extraction outcome."),
         };
     }
@@ -54,10 +54,28 @@ public sealed class ListingAnalysesController(IListingExtractionService extracti
     internal static string GetUrlValidationMessage(ListingUrlValidationErrorCode code) =>
         ListingUrlValidationMessages.Get(code);
 
-    private ObjectResult ExtractionProblem(ListingExtractionFailureCode code)
+    private ObjectResult ExtractionProblem(ListingExtractionFailure failure)
     {
+        var code = failure.Code;
+        if (failure.RetryAfterSeconds is int retry)
+            Response.Headers.RetryAfter = retry.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (code == ListingExtractionFailureCode.SourceUnsupported)
+        {
+            var problem = new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                ["url"] = ["Automatisk hämtning stöder endast Blockets bilannonser på /mobility/item/."],
+            }) { Status = 400, Title = "Unsupported listing source." };
+            problem.Extensions["code"] = "listingSourceUnsupported";
+            var result = new ObjectResult(problem) { StatusCode = 400 };
+            result.ContentTypes.Add("application/problem+json");
+            return result;
+        }
         return code switch
         {
+            ListingExtractionFailureCode.SourceRateLimited => Problem(429, "Listing source rate limited.", "listingSourceRateLimited"),
+            ListingExtractionFailureCode.SourceBlocked => Problem(503, "Listing source denied access.", "listingSourceBlocked"),
+            ListingExtractionFailureCode.SourceUnavailable => Problem(503, "Listing source unavailable.", "listingSourceUnavailable"),
+            ListingExtractionFailureCode.SourceInvalidContent => Problem(503, "Listing source content could not be read.", "listingSourceInvalidContent"),
             ListingExtractionFailureCode.RateLimited => Problem(
                 StatusCodes.Status429TooManyRequests,
                 "Listing analysis is temporarily rate limited.",

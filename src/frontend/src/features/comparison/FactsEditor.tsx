@@ -79,7 +79,7 @@ export function Evidence({
   return (
     <span className="block text-xs text-slate-400">
       {origin} · {level}
-      {` · ${evidence.extractionMethod === "ai" ? "AI-extraherat" : "Manuellt underlag"}`}
+      {` · ${evidence.extractionMethod === "ai" ? "AI-tolkat" : evidence.extractionMethod === "html" ? "Direkt hämtat från annonsen" : "Manuellt underlag"}`}
       {version != null && ` · Annonsversion ${version.text}`}
       {evidence.sourceUrl && (
         <>

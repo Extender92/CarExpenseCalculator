@@ -10,28 +10,28 @@ sources.
 
 ## Milestone 2: listing extraction
 
-URL analysis uses a private Codex sidecar as a hosted extraction adapter, not as
-an advisory reviewer. One user-selected URL starts one non-interactive Codex
-turn. Live web search is required, and actual opened-page events are checked
-before any value is accepted. The browser and application services never fetch
-the listing page directly.
+URL analysis uses the private Codex sidecar to interpret one captured Blocket
+listing. Application-owned HttpClient retrieval and AngleSharp parsing precede
+the turn. The model cannot fetch other pages. Original sections are preserved
+by deterministic composition even if the model rewrites or omits them.
 
-The implemented private extraction runtime uses:
+- Runtime: pinned Codex CLI **0.153.0**, private ASP.NET Core sidecar.
+- Authentication: existing dedicated ChatGPT device-code login; no API-key fallback.
+- Model/reasoning: `gpt-5.6-luna`, `medium`.
+- Tools: web search, shell, apps, plugins, agents and unrelated tools disabled.
+- Input: normalized URL and cleaned original sections; no reference answers,
+  authentication material or unrelated application data.
+- Output: strict schema **3**, prompt **4**, plus application-owned captured
+  content. `html` and `ai` both remain unverified listing sources.
+- Isolation: ephemeral execution in an empty read-only working directory,
+  ignoring user/project rules and configuration.
+- Limits: one complete analysis at a time, one turn per URL, no automatic retry;
+  30-second/10-MiB fetch within the 240-second total deadline including queueing.
+  The API client waits 245 seconds and Nginx 270 seconds.
 
-- Runtime: an internal ASP.NET Core `codex-extractor` sidecar invoking
-  `codex exec`; the API calls it through a typed `HttpClient`.
-- Authentication: a dedicated persisted ChatGPT Codex login created with
-  device-code authentication; there is no Platform API-key fallback.
-- Model: exactly `gpt-5.6-luna` by default, configurable server-side.
-- Reasoning: `medium`.
-- Tool: live hosted web search with medium context and an allowed-domain filter
-  derived from the submitted host.
-- Output: JSONL runtime events plus a final versioned JSON Schema result. Source
-  evidence comes only from actual opened-page events.
-- Isolation: ephemeral, read-only execution in an empty directory with user and
-  project configuration/rules ignored and unrelated tools disabled.
-- Limits: one turn per URL, a 60-second total timeout, process-wide concurrency
-  of two, no application retries, and no artificial search-event limit.
+The [historical source-event probe](listing-extraction-source-gate.md) does not
+gate this flow. Source observation comes from the actual HTTP retrieval, while
+the model's suggestions still require user review.
 
 Page content is hostile input. The prompt rejects embedded instructions,
 contact data, hidden content, recommendations, and unsupported inference.

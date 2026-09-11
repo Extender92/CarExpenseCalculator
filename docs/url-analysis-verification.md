@@ -13,7 +13,7 @@ real Codex home, starts a live Codex turn, or consumes Codex allowance.
 | Layer | Verified behavior |
 | --- | --- |
 | Core unit tests | URL normalization and rejection, page identity, source matching, bounded listing values, missing fields, provenance, status, and reviewed-input validation. |
-| Codex sidecar tests | Owned CLI invocation, ChatGPT login on either output stream, bounded probes, concrete opened-page evidence (opaque actions and URL queries are not sources), strict schema output, timeout, cancellation, concurrency two, failure classification, process cleanup, no retries, and safe logs. |
+| Codex sidecar tests | Owned CLI invocation, ChatGPT login on either output stream, bounded probes, concrete opened-page evidence (opaque actions and URL queries are not sources), strict schema output, timeout, cancellation, concurrency one, direct Blocket parsing and fetch controls, failure classification, process cleanup, no retries, and safe logs. |
 | Infrastructure tests | Private sidecar HTTP mapping, current-only PostgreSQL storage, versions, revisions, replacement, conflicts, cascade deletion, and forbidden-history boundaries. |
 | API tests | Unsaved and saved contracts, typed failures, configuration status, unconfirmed suggestion retention, validation, optimistic concurrency, and operation without an available database where permitted. |
 | Frontend tests | One-to-ten URL validation, FIFO scheduling, review/provenance, manual fallback, saved lifecycle, duplicate comparison, calculator prefilling, and outdated-link handling. |
@@ -25,7 +25,7 @@ The E2E fake selects deterministic behavior from synthetic URL paths. Its
 private test state records only safe case identifiers and aggregate counters.
 It does not retain complete URLs, prompts, request bodies, listing values, or
 credentials. A post-E2E script verifies that maximum extraction concurrency was
-two, failures were not retried automatically, the real sidecar did not run, and
+one, failures were not retried automatically, the real sidecar did not run, and
 container logs contain no extraction content.
 
 ## Repeatable local acceptance
@@ -56,7 +56,7 @@ docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yam
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml run --rm api migrate
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml up --detach api web
 curl --fail http://localhost:8088/api/health/ready
-npm --prefix src/frontend run e2e -- --project=chromium
+npm --prefix src/frontend run e2e -- --project=chromium --workers=1
 node scripts/verify-url-analysis-acceptance.mjs
 ```
 
@@ -83,14 +83,14 @@ contains data or Codex authentication that must be retained.
 
 ## Expected behavior
 
-- One through ten unique public URLs are accepted, with no more than two
-  analysis requests in flight. Items complete independently in FIFO order.
+- One through ten unique public URLs are accepted, with one complete
+  analysis request in flight. Items complete independently in FIFO order.
 - Complete and partial source-matched results retain normalized facts and
   unverified listing provenance. No-source and mismatched-source results retain valid unconfirmed AI suggestions
   and expose missing page metadata separately.
-- Rate limiting, timeout, provider outage, and invalid output affect only their
-  own cards. Nothing is retried automatically; a user action starts exactly one
-  new request.
+- Source rate limiting or blocking pauses queued cards until explicit resume;
+  the remaining Retry-After cooldown must expire first. Other failures affect
+  their own card. Nothing is retried automatically.
 - The browser calls only the frontend origin under `/api` and never requests a
   submitted listing host directly.
 - Manual drafts and review remain available without extraction. An edited value
@@ -131,7 +131,16 @@ Follow [Unraid deployment](deployment-unraid.md) to prepare a dedicated
 Never paste authentication files into logs or issues. Re-authentication is
 safer than an unencrypted backup of the Codex home.
 
-## Local live-check finding: source evidence (2026-09-10)
+## Current Blocket integration acceptance
+
+Direct HTML capture, text-only interpretation, `html` provenance, prompt 4/schema
+3 and all four successful live reference calls are recorded in the
+[current report](listing-extraction-verification-report.md). CI uses fake HTTP
+and fake Codex only. Sanitized HTML fixtures exercise both complete source
+structures, with 18/15 equipment items and original descriptions/questions.
+This supersedes the failure below without removing its diagnostic record.
+
+## Historical live-check finding: source evidence (2026-09-10)
 
 **Historical policy:** the behavior below was observed before the complete-listing
 change. The user superseded the source gate: missing metadata now leaves valid

@@ -56,7 +56,7 @@ public sealed class CodexListingExtractionServiceTests
                 SellerClaims = ["Servad enligt plan"],
                 ConditionNotes = ["Normalt bruksslitage"],
             });
-        var handler = StubHandler.Json(HttpStatusCode.OK, response);
+        var handler = StubHandler.Json(HttpStatusCode.OK, WithContent(response));
         var service = CreateService(handler);
 
         var outcome = await service.ExtractAsync(ListingUrlValue);
@@ -108,7 +108,7 @@ public sealed class CodexListingExtractionServiceTests
     }
 
     [Fact]
-    public async Task Missing_matching_source_preserves_unconfirmed_ai_values()
+    public async Task Mismatched_application_retrieval_is_rejected_in_the_new_pipeline()
     {
         var response = new ListingExtractionResponse(
             "gpt-5.6-luna",
@@ -117,15 +117,12 @@ public sealed class CodexListingExtractionServiceTests
             DateTimeOffset.UtcNow,
             ["https://example.com/another-item"],
             new ExtractedListingDraft { Make = "Volvo", Equipment = [] });
-        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, response));
+        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, WithContent(response)));
 
         var outcome = await service.ExtractAsync(ListingUrlValue);
 
-        var success = Assert.IsType<ListingExtractionSuccess>(outcome);
-        Assert.Equal(ListingAnalysisStatus.Partial, success.ProcessingResult.Status);
-        Assert.Equal("Volvo", success.ProcessingResult.Listing.Make!.Value);
-        Assert.Equal(VerificationStatus.Unverified, success.ProcessingResult.Listing.Make.Provenance.Verification);
-        Assert.Empty(success.ProcessingResult.Listing.Equipment!.Values);
+        Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse,
+            Assert.IsType<ListingExtractionFailure>(outcome).Code);
     }
 
     [Fact]
@@ -138,7 +135,7 @@ public sealed class CodexListingExtractionServiceTests
             {
                 Details = new ExtractedListingDetails { Specifications = [null!] }
             });
-        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, response));
+        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, WithContent(response)));
         var result = Assert.IsType<ListingExtractionFailure>(await service.ExtractAsync(ListingUrlValue));
         Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse, result.Code);
     }
@@ -159,9 +156,14 @@ public sealed class CodexListingExtractionServiceTests
             [opened],
             new ExtractedListingDraft { Make = "Volvo" });
 
-        var outcome = await CreateService(StubHandler.Json(HttpStatusCode.OK, response))
+        var outcome = await CreateService(StubHandler.Json(HttpStatusCode.OK, WithContent(response)))
             .ExtractAsync(ListingUrl.Parse(submitted));
 
+        if (!expectedMatch)
+        {
+            Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse, Assert.IsType<ListingExtractionFailure>(outcome).Code);
+            return;
+        }
         var success = Assert.IsType<ListingExtractionSuccess>(outcome);
         Assert.Equal(
             ListingAnalysisStatus.Partial,
@@ -179,7 +181,7 @@ public sealed class CodexListingExtractionServiceTests
             DateTimeOffset.UtcNow,
             ["https://example.com/item/1"],
             new ExtractedListingDraft { Equipment = [], SellerClaims = null });
-        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, response));
+        var service = CreateService(StubHandler.Json(HttpStatusCode.OK, WithContent(response)));
 
         var outcome = await service.ExtractAsync(ListingUrlValue);
 
@@ -191,6 +193,11 @@ public sealed class CodexListingExtractionServiceTests
     }
 
     [Theory]
+    [InlineData(400, ListingExtractorProblemCodes.SourceUnsupported, ListingExtractionFailureCode.SourceUnsupported)]
+    [InlineData(429, ListingExtractorProblemCodes.SourceRateLimited, ListingExtractionFailureCode.SourceRateLimited)]
+    [InlineData(503, ListingExtractorProblemCodes.SourceBlocked, ListingExtractionFailureCode.SourceBlocked)]
+    [InlineData(503, ListingExtractorProblemCodes.SourceUnavailable, ListingExtractionFailureCode.SourceUnavailable)]
+    [InlineData(503, ListingExtractorProblemCodes.SourceInvalidContent, ListingExtractionFailureCode.SourceInvalidContent)]
     [InlineData(503, ListingExtractorProblemCodes.NotConfigured, ListingExtractionFailureCode.NotConfigured)]
     [InlineData(429, ListingExtractorProblemCodes.RateLimited, ListingExtractionFailureCode.RateLimited)]
     [InlineData(503, ListingExtractorProblemCodes.TimedOut, ListingExtractionFailureCode.TimedOut)]
@@ -221,7 +228,7 @@ public sealed class CodexListingExtractionServiceTests
             ["https://example.com/item/1", "https://example.com/item/1"],
             new ExtractedListingDraft());
 
-        var outcome = await CreateService(StubHandler.Json(HttpStatusCode.OK, response))
+        var outcome = await CreateService(StubHandler.Json(HttpStatusCode.OK, WithContent(response)))
             .ExtractAsync(ListingUrlValue);
 
         Assert.Equal(
@@ -240,7 +247,7 @@ public sealed class CodexListingExtractionServiceTests
             ["https://example.com/item/1"],
             new ExtractedListingDraft());
 
-        var outcome = await CreateService(StubHandler.Json(HttpStatusCode.OK, response))
+        var outcome = await CreateService(StubHandler.Json(HttpStatusCode.OK, WithContent(response)))
             .ExtractAsync(ListingUrlValue);
 
         Assert.Equal(
@@ -293,6 +300,46 @@ public sealed class CodexListingExtractionServiceTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => service.ExtractAsync(ListingUrlValue, cancellation.Token));
     }
+
+    [Fact]
+    public async Task Original_content_replaces_model_rewrites_without_confirming_any_fact()
+    {
+        var original = new RetrievedListingContent(ListingUrlValue.Value, "Original rubrik", "Original underrubrik", "1",
+            "35 000 kr", "Första stycket.\n\nAndra stycket.", [new("Vikt", "1 370 kg")], ["ABS"],
+            [new("Skulder?", "Nej")], null, null);
+        var response = new ListingExtractionResponse("gpt-5.6-luna", 4, 3, DateTimeOffset.UtcNow,
+            [ListingUrlValue.Value], new()
+            {
+                Make = "Audi", PriceSek = 35_000, Equipment = ["ABS", "Vinterdäck från beskrivningen"],
+                Details = new() { Title = "Påhittad rubrik", Description = "Sammanfattning", SellerAnswers = [new("Skulder?", "Ja")] },
+            }, original);
+        var result = Assert.IsType<ListingExtractionSuccess>(await CreateService(StubHandler.Json(HttpStatusCode.OK, response)).ExtractAsync(ListingUrlValue));
+        var draft = result.ProcessingResult.Listing;
+        Assert.Equal(original.Title, draft.Details!.Title!.Value);
+        Assert.Equal(original.Description, draft.Details.Description!.Value);
+        Assert.Equal(original.Equipment, draft.Equipment!.Values);
+        Assert.Equal("Nej", Assert.Single(draft.Details.SellerAnswers!).Value.Answer);
+        Assert.Equal(ExtractionMethod.Html, draft.Details.Title.Provenance.ExtractionMethod);
+        Assert.Equal(ExtractionMethod.Html, draft.Equipment.Provenance.ExtractionMethod);
+        Assert.Equal(ExtractionMethod.Ai, draft.PriceSek!.Provenance.ExtractionMethod);
+        Assert.Equal(VerificationStatus.Unverified, draft.Details.Title.Provenance.Verification);
+        Assert.Equal(VerificationStatus.Unverified, draft.PriceSek.Provenance.Verification);
+    }
+
+    [Fact]
+    public async Task Missing_application_content_is_not_fabricated_from_model_output()
+    {
+        var response = new ListingExtractionResponse("gpt-5.6-luna", 4, 3, DateTimeOffset.UtcNow,
+            [ListingUrlValue.Value], new() { Make = "Audi", Equipment = ["ABS"] });
+        var result = Assert.IsType<ListingExtractionFailure>(await CreateService(StubHandler.Json(HttpStatusCode.OK, response)).ExtractAsync(ListingUrlValue));
+        Assert.Equal(ListingExtractionFailureCode.InvalidProviderResponse, result.Code);
+    }
+
+    private static ListingExtractionResponse WithContent(ListingExtractionResponse response) => response with
+    {
+        RetrievedContent = new(response.Sources.FirstOrDefault() ?? ListingUrlValue.Value, "Testbil", null, "1",
+            null, null, null, response.Draft.Equipment, null, null, null),
+    };
 
     private static CodexListingExtractionService CreateService(HttpMessageHandler handler)
     {

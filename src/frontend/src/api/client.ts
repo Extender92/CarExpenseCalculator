@@ -62,6 +62,7 @@ export class ListingAnalysisApiError extends Error {
     public readonly status?: number,
     public readonly code?: string,
     public readonly validationProblem?: ValidationProblemDetails,
+    public readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "ListingAnalysisApiError";
@@ -142,7 +143,7 @@ export async function analyzeListing(
     return data;
   }
 
-  if (response.status === 400) {
+  if (response.status === 400 && !(error as ListingAnalysisProblemDetails | undefined)?.code) {
     throw new ListingAnalysisApiError(
       "URL:en kunde inte godkännas.",
       response.status,
@@ -153,6 +154,11 @@ export async function analyzeListing(
 
   const problem = error as ListingAnalysisProblemDetails | undefined;
   const messages: Record<string, string> = {
+    listingSourceUnsupported: "Automatisk hämtning stöder just nu endast Blockets bilannonser på /mobility/item/.",
+    listingSourceRateLimited: "Blocket har tillfälligt begränsat hämtningen. Kön är pausad. Vänta innan du fortsätter.",
+    listingSourceBlocked: "Blocket nekade åtkomst till sidan. Kön är pausad och inga automatiska omförsök görs.",
+    listingSourceUnavailable: "Annonsen finns inte längre eller kunde inte nås. Kontrollera adressen.",
+    listingSourceInvalidContent: "Annonsens innehåll kunde inte läsas. Sidans struktur, innehållstyp eller storlek stöds inte.",
     listingAnalysisRateLimited: "URL-analysen är tillfälligt begränsad. Försök igen senare eller fyll i uppgifterna manuellt.",
     listingAnalysisNotConfigured: "Codex-extraktionen är inte konfigurerad. Du kan fortfarande fylla i uppgifterna manuellt.",
     listingAnalysisTimedOut: "URL-analysen tog för lång tid. Försök igen eller fyll i uppgifterna manuellt.",
@@ -165,6 +171,8 @@ export async function analyzeListing(
       || "URL-analysen kunde inte genomföras. Kontrollera anslutningen och försök igen.",
     response.status,
     problem?.code,
+    undefined,
+    response.headers.has("Retry-After") ? Math.max(1, Number(response.headers.get("Retry-After")) || 60) : undefined,
   );
 }
 

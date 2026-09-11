@@ -63,8 +63,8 @@ public sealed class CodexProcessRunnerTests
         Assert.Contains("--ignore-user-config", arguments);
         Assert.Contains("--ignore-rules", arguments);
         Assert.Contains("approval_policy=\"never\"", arguments);
-        Assert.Contains("web_search=\"live\"", arguments);
-        Assert.Contains("tools.web_search={context_size=\"high\",allowed_domains=[\"example.com\"]}", arguments);
+        Assert.Contains("web_search=\"disabled\"", arguments);
+        Assert.DoesNotContain(arguments, x => x.StartsWith("tools.web_search=", StringComparison.Ordinal));
         Assert.Contains("agents.enabled=false", arguments);
         Assert.Contains("apps._default.enabled=false", arguments);
         Assert.Contains("features.shell_tool=false", arguments);

@@ -9,12 +9,16 @@ interface QueueEntry<T> {
 export class FifoRequestScheduler {
   private readonly queue: QueueEntry<unknown>[] = [];
   private running = 0;
+  private paused = false;
 
-  constructor(private readonly maximumConcurrency = 2) {
+  constructor(private readonly maximumConcurrency = 1) {
     if (!Number.isInteger(maximumConcurrency) || maximumConcurrency < 1) {
       throw new RangeError("Maximum concurrency must be a positive integer.");
     }
   }
+
+  pause() { this.paused = true; }
+  resume() { this.paused = false; this.pump(); }
 
   schedule<T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     if (signal?.aborted) return Promise.reject(abortError());
@@ -39,7 +43,7 @@ export class FifoRequestScheduler {
   }
 
   private pump() {
-    while (this.running < this.maximumConcurrency && this.queue.length > 0) {
+    while (!this.paused && this.running < this.maximumConcurrency && this.queue.length > 0) {
       const entry = this.queue.shift()!;
       entry.removeAbortListener?.();
       if (entry.signal?.aborted) {

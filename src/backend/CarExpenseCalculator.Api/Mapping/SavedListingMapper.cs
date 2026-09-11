@@ -365,6 +365,7 @@ internal static class SavedListingMapper
         ApiListingContracts.ExtractionMethod value) => value switch
         {
             ApiListingContracts.ExtractionMethod.Ai => CoreContracts.ExtractionMethod.Ai,
+            ApiListingContracts.ExtractionMethod.Html => CoreContracts.ExtractionMethod.Html,
             ApiListingContracts.ExtractionMethod.Manual => CoreContracts.ExtractionMethod.Manual,
             _ => throw Unsupported(value),
         };

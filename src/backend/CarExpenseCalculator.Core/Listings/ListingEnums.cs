@@ -18,6 +18,7 @@ public enum ExtractionMethod
 {
     Ai,
     Manual,
+    Html,
 }
 
 public enum VerificationStatus

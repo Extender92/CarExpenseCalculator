@@ -2800,7 +2800,7 @@ export interface components {
         /** @enum {unknown} */
         EvidenceRequirement: "advertised" | "userConfirmed" | "registryVerified";
         /** @enum {unknown} */
-        ExtractionMethod: "ai" | "manual";
+        ExtractionMethod: "ai" | "manual" | "html";
         /** @enum {unknown} */
         FactEditKind: "preserve" | "unknown" | "notApplicable" | "manual" | "listing" | "conflict" | "resolve";
         FactEditOfBodyType: {

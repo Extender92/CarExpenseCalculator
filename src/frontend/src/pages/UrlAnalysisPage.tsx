@@ -141,7 +141,8 @@ export function UrlAnalysisPage() {
   const [savedListError, setSavedListError] = useState<string | null>(null);
   const [busyVehicleId, setBusyVehicleId] = useState<string | null>(null);
   const [pageNotice, setPageNotice] = useState<PageNotice | null>(null);
-  const schedulerRef = useRef(new FifoRequestScheduler(2));
+  const schedulerRef = useRef(new FifoRequestScheduler(1));
+  const [pausedQueue, setPausedQueue] = useState<{message: string; until: number} | null>(null);
   const controllersRef = useRef(new Map<string, AbortController>());
   const urlErrorRef = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLDivElement>(null);
@@ -226,7 +227,17 @@ export function UrlAnalysisPage() {
 
     void schedulerRef.current.schedule(async () => {
       updateItem(id, (item) => ({ ...item, phase: retry ? "retrying" : "analyzing" }));
-      return analyzeListing(url, controller.signal);
+      try {
+        return await analyzeListing(url, controller.signal);
+      } catch (error) {
+        // Pause before the scheduler releases capacity and starts another queued URL.
+        if (!controller.signal.aborted && controllersRef.current.get(id) === controller && error instanceof ListingAnalysisApiError &&
+            (error.code === "listingSourceRateLimited" || error.code === "listingSourceBlocked")) {
+          schedulerRef.current.pause();
+          setPausedQueue({message: error.message, until: Date.now() + (error.retryAfterSeconds ?? 0) * 1000});
+        }
+        throw error;
+      }
     }, controller.signal).then((response) => {
       if (controllersRef.current.get(id) !== controller) return;
       controllersRef.current.delete(id);
@@ -694,7 +705,8 @@ export function UrlAnalysisPage() {
         <Badge variant="success">Tillgänglig</Badge>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Analysera URL:er</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400">
-          Klistra in upp till tio publika bilannonser, granska uppgifterna och spara bilens aktuella annons.
+          Klistra in upp till tio Blocket-annonser. En annons hämtas och tolkas åt gången.
+          Granska uppgifterna innan du sparar bilens aktuella annons.
           Sparade och tillfälliga underlag kan vara öppna samtidigt.
         </p>
       </header>
@@ -704,6 +716,17 @@ export function UrlAnalysisPage() {
           {pageNotice.message}
         </div>
       )}
+      {pausedQueue && <div role="alert" className="rounded-lg border p-4 space-y-2">
+        <p>{pausedQueue.message}</p>
+        <Button type="button" onClick={() => {
+          if (Date.now() < pausedQueue.until) {
+            setPageNotice({tone: "error", message: `Vänta minst ${Math.ceil((pausedQueue.until - Date.now()) / 1000)} sekunder innan kön återupptas.`});
+            return;
+          }
+          setPausedQueue(null);
+          schedulerRef.current.resume();
+        }}>Fortsätt kön</Button>
+      </div>}
 
       <SavedListingsPanel
         state={savedListState}
@@ -736,7 +759,7 @@ export function UrlAnalysisPage() {
             <span className="grid size-11 place-items-center rounded-xl bg-blue-400/10 text-blue-300"><Link2 size={22} /></span>
             <div>
               <CardTitle>Annonslänkar</CardTitle>
-              <CardDescription>En fullständig HTTP- eller HTTPS-URL per rad. Samma annonssida får bara anges en gång.</CardDescription>
+              <CardDescription>En fullständig annonslänk per rad. Automatisk hämtning stöder Blockets bilannonser via HTTPS. Samma annonssida får bara anges en gång.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -751,7 +774,7 @@ export function UrlAnalysisPage() {
                 className={textareaClassName}
                 aria-invalid={Object.keys(urlErrors).length > 0}
                 aria-describedby="listing-url-help listing-url-errors"
-                placeholder={"https://www.example.se/annons/123\nhttps://www.example.se/annons/456"}
+                placeholder={"https://www.blocket.se/mobility/item/123\nhttps://www.blocket.se/mobility/item/456"}
                 onChange={(event) => { setUrlInput(event.target.value); setUrlErrors({}); }}
               />
             </label>

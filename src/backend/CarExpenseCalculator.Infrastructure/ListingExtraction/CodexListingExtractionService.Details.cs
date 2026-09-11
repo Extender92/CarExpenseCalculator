@@ -3,6 +3,20 @@ using CarExpenseCalculator.Extraction.Contracts;
 namespace CarExpenseCalculator.Infrastructure.ListingExtraction;
 internal sealed partial class CodexListingExtractionService
 {
+    private static ListingDraft ApplyRetrievedContent(ListingDraft draft, RetrievedListingContent content, FieldProvenance provenance) => draft with
+    {
+        Equipment = content.Equipment is null ? null : new SourcedCollection<string>(content.Equipment, provenance),
+        Details = (draft.Details ?? new ListingDetails()) with
+        {
+            Title = Value(content.Title, provenance),
+            Subtitle = Value(content.Subtitle, provenance),
+            Description = Value(content.Description, provenance),
+            ListingId = Value(content.ListingId, provenance),
+            Specifications = content.Specifications?.Select(x => new SourcedValue<ListingSpecification>(new(x.Name, x.Value), provenance)).ToArray(),
+            SellerAnswers = content.SellerAnswers?.Select(x => new SourcedValue<SellerAnswer>(new(x.Question, x.Answer), provenance)).ToArray(),
+        },
+    };
+
     private static ListingDetails? MapDetails(ExtractedListingDetails? x, FieldProvenance p) => x is null ? null : new()
     {
         Title = Value(x.Title, p),

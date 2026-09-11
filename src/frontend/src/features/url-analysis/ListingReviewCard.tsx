@@ -260,7 +260,7 @@ export function ListingReviewCard({
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {item.context.requestedModel && <p className="text-sm" role="note">Obekräftade AI-hämtade annonsuppgifter.
+        {item.context.requestedModel && <p className="text-sm" role="note">Obekräftade annonsuppgifter. Fältens källor visar direkt hämtat eller AI-tolkat innehåll.
           {!item.context.sources.some(s => s.matchesSubmittedUrl) && " Metadata om öppnad sida saknas. Annonsadressen är en referens; granska uppgifterna."}
         </p>}
         <Summary draft={item.draft} />

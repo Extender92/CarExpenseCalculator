@@ -29,7 +29,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         await using (var dbContext = fixture.CreateDbContext())
         {
             var applied = await dbContext.Database.GetAppliedMigrationsAsync();
-            Assert.Equal(6, applied.Count());
+            Assert.Equal(7, applied.Count());
             var migrator = dbContext.Database.GetService<IMigrator>();
             await migrator.MigrateAsync(Migration.InitialDatabase);
         }

@@ -298,14 +298,14 @@ public sealed class SavedListingStore(
                 "Requested model must contain 1 through 100 characters after trimming."));
         }
 
-        if (input.PromptVersion is not (2 or 3))
+        if (input.PromptVersion is not (2 or 3 or 4))
         {
             errors.Add(new ListingValidationError(
                 "promptVersion",
                 $"Prompt version must be {ListingExtractionContractVersions.Prompt}."));
         }
 
-        if (input.ExtractionSchemaVersion != input.PromptVersion)
+        if (!ListingExtractionContractVersions.CanRead(input.PromptVersion, input.ExtractionSchemaVersion))
         {
             errors.Add(new ListingValidationError(
                 "schemaVersion",
@@ -568,7 +568,7 @@ public sealed class SavedListingStore(
         new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.UserConfirmed, sourceUrl);
 
     private static bool HasAiProvenance(ListingDraft listing) =>
-        EnumerateProvenance(listing).Any(value => value.ExtractionMethod == ExtractionMethod.Ai);
+        EnumerateProvenance(listing).Any(value => value.ExtractionMethod is ExtractionMethod.Ai or ExtractionMethod.Html);
 
     private static IEnumerable<FieldProvenance> EnumerateProvenance(ListingDraft listing)
     {
@@ -605,8 +605,7 @@ public sealed class SavedListingStore(
                 && listing.PromptVersion is null
                 && listing.ExtractionSchemaVersion is null
             || listing.RequestedModel is not null
-                && listing.PromptVersion is 2 or 3
-                && listing.ExtractionSchemaVersion == listing.PromptVersion;
+                && ListingExtractionContractVersions.CanRead(listing.PromptVersion, listing.ExtractionSchemaVersion);
         if (listing.ListingSchemaVersion is not (1 or 2)
             || !extractionMetadataIsSupported)
         {

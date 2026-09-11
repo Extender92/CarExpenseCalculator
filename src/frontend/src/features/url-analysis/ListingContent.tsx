@@ -9,7 +9,7 @@ const names: Record<string,string> = {
   equipment:"Utrustning", sellerClaims:"Säljarpåståenden", conditionNotes:"Skickuppgifter", vin:"Chassinummer",
   firstRegistrationDate:"Första registreringsdatum", lastInspectionDate:"Senaste besiktningsdatum", nextInspectionDate:"Nästa besiktningsdatum",
   listingVersion:"Aktuell annonsversion", listingSchemaVersion:"Annonsens lagringsversion", sources:"Observerade sidkällor",
-  sourcePageObserved:"Sidöppning observerad", submittedUrl:"Inskickad annonsadress", normalizedUrl:"Normaliserad annonsadress",
+  sourcePageObserved:"Annonsens sida observerad eller hämtad", submittedUrl:"Inskickad annonsadress", normalizedUrl:"Normaliserad annonsadress",
   requestedModel:"Begärd AI-modell", promptVersion:"Promptversion", schemaVersion:"Extraktionsversion", analyzedAtUtc:"Hämtningstid",
   provenance:"Källa", matchesSubmittedUrl:"Matchar inskickad annons", values:"Uppgifter",
   vehicleId:"Fordons-ID", registrationNumber:"Registreringsnummer", revision:"Fordonsrevision",

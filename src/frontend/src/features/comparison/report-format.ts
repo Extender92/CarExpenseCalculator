@@ -225,7 +225,7 @@ Object.assign(options, {
     registryVerified: "Registerverifierat",
   },
   origin: { listing: "Annons", user: "Användare", registry: "Register" },
-  extractionMethod: { manual: "Manuellt", ai: "AI-extraktion" },
+  extractionMethod: { manual: "Manuellt", ai: "AI-tolkat", html: "Direkt hämtat från annonsen" },
   acquisitionType: { purchase: "Köp", lease: "Leasing" },
   kind: {
     information: "Källuppgift",

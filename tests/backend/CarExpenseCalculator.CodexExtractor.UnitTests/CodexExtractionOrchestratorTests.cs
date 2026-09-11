@@ -6,7 +6,7 @@ namespace CarExpenseCalculator.CodexExtractor.UnitTests;
 public sealed class CodexExtractionOrchestratorTests
 {
     private static readonly ListingExtractionRequest ValidRequest = new(
-        "https://example.com/item/1",
+        "https://www.blocket.se/mobility/item/1",
         ListingExtractionContractVersions.Prompt,
         ListingExtractionContractVersions.Schema);
 
@@ -23,12 +23,12 @@ public sealed class CodexExtractionOrchestratorTests
         Assert.Equal("gpt-5.6-luna", success.Response.RequestedModel);
         Assert.Single(success.Response.Sources);
         Assert.Equal(1, runner.RunCalls);
-        Assert.DoesNotContain("https://example.com/item/1", string.Join(' ', logger.Messages));
+        Assert.DoesNotContain("https://www.blocket.se/mobility/item/1", string.Join(' ', logger.Messages));
         Assert.DoesNotContain(TestData.EmptyDraftJson(), string.Join(' ', logger.Messages));
     }
 
     [Fact]
-    public async Task Deterministic_jsonl_uses_only_opened_pages_as_source_evidence()
+    public async Task Fetched_page_is_the_source_regardless_of_model_web_events()
     {
         var runner = FakeRunner.Success();
         runner.Result = new CodexProcessResult(
@@ -46,7 +46,7 @@ public sealed class CodexExtractionOrchestratorTests
 
         var success = Assert.IsType<CodexExtractionSucceeded>(execution);
         Assert.Equal(
-            ["https://example.com/item/1", "https://example.com/item/2"],
+            ["https://www.blocket.se/mobility/item/1"],
             success.Response.Sources);
         Assert.Equal(1, runner.RunCalls);
     }
@@ -92,7 +92,7 @@ public sealed class CodexExtractionOrchestratorTests
     }
 
     [Theory]
-    [InlineData("https://example.com/item/1#fragment")]
+    [InlineData("https://www.blocket.se/mobility/item/1#fragment")]
     [InlineData("http://127.0.0.1/private")]
     [InlineData("")]
     public async Task Invalid_or_non_normalized_urls_never_start_codex(string value)
@@ -177,7 +177,7 @@ public sealed class CodexExtractionOrchestratorTests
     [Fact]
     public async Task Failure_logs_do_not_contain_stderr_url_output_or_credentials()
     {
-        const string sensitive = "https://example.com/item/1 fake-access-token extracted Volvo";
+        const string sensitive = "https://www.blocket.se/mobility/item/1 fake-access-token extracted Volvo";
         var runner = FakeRunner.Success();
         runner.Result = new CodexProcessResult(1, [sensitive], $"HTTP 429 {sensitive}", false);
         var logger = new RecordingLogger<CodexExtractionOrchestrator>();
@@ -242,7 +242,7 @@ public sealed class CodexExtractionOrchestratorTests
     }
 
     [Fact]
-    public async Task Process_wide_concurrency_never_exceeds_two()
+    public async Task Process_wide_concurrency_never_exceeds_one()
     {
         var runner = FakeRunner.Blocking();
         var orchestrator = CreateOrchestrator(runner);
@@ -251,14 +251,14 @@ public sealed class CodexExtractionOrchestratorTests
         var tasks = Enumerable.Range(0, 3)
             .Select(_ => orchestrator.ExecuteAsync(ValidRequest, cancellation.Token))
             .ToArray();
-        await runner.TwoStarted.Task.WaitAsync(cancellation.Token);
+        await runner.FirstStarted.Task.WaitAsync(cancellation.Token);
 
-        Assert.Equal(2, runner.MaximumConcurrentRuns);
-        Assert.Equal(2, runner.RunCalls);
+        Assert.Equal(1, runner.MaximumConcurrentRuns);
+        Assert.Equal(1, runner.RunCalls);
 
         runner.Release.TrySetResult();
         await Task.WhenAll(tasks);
-        Assert.Equal(2, runner.MaximumConcurrentRuns);
+        Assert.Equal(1, runner.MaximumConcurrentRuns);
         Assert.Equal(3, runner.RunCalls);
     }
 
@@ -277,14 +277,14 @@ public sealed class CodexExtractionOrchestratorTests
                 runner,
                 parser,
                 TimeProvider.System,
-                resolvedLogger)
+                resolvedLogger, new FakeListingPageFetcher(), new BlocketContentParser())
             : new CodexExtractionOrchestrator(
                 options,
                 runner,
                 parser,
                 TimeProvider.System,
                 resolvedLogger,
-                concurrencyGate);
+                concurrencyGate, new FakeListingPageFetcher(), new BlocketContentParser());
     }
 
     private sealed class FakeRunner : ICodexProcessRunner

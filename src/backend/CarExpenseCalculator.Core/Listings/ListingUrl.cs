@@ -225,7 +225,7 @@ public sealed class ListingUrl : IEquatable<ListingUrl>
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        if (!Host.Equals(other.Host, StringComparison.Ordinal)
+        if (!HasSameSourceHost(other)
             || !GetComparablePath().Equals(other.GetComparablePath(), StringComparison.Ordinal))
         {
             return false;
@@ -244,7 +244,7 @@ public sealed class ListingUrl : IEquatable<ListingUrl>
     {
         ArgumentNullException.ThrowIfNull(submittedUrl);
 
-        if (!Host.Equals(submittedUrl.Host, StringComparison.Ordinal)
+        if (!HasSameSourceHost(submittedUrl)
             || !GetComparablePath().Equals(submittedUrl.GetComparablePath(), StringComparison.Ordinal))
         {
             return false;
@@ -285,6 +285,10 @@ public sealed class ListingUrl : IEquatable<ListingUrl>
             ? EscapedPath[..^1]
             : EscapedPath;
     }
+
+    private bool HasSameSourceHost(ListingUrl other) => Host.Equals(other.Host, StringComparison.Ordinal) ||
+        (Scheme == "https" && other.Scheme == "https" && NonDefaultPort is null && other.NonDefaultPort is null &&
+         Host is "blocket.se" or "www.blocket.se" && other.Host is "blocket.se" or "www.blocket.se");
 
     private static bool IsRejectedAddress(IPAddress address)
     {

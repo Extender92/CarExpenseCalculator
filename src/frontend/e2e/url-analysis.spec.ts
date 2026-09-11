@@ -21,8 +21,8 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await page.getByRole("button", { name: "Analysera URL:er" }).click();
 
   await expect(page.getByText("Grunduppgifter kompletta")).toHaveCount(2);
-  await expect(page.getByText("Delvis extraktion")).toBeVisible();
-  await expect(page.getByText("Inga användbara annonsuppgifter")).toHaveCount(1);
+  // Even an empty model result retains the application's original listing title.
+  await expect(page.getByText("Delvis extraktion")).toHaveCount(2);
   await expect(page.getByText("Analysen misslyckades")).toBeVisible();
   await expect.poll(() => listingRequests.length).toBe(5);
   for (const request of listingRequests) {
@@ -54,16 +54,16 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await expect(unavailableCard.getByText(/Användare · Manuell · Bekräftad/)).toBeVisible();
 
   const unmatchedCard = resultCards.nth(3);
-  await expect(unmatchedCard.getByText(/Metadata om öppnad sida saknas/)).toBeVisible();
   await unmatchedCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
-  await expect(unmatchedCard.getByText("Kompletterande källa")).toBeVisible();
+  await expect(unmatchedCard.getByText("Matchar annonsen")).toBeVisible();
+  await expect(unmatchedCard.getByText("Kompletterande källa")).toHaveCount(0);
   await expect(unmatchedCard.getByText("Volvo V70 2.4")).toBeVisible();
 
   await page.reload();
   await expect(page.getByText("Inga annonsunderlag är öppna ännu.")).toBeVisible();
 });
 
-test("limits a ten-URL FIFO batch to two browser and extractor operations", async ({ page }) => {
+test("serializes a ten-URL FIFO batch through browser and extractor", async ({ page }) => {
   const suffix = uniqueTestId();
   const urls = Array.from(
     { length: 10 },
@@ -90,7 +90,7 @@ test("limits a ten-URL FIFO batch to two browser and extractor operations", asyn
 
   await expect(page.getByText("Grunduppgifter kompletta")).toHaveCount(10);
   expect(started).toEqual(urls);
-  expect(maximumActive).toBe(2);
+  expect(maximumActive).toBe(1);
   expect(active).toBe(0);
 });
 
@@ -143,6 +143,7 @@ test("maps every extraction failure and retries only after an explicit action", 
 
 test("creates, compares, reopens, replaces, and permanently deletes a saved listing", async ({ page }) => {
   await removeSavedListingIfPresent(page, "ABC123");
+  try {
   await page.goto("/analyze-urls");
   await page.getByLabel("URL:er").fill("https://cars.example/item/complete");
   await page.getByRole("button", { name: "Analysera URL:er" }).click();
@@ -179,6 +180,8 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await expect(comparison).toBeVisible();
   await expect(comparison.getByRole("button", { name: "Ersätt sparad bil" })).toBeDisabled();
   await comparison.getByRole("radio", { name: /Använd ny uppgift.*Saab/ }).check();
+  // The newly fetched details have a different source URL and require their own explicit choice.
+  await comparison.getByRole("radio", { name: /Använd ny uppgift Annonsrubrik:/ }).check();
   const replacePromise = page.waitForResponse((response) =>
     response.url().includes("/api/saved-listings/") && response.request().method() === "PUT",
   );
@@ -205,6 +208,9 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await expect(updatedCard).toHaveCount(0);
   const missing = await page.request.get("/api/saved-listings/by-registration/ABC123");
   expect(missing.status()).toBe(404);
+  } finally {
+    await removeSavedListingIfPresent(page, "ABC123");
+  }
 });
 
 test("attaches a manual listing to a scenario-only vehicle and warns before deleting both", async ({ page }) => {

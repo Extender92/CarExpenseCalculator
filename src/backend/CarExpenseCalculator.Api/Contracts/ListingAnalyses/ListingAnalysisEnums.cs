@@ -24,6 +24,7 @@ public enum ExtractionMethod
 {
     Ai,
     Manual,
+    Html,
 }
 
 [JsonConverter(typeof(StrictStringEnumConverter<VerificationStatus>))]

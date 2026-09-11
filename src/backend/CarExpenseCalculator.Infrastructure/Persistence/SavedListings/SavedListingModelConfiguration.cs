@@ -28,8 +28,8 @@ internal sealed class VehicleListingEntityConfiguration
                     "ck_vehicle_listings_extraction_metadata",
                     "(requested_model IS NULL AND prompt_version IS NULL AND extraction_schema_version IS NULL) "
                     + "OR (requested_model IS NOT NULL AND length(btrim(requested_model)) BETWEEN 1 AND 100 "
-                    + "AND prompt_version IS NOT NULL AND prompt_version IN (2, 3) "
-                    + "AND extraction_schema_version IS NOT NULL AND extraction_schema_version = prompt_version)");
+                    + "AND prompt_version IS NOT NULL AND extraction_schema_version IS NOT NULL "
+                    + "AND ((prompt_version = 2 AND extraction_schema_version = 2) OR (prompt_version IN (3, 4) AND extraction_schema_version = 3)))");
                 table.HasCheckConstraint(
                     "ck_vehicle_listings_model_year",
                     "model_year IS NULL OR model_year BETWEEN 1886 AND 2100");

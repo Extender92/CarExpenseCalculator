@@ -1,4 +1,142 @@
-# Complete listing extraction: verification and remaining blocker
+# Complete Blocket extraction: integration acceptance
+
+Status: **direct retrieval and all four live reference checks passed** on
+`fix/codex-login-status`, for [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93).
+This report covers branch delivery; merge and deployment require separate action.
+The earlier hosted-retrieval failures are retained below as history, not current blockers.
+Publication commit and CI links are recorded after pushing the verified implementation.
+
+## Final implementation and live results
+
+The app fetches one supported Blocket HTML document through HttpClient, parses
+it with AngleSharp **1.7.0**, and sends the cleaned captured sections to one Codex
+turn with **web disabled**. The original title/subtitle, description, ID,
+specifications, equipment and seller answers replace model copies deterministically.
+Captured fields are `listing/html/unverified`; interpreted facts are
+`listing/ai/unverified`. Actual retrieval supplies source observation without
+creating user or registry confirmation. Registration remains required for saving.
+
+CLI **0.153.0**, ChatGPT login, **gpt-5.6-luna**, **medium** reasoning were retained.
+Prompt **4** / schema **3** is separate from listing storage **2** and complete
+comparison transport **2**. Follow-up migration
+`20260910214541_AllowHtmlListingExtraction` permits 2/2, 3/3 and 4/3 and guards
+rollback against newer metadata or HTML provenance. Earlier migrations and data
+were not rewritten. See the [implemented contract](complete-listing-extraction.md).
+
+Each row is a separate sequential request through Nginx → API → real sidecar
+on the disposable `car-expense-listing-live` stack (loopback 8091). Only the URL
+with `?ci=3` was submitted; reference text/fixtures never entered the model prompt.
+There were no retries, parallel live analyses, source blocks or rate limits.
+
+| Request | Ad ID | Start UTC, 2026-09-10 | Seconds | HTTP | UTF-8 bytes | Correct / missing / incorrect checks |
+|---|---|---|---:|---:|---:|---|
+| Audi 1 | 26427275 | 22:02:04.397 | 26.940 | 200 | 14965 | 149 / 0 / 0 |
+| Skoda 1 | 26434732 | 22:02:31.339 | 20.910 | 200 | 13049 | 139 / 0 / 0 |
+| Audi 2 | 26427275 | 22:02:52.250 | 25.023 | 200 | 14886 | 149 / 0 / 0 |
+| Skoda 2 | 26434732 | 22:03:17.274 | 21.515 | 200 | 12899 | 139 / 0 / 0 |
+
+The [complete final field matrix](listing-scraper-live-matrix.md) records expected
+and observed values for all **576** checks. Both full descriptions, exact ordered
+18/15 equipment entries, Audi owners/registration date, Skoda debt answer, every
+25/22 original specification row, quantities, VINs, places, IDs and timestamps
+matched the supplied references. No source change was needed to explain an
+exception. Both registration numbers remain null; the results are correctly
+partial despite complete retrieval of the reference advertisement content.
+Generic weight/trailer labels remain unspecified categories, inspection dates
+do not become verified validity and seller service/debt claims remain claims.
+
+The [65-source/129-interpretation prototype](listing-text-retrieval-probe.md#follow-up-direct-html-retrieval)
+preceded this integration. Those controls are separate from these four application
+calls and from automated test counts. The source/equipment fixtures are sanitized
+HTML, with no contact panels, scripts, real credentials or external resource loads.
+
+## Automated evidence and final environment
+
+Windows, .NET SDK **10.0.400**, process-local Node **22.22.2**, disposable PostgreSQL
+**18**, repository-pinned Playwright Chromium, one browser worker. CI and automated
+checks fake both source retrieval and Codex; only the four separately recorded
+live calls used Blocket/ChatGPT. No Unraid or existing application data was tested.
+
+| Requirement | Evidence |
+|---|---|
+| Complete sections, exact originals, missing/ambiguous sections, contacts, hostile text and limits | `BlocketContentParserTests`, sanitized Audi/Skoda HTML fixtures |
+| HTTPS allowlist, public IP rules, same-ad redirects, byte boundary, 403/429, cooldown and cancellation | `BlocketPageFetcherTests`, `ListingUrlTests`; actual live connections separately |
+| One complete operation, one model turn, web disabled, timeouts and cleanup | `CodexExtractionOrchestratorTests`, `CodexProcessRunnerTests`, endpoint tests |
+| Original content cannot be replaced by AI; typed source failures and Retry-After | `CodexListingExtractionServiceTests`, `ListingAnalysisEndpointTests` |
+| HTML is advertised evidence only; no transferred user/register confirmation | `VehicleFactsEvidenceTests`, `ListingDraftProcessorTests` |
+| Old/new metadata, guarded migration, shared draft/adoption and same-snapshot content | `ListingDetailsPersistenceTests`, migration/API suites |
+| FIFO pause and explicit resume, no automatic retry, preserved edited cards | scheduler and `UrlAnalysisPage` frontend tests |
+| Review → save/draft → comparison → frozen PDF, revisions and deletion | `e2e/listing-details.spec.ts`, URL lifecycle and existing comparison/household suites |
+| Unchanged price/cost/score authority, full candidate sets and isolation | Existing full backend/frontend/Chromium suites |
+
+The repository commands were run: `dotnet restore`, Release build/test;
+frontend `npm ci`, lint/test/build; OpenAPI generation from port **5090**;
+`verify-compose-boundaries.mjs`; isolated Docker build, pinned CLI version,
+explicit migration and Nginx readiness; Chromium `--workers=1` and
+`verify-url-analysis-acceptance.mjs`. Generated types were not hand-edited.
+
+| Check | Final result |
+|---|---|
+| Backend restore/build | Pass, 0 warnings / 0 errors |
+| Backend tests | **1,111 passed**, 0 failed / 0 skipped: 585 Core, 90 sidecar, 24 Infrastructure unit, 270 API, 138 PostgreSQL, 4 architecture |
+| Frontend lint/build | Pass |
+| Frontend tests | **282 passed**, 0 failed / 0 skipped |
+| Chromium | **70 passed**, 0 failed / 0 skipped; final clean run took 3.0 minutes |
+| OpenAPI | Generated from API; intended addition is `html` extraction method |
+| Docker, CLI pin, explicit migration, readiness | Pass |
+| Compose boundary / URL acceptance | Pass, including the post-browser state, isolation and safe-log checks |
+| Live field matrix | **576 passed**, 0 missing / 0 incorrect |
+
+Development runs caught outdated enum/prompt/concurrency expectations and an
+unsupported PageNotice tone; these were corrected. The first browser suite was
+69/70: duplicate review now also requires an explicit source/details choice.
+The next run had 61 passes and 9 failures because the failed earlier test had
+left ABC123 in the disposable database. The lifecycle test now cleans up in
+`finally`; that vehicle was removed, an empty baseline was verified, and the
+complete suite rerun. These runs are disclosed, not counted as extra unique tests.
+After the session resumed, Docker was stopped; a post-run script attempt could
+not connect to its engine. Docker and the disposable fake were restarted and
+the full browser suite and safe-log acceptance were run again because the fake's
+in-memory counters had been reset. No new live AI calls were made.
+
+`npm ci` still reports the two pre-existing high development-dependency audit
+entries described in the historical section. PDFium emits its text-range
+deprecation notice, and Playwright may report FORCE_COLOR/NO_COLOR precedence.
+No warning was hidden or dependency lockfile changed to silence it.
+
+## New practical PDF session
+
+On 11 September, the disposable fake-extractor API produced reference-like
+listings with fictitious TSA100/TSA101 identities. The actual saved 4/3 records
+were used by comparison and report. Two fresh A4-landscape PDFs were generated
+with `page.pdf({preferCSSPageSize:true})`: **83 pages** for both original listings
+with partial economic inputs, and **123 pages** for a **31,999-character**
+description, 100 specifications and 100 seller answers.
+
+PDFium text and page-box checks found both identities/VINs, the debt question,
+both source-method labels and all terminal long-content markers, with **zero
+characters outside page bounds**. Rendered first, description, continuation,
+last-question and final pages were visually inspected: Swedish text, paragraph
+breaks, repeated registration/table headings and wrapping remained readable.
+The 390-pixel report preview was inspected as well. Detailed exhaustive appendices
+produce long reports, including missing cost input; no sections are silently cut.
+
+The browser regression also changed the saved ad after report capture and
+asserted unchanged report text and zero network requests during PDF generation.
+The live advertisements were never saved with invented registration numbers.
+The native operating-system print dialog was not exercised in this integration;
+real PDF generation, rendering and visual checks were performed.
+
+## Cleanup and delivery
+
+Final cleanup inventory and publication links are recorded after verification.
+Earlier deferred inventories remain untouched, including the historical paths
+below, `temp/listing-text-probe/` and `temp/direct-listing-probe/`. Authentication
+and existing application data are preserved. This work does not authorize merge.
+
+---
+
+## Historical URL-only verification — superseded by direct retrieval
 
 Status: **implementation under verification; complete live extraction is not accepted**.
 Branch: `fix/codex-login-status`, based on `fc7eefc138ed904e5eb4e2a916f48f530f15dc0f`.
@@ -14,6 +152,16 @@ The application retains unconfirmed AI suggestions without opened-page metadata
 and carries the new sourced fields through review, shared draft, PostgreSQL,
 comparison and the frozen PDF. The remaining blocker is retrieval completeness,
 not the former source-evidence gate.
+
+A later [text retrieval and interpretation probe](listing-text-retrieval-probe.md)
+isolates URL-only transcription from interpretation of the user's complete
+texts. It retains the URL completeness failure and records all text-control
+attempts, including a remaining equipment-section fidelity deviation. Its later
+[direct-HTML follow-up](listing-text-retrieval-probe.md#follow-up-direct-html-retrieval)
+successfully retrieved both complete reference inputs and interpreted them in
+an isolated prototype after the user selected application-owned scraping.
+Integration into the application and full live acceptance remain outstanding;
+no pasted-text feature was implemented.
 
 The two final Audi requests both omit owner count **4**, first registration
 **1999-11-24**, and sale form **Begagnad bil till salu**. The first final Skoda

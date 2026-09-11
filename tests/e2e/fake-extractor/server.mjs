@@ -4,7 +4,7 @@ const references = Object.fromEntries(["audi-a4", "skoda-roomster"].map(name =>
   [name, JSON.parse(readFileSync(new URL(`./references/${name}.json`, import.meta.url), "utf8")).draft]));
 
 const port = 8080;
-const maximumCapacity = 2;
+const maximumCapacity = 1;
 const invocationCounts = new Map();
 const outcomeCounts = new Map();
 const waiters = [];
@@ -91,7 +91,7 @@ const server = createServer(async (request, response) => {
       requestedModel: "gpt-5.6-luna",
       reasoningEffort: "medium",
       codexCliVersion: "0.153.0",
-      promptVersion: 3,
+      promptVersion: 4,
       schemaVersion: 3,
     });
   }
@@ -149,19 +149,30 @@ const server = createServer(async (request, response) => {
       : partial
         ? { ...nullDraft, make: "Volvo", locality: "Tenhult" }
         : { ...completeDraft };
-    const sources = unavailable || reference
-      ? []
-      : unmatched
-        ? ["https://unmatched.example/another-listing"]
-        : [payload.normalizedUrl, "https://manufacturer.example/model"];
+    // HTTP retrieval supplies the actual page independently of simulated model web events.
+    const sources = [payload.normalizedUrl];
+    const retrievedContent = {
+      sourceUrl: payload.normalizedUrl,
+      title: draft.details?.title ?? "Fiktiv testannons",
+      subtitle: draft.details?.subtitle ?? null,
+      listingId: draft.details?.listingId ?? "test",
+      price: null,
+      description: draft.details?.description ?? null,
+      specifications: draft.details?.specifications ?? null,
+      equipment: draft.equipment,
+      sellerAnswers: draft.details?.sellerAnswers ?? null,
+      location: null,
+      updated: null,
+    };
 
     return json(response, 200, {
       requestedModel: "gpt-5.6-luna",
-      promptVersion: 3,
+      promptVersion: 4,
       schemaVersion: 3,
       analyzedAtUtc: "2026-09-03T08:00:00Z",
       sources,
       draft,
+      retrievedContent,
     });
   } finally {
     releaseCapacity();

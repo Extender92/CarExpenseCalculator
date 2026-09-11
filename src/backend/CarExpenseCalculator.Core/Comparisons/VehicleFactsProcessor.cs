@@ -180,13 +180,13 @@ public sealed class VehicleFactsProcessor
             return;
         }
 
-        var listing = evidence.Origin == FieldOrigin.Listing && evidence.ExtractionMethod == ExtractionMethod.Ai &&
+        var listing = evidence.Origin == FieldOrigin.Listing && evidence.ExtractionMethod is ExtractionMethod.Ai or ExtractionMethod.Html &&
             evidence.Verification == VerificationStatus.Unverified;
         var manual = evidence.Origin == FieldOrigin.User && evidence.ExtractionMethod == ExtractionMethod.Manual &&
             evidence.Verification == VerificationStatus.UserConfirmed;
         if (!listing && !manual)
         {
-            Add(errors, path, "unsupportedEvidence", "Only listing/ai/unverified and user/manual/userConfirmed evidence is supported.");
+            Add(errors, path, "unsupportedEvidence", "Only listing/ai-or-html/unverified and user/manual/userConfirmed evidence is supported.");
         }
 
         if (listing && evidence.SourceUrl is null)

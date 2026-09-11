@@ -135,4 +135,60 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
         Assert.Equal(saved.Revision,current.Revision);
         Assert.Equivalent(Details(),current.Input!.Listing!.Listing.Details,strict:true);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Html_source_and_prompt_four_survive_drafts_adoption_and_guarded_rollback(bool adopt)
+    {
+        await fixture.ResetDatabaseAsync();
+        await using var db = fixture.CreateDbContext();
+        var html = Ai with { ExtractionMethod = ExtractionMethod.Html };
+        var details = Details() with { Description = new("Originaltext.\n\nOförändrat andra stycke.", html),
+            SellerAnswers = [new(new SellerAnswer("Skulder?", "Nej"), html)] };
+        var input = new SavedListingInput(Url.Value, new(2026, 9, 10, 12, 0, 0, TimeSpan.Zero),
+            "gpt-5.6-luna", 4, 3, [], new() { PriceSek = new(28888m, Ai), Details = details });
+        var drafts = new SharedVehicleDraftStore(db, new(), TimeProvider.System);
+        var saved = await drafts.SaveAsync(new(RegistrationNumber.Parse("TST129"), Listing: input), 0);
+        if (adopt) await drafts.AdoptAsync(saved.Revision);
+        var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.GetService<IMigrator>()
+            .MigrateAsync("20260910132449_AddListingDetails"));
+        Assert.Contains("HTML listing content cannot be downgraded", error.MessageText);
+        await using var reader = fixture.CreateDbContext();
+        if (adopt)
+        {
+            var listing = (await new SavedListingStore(reader, new(), TimeProvider.System)
+                .GetByRegistrationNumberAsync(RegistrationNumber.Parse("TST129")))!;
+            Assert.Equal(4, listing.PromptVersion);
+            Assert.Equal(3, listing.ExtractionSchemaVersion);
+            Assert.Equivalent(details, listing.ProcessingResult.Listing.Details, strict: true);
+            var snapshot = await new ComparisonSnapshotStore(reader).ReadAsync([listing.VehicleId]);
+            Assert.Equivalent(details, Assert.Single(snapshot.Vehicles).Listing!.ProcessingResult.Listing.Details, strict: true);
+        }
+        else
+        {
+            var reopened = await new SharedVehicleDraftStore(reader, new(), TimeProvider.System).GetAsync();
+            Assert.Equal(saved.Revision, reopened.Revision);
+            Assert.Equal(4, reopened.Input!.Listing!.PromptVersion);
+            Assert.Equivalent(details, reopened.Input.Listing.Listing.Details, strict: true);
+        }
+    }
+
+    [Fact]
+    public async Task Prompt_three_survives_the_followup_migration_down_and_up()
+    {
+        await fixture.ResetDatabaseAsync();
+        await using var db = fixture.CreateDbContext();
+        var listing = await new SavedListingStore(db, new(), TimeProvider.System)
+            .CreateAsync(RegistrationNumber.Parse("TST130"), Input(Details()));
+        var migrator = db.Database.GetService<IMigrator>();
+        await migrator.MigrateAsync("20260910132449_AddListingDetails");
+        await migrator.MigrateAsync();
+        await using var reader = fixture.CreateDbContext();
+        var read = (await new SavedListingStore(reader, new(), TimeProvider.System).GetAsync(listing.VehicleId))!;
+        Assert.Equal(3, read.PromptVersion);
+        Assert.Equal(listing.Revision, read.Revision);
+        Assert.Equivalent(Details(), read.ProcessingResult.Listing.Details, strict: true);
+        Assert.False(reader.Database.HasPendingModelChanges());
+    }
 }

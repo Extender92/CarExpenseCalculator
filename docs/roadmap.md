@@ -48,9 +48,11 @@ linked-calculation versioning without consuming ChatGPT usage.
 
 - Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
 - Add dependency-free listing concepts and deterministic validation in Core.
-- Add a bounded internal Codex extraction sidecar using ChatGPT authentication,
-  host-restricted hosted web search, and no direct scraping or
-  marketplace-specific parsing.
+- Add a bounded internal Codex extraction sidecar using ChatGPT authentication.
+  The subsequent [Blocket extension](complete-listing-extraction.md), currently
+  in PR #93, replaces hosted retrieval with direct HTML capture and text-only
+  interpretation; [acceptance evidence](listing-extraction-verification-report.md)
+  records the branch status. Automatic discovery remains separate.
 - Expose independent unsaved previews and current saved-listing APIs.
 - Persist one current listing per vehicle with optimistic concurrency and no analysis history.
 - Build Swedish analysis, manual-review, saved-listing, and calculator-prefill workflows.

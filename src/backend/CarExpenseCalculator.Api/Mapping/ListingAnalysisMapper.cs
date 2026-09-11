@@ -161,6 +161,7 @@ internal static class ListingAnalysisMapper
         return method switch
         {
             CoreContracts.ExtractionMethod.Ai => ApiContracts.ExtractionMethod.Ai,
+            CoreContracts.ExtractionMethod.Html => ApiContracts.ExtractionMethod.Html,
             CoreContracts.ExtractionMethod.Manual => ApiContracts.ExtractionMethod.Manual,
             _ => throw Unsupported(method),
         };

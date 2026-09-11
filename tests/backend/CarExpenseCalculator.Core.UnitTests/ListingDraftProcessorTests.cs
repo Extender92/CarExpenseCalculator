@@ -563,7 +563,7 @@ public sealed class ListingDraftProcessorTests
         Assert.Equal(
             [FieldOrigin.Listing, FieldOrigin.User, FieldOrigin.Registry],
             Enum.GetValues<FieldOrigin>());
-        Assert.Equal([ExtractionMethod.Ai, ExtractionMethod.Manual], Enum.GetValues<ExtractionMethod>());
+        Assert.Equal([ExtractionMethod.Ai, ExtractionMethod.Manual, ExtractionMethod.Html], Enum.GetValues<ExtractionMethod>());
         Assert.Equal(
             [VerificationStatus.Unverified, VerificationStatus.UserConfirmed, VerificationStatus.RegistryVerified],
             Enum.GetValues<VerificationStatus>());

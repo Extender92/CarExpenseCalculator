@@ -25,8 +25,8 @@ const state = JSON.parse(runCompose([
 ]));
 
 assert(state.activeOperations === 0, "The fake extractor must have no active operations after Playwright.");
-assert(state.maximumCapacity === 2, "The fake extractor capacity must be exactly two.");
-assert(state.maximumConcurrentOperations === 2, "The acceptance run must exercise exactly two concurrent extraction operations.");
+assert(state.maximumCapacity === 1, "The fake extractor capacity must be exactly one.");
+assert(state.maximumConcurrentOperations === 1, "The acceptance run must serialize complete extraction operations.");
 
 for (const outcome of [
   "complete",

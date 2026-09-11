@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import { FifoRequestScheduler } from "./request-scheduler";
 
 describe("FifoRequestScheduler", () => {
+  it("defaults to one complete operation and requires explicit resume after a pause", async () => {
+    const scheduler = new FifoRequestScheduler();
+    const started: string[] = [];
+    const first = scheduler.schedule(async () => { started.push("first"); scheduler.pause(); throw new Error("blocked"); });
+    const second = scheduler.schedule(async () => { started.push("second"); return 2; });
+    await expect(first).rejects.toThrow("blocked");
+    await Promise.resolve();
+    expect(started).toEqual(["first"]);
+    scheduler.resume();
+    await expect(second).resolves.toBe(2);
+    expect(started).toEqual(["first", "second"]);
+  });
   it("runs FIFO with at most two requests and continues after failure", async () => {
     const scheduler = new FifoRequestScheduler(2);
     const started: number[] = [];

@@ -6,6 +6,19 @@ namespace CarExpenseCalculator.Core.UnitTests;
 
 public sealed class ListingUrlTests
 {
+    [Theory]
+    [InlineData("https://blocket.se/mobility/item/123?ci=3", true)]
+    [InlineData("https://www.blocket.se/mobility/item/123", true)]
+    [InlineData("https://blocket.se/mobility/item/124", false)]
+    [InlineData("http://blocket.se/mobility/item/123", false)]
+    [InlineData("https://blocket.se:8443/mobility/item/123", false)]
+    [InlineData("https://other.example/mobility/item/123", false)]
+    public void Blocket_aliases_match_only_the_same_https_advertisement(string actual, bool expected)
+    {
+        var submitted = ListingUrl.Parse("https://www.blocket.se/mobility/item/123?ci=3");
+        Assert.Equal(expected, ListingUrl.Parse(actual).IsSourceMatchFor(submitted));
+    }
+
     public static TheoryData<string, int> DocumentedIpv4Ranges => new()
     {
         { "0.0.0.0", 8 },

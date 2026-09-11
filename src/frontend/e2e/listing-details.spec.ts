@@ -20,7 +20,8 @@ test("complete reference listings survive review, draft adoption, comparison and
       await expect(card.getByLabel("Hela beskrivningen")).toHaveValue(reference.draft.details.description);
       await expect(card.getByLabel("Sittplatser",{exact:true})).toHaveValue(String(reference.draft.details.seats));
       await expect(card.getByLabel("Registreringsnummer",{exact:true})).toHaveValue("");
-      await expect(card.getByText(/Metadata om öppnad sida saknas/)).toBeVisible();
+      await expect(card.getByText("Matchar annonsen")).toBeVisible();
+      await expect(card.getByText("Annons · Direkt hämtat · Inte verifierad").first()).toBeVisible();
       if (i===1) await expect(card.getByLabel("Svar 1",{exact:true})).toHaveValue("Nej");
       // Fictional identities exist only in this disposable acceptance database.
       await card.getByLabel("Registreringsnummer",{exact:true}).fill(`ULA10${i}`);
@@ -42,7 +43,12 @@ test("complete reference listings survive review, draft adoption, comparison and
       expect(persisted.listing.details.description.value).toBe(reference.draft.details.description);
       expect(persisted.listing.equipment.values).toEqual(reference.draft.equipment);
       expect(persisted.listing.details.seats.provenance.verification).toBe("unverified");
-      expect(persisted.sourcePageObserved).toBe(false);
+      expect(persisted.sourcePageObserved).toBe(true);
+      expect(persisted.promptVersion).toBe(4);
+      expect(persisted.schemaVersion).toBe(3);
+      expect(persisted.listing.details.description.provenance.extractionMethod).toBe("html");
+      expect(persisted.listing.equipment.provenance.extractionMethod).toBe("html");
+      expect(persisted.listing.details.seats.provenance.extractionMethod).toBe("ai");
     }
     // A real snapshot response carries both complete listings exactly once.
     const comparison=page.waitForResponse(r=>r.url().endsWith("/api/comparisons/preview-all") && r.status()===200);
@@ -60,6 +66,8 @@ test("complete reference listings survive review, draft adoption, comparison and
       await expect(report).toContainText(reference.draft.firstRegistrationDate);
     }
     await expect(report).toContainText("Har bilen några skulder?");
+    await expect(report).toContainText("Direkt hämtat från annonsen");
+    await expect(report).toContainText("AI-tolkat");
     const before=await report.innerText();
     const old=await (await request.get(`/api/saved-listings/${ids[0]}`)).json();
     const replaced=await request.put(`/api/saved-listings/${ids[0]}`,{data:{expectedRevision:old.revision,listing:{

@@ -1,36 +1,58 @@
-# Complete listing input and unconfirmed AI suggestions
+# Complete Blocket retrieval and unconfirmed listing input
 
 This contract is implemented on `fix/codex-login-status`, not yet a merged
 delivery. The [acceptance report](listing-extraction-verification-report.md)
-separates the verified data pipeline from incomplete live extraction.
+records integration, four live reference checks and prior failed retrieval attempts.
 
 ## Retrieval and evidence
 
 The runtime keeps Codex CLI **0.153.0**, ChatGPT authentication,
-`gpt-5.6-luna` and reasoning **medium**. Hosted web-search context is **high**.
-One Codex turn handles each submitted URL, with at most two concurrent turns
+`gpt-5.6-luna` and reasoning **medium**. Codex web search is **disabled**.
+One Codex turn interprets each captured page, with one complete analysis at a time
 and no automatic application retries. The total sidecar deadline is **240
 seconds**, including queueing and installation checks/process startup. The
 API's internal HTTP client uses **245 seconds**; Nginx's URL-analysis route
 uses **270 seconds**. Other routes retain their existing timeouts.
 
-The prompt visits title, subtitle, description, all specification rows,
-equipment, seller questions/answers, location and advertisement information.
-It requests original-language paragraphs and Swedish generated short notes,
-excludes contact details even inside descriptions, and treats page instructions
-as untrusted data. It can open the same canonical listing path without tracking
-parameters when needed. It must not substitute another car or infer absent facts.
-There is no pasted-text input, direct marketplace scraper, registry adapter,
-extra reviewer model or additional paid service.
+The private sidecar implements `IListingPageFetcher` with .NET `HttpClient` and
+`IListingContentParser` with **AngleSharp 1.7.0**, without script execution or
+resource loading. Only HTTPS port 443 on `blocket.se`/`www.blocket.se` and
+`/mobility/item/{digits}` is supported. Query parameters such as `?ci=3` survive.
+Before connecting, all DNS results must be public; the socket connects to a
+validated literal IP and checks its actual remote address. At most three
+redirects are followed, only to that same ad on an allowed host.
 
-The submitted normalized URL is the listing reference. Actual opened-page URLs
-remain separate observations, accepted only from completed runtime events with
-concrete `open_page`/`find_in_page` URLs. Search queries, opaque `other` actions
-and model-written URLs are not opened-page evidence. Missing observations no
-longer discard valid suggestions. `sourcePageObserved` is server-derived on
-analysis and saved-listing responses; absence produces a Swedish review notice.
+The request identifies `CarExpenseCalculator/0.1 (user-requested listing retrieval)`.
+Only the HTML document is fetched, within **30 seconds** and **10 MiB of actual
+decompressed UTF-8 content**, even without Content-Length. Images, scripts,
+maps and contact actions are not fetched. Non-HTML/non-UTF-8, invalid sections,
+ambiguous name/value pairs, a mismatched ad ID or oversized content fail explicitly.
+Missing sections remain unknown, never automatically confirmed empty.
 
-An untouched suggestion remains `listing` / `ai` / `unverified` when read,
+The immutable `RetrievedListingContent` captures title/subtitle, total price,
+original description, all specifications, equipment, seller answers, location
+and advertisement information. Menus, advertisements and contact panels are
+excluded. Identified email/telephone contact details in descriptions are masked
+before interpretation or storage, preserving paragraphs, dates, VINs and numbers.
+The model receives only this cleaned material, treating embedded instructions
+as untrusted data. It produces typed facts and Swedish generated short notes.
+Infrastructure replaces the model's title/subtitle/description/ID/specification,
+equipment and seller-answer fields with the captured originals. Description-only
+winter tyres cannot silently become an equipment entry. No reference car values
+are present in the production parser or prompt.
+
+There is no pasted-text input, discovery, registry adapter, additional model,
+alternate paid provider, VPN rotation or challenge bypass.
+
+The submitted URL is the reference; the actually retrieved URL is the observed
+source. The internal API requires captured original content bound to that source.
+Model-written addresses, searches and opaque actions cannot replace it. The old
+JSONL source-event tests remain compatibility coverage. Older saved observations,
+including missing page metadata, remain readable with a Swedish review notice.
+`sourcePageObserved` is server-derived and does not imply independent verification.
+
+Captured original values use `listing` / `html` / `unverified`; interpreted
+values use `listing` / `ai` / `unverified`. Both remain unchanged when read,
 saved or adopted. It can satisfy a comparison's `advertised` evidence level,
 but never `userConfirmed` or `registryVerified`. Explicit edits retain existing
 manual-confirmation semantics. Development acceptance checks do not change
@@ -42,6 +64,22 @@ usable values with gaps; `unavailable` means no usable vehicle input remains.
 Technical failure, invalid structured output, cancellation and timeout remain
 separate typed failures. Registration number is required for storage; VIN and
 advertisement ID never replace it.
+
+| Source failure | Public HTTP / code |
+| --- | --- |
+| Unsupported host or URL form | 400 `listingSourceUnsupported` |
+| Rate limit | 429 `listingSourceRateLimited`, with Retry-After seconds |
+| Access denied or detected CAPTCHA | 503 `listingSourceBlocked` |
+| Missing/unreachable advertisement | 503 `listingSourceUnavailable` |
+| Invalid content type, HTML, identity, encoding or size | 503 `listingSourceInvalidContent` |
+
+AI configuration, invalid AI output and total timeout retain their existing
+distinct errors. No automatic retries occur. The singleton fetcher honors a
+429 Retry-After date/duration, using 60 seconds if missing/invalid, and prevents
+new source requests during cooldown across browsers. The browser FIFO pauses
+on source 429/blocking and requires **Fortsätt kön** explicitly. Pending items
+are not sent until the previous analysis ends. Cancellation propagates through
+queue, fetch, parsing and the Codex process.
 
 ## Typed listing extension
 
@@ -94,9 +132,9 @@ Replacement keeps one current value set; it creates no archive or result cache.
 
 | Contract | Version |
 | --- | --- |
-| New extraction prompt / schema | 3 / 3 |
+| New extraction prompt / schema | 4 / 3 |
 | Newly written listing storage | 2 |
-| Readable previous listing storage / extraction | 1 / 2+2 |
+| Readable previous listing storage / extraction | 1 or 2 / 2+2 or 3+3 |
 | Complete comparison response transport | 2 |
 | Baseline transport, rules and comparison results | 1 |
 | Household calculation / results | 2 / 2 |
@@ -105,6 +143,14 @@ Replacement keeps one current value set; it creates no archive or result cache.
 Old rows have missing extension fields and keep their original metadata and
 verification. Migration never performs extraction or adopts facts. New
 extractions are never relabeled as old ones.
+
+The separate follow-up `20260910214541_AllowHtmlListingExtraction` changes the
+metadata constraint to allow exactly 2/2, 3/3 and 4/3. The earlier details
+migration is not rewritten. Rolling back to `20260910132449_AddListingDetails`
+rejects prompt-4 metadata or HTML provenance in saved listings, shared drafts
+or comparison facts before changing the schema. A compatible backup is needed
+to retain such content with an older application; neither version nor source
+method is downgraded by relabeling.
 
 Apply migrations only with the explicit API migration command. Before rollback,
 stop writes and take a verified backup. Downgrade to

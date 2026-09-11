@@ -120,7 +120,6 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
 
     internal IReadOnlyList<string> BuildArguments(string host, string workDirectory)
     {
-        var quotedHost = JsonSerializer.Serialize(host);
         return
         [
             "exec",
@@ -145,9 +144,7 @@ internal sealed class CodexProcessRunner : ICodexProcessRunner
             "-c",
             "approval_policy=\"never\"",
             "-c",
-            "web_search=\"live\"",
-            "-c",
-            $"tools.web_search={{context_size=\"high\",allowed_domains=[{quotedHost}]}}",
+            "web_search=\"disabled\"",
             "-c",
             "forced_login_method=\"chatgpt\"",
             "-c",
