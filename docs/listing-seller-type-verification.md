@@ -12,6 +12,8 @@ Both are `listing/html/unverified`. Existing public contracts and all version
 numbers are unchanged. This is [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93)
 branch delivery, not a merge or deployment. The original [acceptance report](listing-extraction-verification-report.md)
 and its Audi/Skoda evidence remain applicable to the earlier implementation.
+Tested application commit: [`e5951fa`](https://github.com/Extender92/CarExpenseCalculator/commit/e5951fa69857aa9bb28ab0052d29d4c84d73ee63).
+The following documentation-only correction does not change that implementation.
 
 ## Execution history
 
@@ -299,4 +301,3 @@ the expected and observed values; array entries retain their original ordering.
 | promptVersion | 4 | 4 | correct |
 | schemaVersion | 3 | 3 | correct |
 | sourcePageObserved | True | True | correct |
-
