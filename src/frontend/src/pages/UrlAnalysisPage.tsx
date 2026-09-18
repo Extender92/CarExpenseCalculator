@@ -1,6 +1,6 @@
 import { AlertTriangle, Link2, ListPlus, LoaderCircle, Sparkles } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   analyzeListing,
   createSavedListing,
@@ -29,6 +29,7 @@ import {
 import {
   allComparisonChoicesSelected,
   buildSavedListingRequest,
+  buildReviewedListingInput,
   compareListingDrafts,
   createManualReviewContext,
   mergeListingComparison,
@@ -45,11 +46,18 @@ import {
 import { textareaClassName } from "@/features/url-analysis/presentation";
 import { validateListingUrlList, type NormalizedListingUrl } from "@/features/url-analysis/urls";
 import { useSystemStatus } from "@/hooks/use-system-status";
-import { householdApi } from "@/features/household/api";
+import { householdApi, HouseholdApiError } from "@/features/household/api";
 import { vehicleStateLabels } from "@/features/household/labels";
 import { useOptionalWorkspace } from "@/features/household/use-workspace";
 import { readListingForHouseholdDraft } from "@/features/household/listing-read";
-import {canonicalNumber,n,shiftDecimal} from "@/features/household/numbers";
+import {canonicalNumber,n,shiftDecimal,fromOrdinary} from "@/features/household/numbers";
+import { listingNumberText } from "@/features/url-analysis/exact";
+import { vehicleChanged } from "@/lib/vehicle-events";
+import { useReviewWorkspace } from "@/features/url-analysis/review-workspace";
+import { reviewDraftApi, type ReviewDraftResponse } from "@/features/url-analysis/review-drafts-api";
+import { reviewDraftToItem } from "@/features/url-analysis/review-draft-state";
+import { validateReviewDraft } from "@/features/url-analysis/validation";
+import { EditorDialog } from "@/components/editing/EditorDialog";
 
 type BatchMode = "analyze" | "manual";
 
@@ -99,12 +107,19 @@ let workspaceId = 0;
 
 export function UrlAnalysisPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const householdWorkspace = useOptionalWorkspace();
   const [calculationStatuses, setCalculationStatuses] = useState<Record<string, string>>({});
   const systemStatus = useSystemStatus();
   const [urlInput, setUrlInput] = useState("");
   const [urlErrors, setUrlErrors] = useState<Record<string, string>>({});
-  const [items, setItems] = useState<ListingWorkspaceItem[]>([]);
+  const { items, setItems } = useReviewWorkspace();
+  const itemsRef = useRef(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  const [reviewDrafts, setReviewDrafts] = useState<ReviewDraftResponse[]>([]);
+  const [reviewDraftError, setReviewDraftError] = useState<string | null>(null);
+  const [draftConflict, setDraftConflict] = useState<{ itemId: string; existing: ReviewDraftResponse } | null>(null);
+  const [deleteDraft, setDeleteDraft] = useState<ReviewDraftResponse | null>(null);
   const [pendingBatch, setPendingBatch] = useState<PendingBatch | null>(null);
   const [pendingReload, setPendingReload] = useState<PendingReload | null>(null);
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null);
@@ -150,12 +165,42 @@ export function UrlAnalysisPage() {
 
   useEffect(() => {
     void refreshSavedListings();
+    void refreshReviewDrafts();
     const controllers = controllersRef.current;
     return () => {
       controllers.forEach((controller) => controller.abort());
       controllers.clear();
+      setItems(current => current.map(item => item.controller ? { ...item, controller: null,
+        phase: "failed", error: "Analysen avbröts när du lämnade sidan. Befintliga uppgifter finns kvar." } : item));
     };
-  }, []);
+  }, [setItems]);
+
+  const deepLink = searchParams.get("reviewDraftId") ?? searchParams.get("vehicleId") ?? searchParams.get("analysisId");
+  const deepLinkKind = searchParams.has("reviewDraftId") ? "draft" : searchParams.has("vehicleId") ? "vehicle" : "analysis";
+  useEffect(() => {
+    if (!deepLink) return;
+    let live = true;
+    async function open() {
+      try {
+        if (deepLinkKind === "analysis") {
+          setItems(current => current.map(item => item.id === deepLink ? { ...item, editorRequest: Date.now() } : item));
+          return;
+        }
+        const loaded: ListingWorkspaceItem = deepLinkKind === "draft"
+          ? reviewDraftToItem(await reviewDraftApi.read(deepLink!))
+          : { ...createWorkspaceItem({ submitted: "", normalized: "" } as NormalizedListingUrl, "manual"),
+            ...savedListingToReviewState(await getSavedListing(deepLink!)) };
+        if (!live) return;
+        setItems(current => {
+          const existing = current.find(item => deepLinkKind === "draft" ? item.reviewDraft?.id === deepLink : item.saved?.vehicleId === deepLink);
+          return existing ? current.map(item => item === existing ? { ...item, editorRequest: Date.now() } : item)
+            : [...current, { ...loaded, baseline: loaded.draft, editorRequest: Date.now() }];
+        });
+      } catch (error) { if (live) setPageNotice({ tone: "error", message: savedErrorMessage(error) }); }
+    }
+    void open();
+    return () => { live = false; };
+  }, [deepLink, deepLinkKind, setItems]);
 
   useEffect(() => {
     const id = pendingCardFocusRef.current;
@@ -180,6 +225,20 @@ export function UrlAnalysisPage() {
       setSavedListError(savedErrorMessage(error));
       setSavedListState("error");
     }
+  }
+
+  async function refreshReviewDrafts() {
+    try { setReviewDrafts(await reviewDraftApi.list()); setReviewDraftError(null); }
+    catch (error) { setReviewDraftError(savedErrorMessage(error)); }
+  }
+
+  function openReviewDraft(value: ReviewDraftResponse) {
+    const loaded = reviewDraftToItem(value);
+    setItems(current => {
+      const existing = current.find(item => item.reviewDraft?.id === value.id);
+      return existing ? current.map(item => item === existing ? { ...item, editorRequest: Date.now() } : item)
+        : [...current, { ...loaded, editorRequest: Date.now() }];
+    });
   }
 
   function requestBatch(mode: BatchMode) {
@@ -241,21 +300,24 @@ export function UrlAnalysisPage() {
     }, controller.signal).then((response) => {
       if (controllersRef.current.get(id) !== controller) return;
       controllersRef.current.delete(id);
-      updateItem(id, (item) => ({
+      updateItem(id, (item) => {
+        const draft = analyzedDraftForItem(response, item);
+        return ({
         ...item,
         submittedUrl: response.submittedUrl,
         normalizedUrl: response.normalizedUrl,
         phase: response.status,
         context: analysisResponseToContext(response),
-        draft: analyzedDraftForItem(response, item),
-        dirty: item.saved !== null,
+        draft,
+        baseline: item.saved || item.reviewDraft ? item.baseline : draft,
+        dirty: item.saved !== null || item.reviewDraft !== undefined,
         error: null,
         persistenceNotice: item.saved
           ? { tone: "warning", message: "Den nya analysen är inte sparad ännu." }
           : null,
         validationErrors: {},
         controller: null,
-      }));
+      }); });
     }).catch((error: unknown) => {
       if (controllersRef.current.get(id) !== controller) return;
       controllersRef.current.delete(id);
@@ -282,7 +344,7 @@ export function UrlAnalysisPage() {
     updateItem(id, (item) => ({
       ...item,
       draft,
-      dirty: true,
+      dirty: JSON.stringify(draft) !== JSON.stringify(item.baseline ?? createEmptyReviewDraft()),
       persistenceNotice: null,
       validationErrors: validationErrors ?? item.validationErrors,
     }));
@@ -333,6 +395,7 @@ export function UrlAnalysisPage() {
         updateItem(openItem.id, (item) => ({
           ...item,
           ...state,
+          baseline: state.draft,
           dirty: false,
           error: null,
           persistenceNotice: null,
@@ -345,6 +408,7 @@ export function UrlAnalysisPage() {
         const item: ListingWorkspaceItem = {
           id: `saved-${++workspaceId}`,
           ...state,
+          baseline: state.draft,
           dirty: false,
           error: null,
           persistenceNotice: null,
@@ -362,12 +426,13 @@ export function UrlAnalysisPage() {
     }
   }
 
-  async function saveItem(item: ListingWorkspaceItem) {
+  async function saveItem(item: ListingWorkspaceItem): Promise<boolean> {
+    if (item.reviewDraft || (!item.saved && !item.draft.fields.registrationNumber.input)) return saveReviewDraft(item);
     const built = buildSavedListingRequest(item.submittedUrl, item.normalizedUrl, item.context, item.draft);
     if (!built.request || !built.registrationNumber) {
       updateItem(item.id, (current) => ({ ...current, validationErrors: built.errors }));
       focusCard(item.id);
-      return;
+      return false;
     }
 
     updateItem(item.id, (current) => ({
@@ -385,14 +450,75 @@ export function UrlAnalysisPage() {
             listing: built.request.listing,
           })
         : await createSavedListing(built.request);
-      acceptSavedResponse(item.id, saved, item.saved ? "Ändringarna har sparats." : "Bilen har sparats.");
+      acceptSavedResponse(item.id, saved, item.saved ? "Ändringarna har sparats." : "Bilen har sparats.", item.draft);
+      if (item.saved) householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(item.saved.revision)));
+      vehicleChanged(saved.vehicleId);
       await refreshSavedListings();
+      return true;
     } catch (error) {
       await handleSaveError(item.id, built.registrationNumber, error);
+      return false;
     } finally {
       updateItem(item.id, (current) => ({ ...current, saving: false }));
       if (item.saved) setBusyVehicleId(null);
     }
+  }
+
+  async function saveReviewDraft(item: ListingWorkspaceItem, existing?: ReviewDraftResponse): Promise<boolean> {
+    const errors = validateReviewDraft(item.draft);
+    if (Object.keys(errors).length) {
+      updateItem(item.id, current => ({ ...current, validationErrors: errors })); return false;
+    }
+    updateItem(item.id, current => ({ ...current, saving: true, persistenceNotice: null }));
+    try {
+      const input = buildReviewedListingInput(item.submittedUrl, item.normalizedUrl, item.context, item.draft);
+      const target = existing ?? item.reviewDraft;
+      const saved = target ? await reviewDraftApi.replace(target.id, target.revision, input) : await reviewDraftApi.create(input);
+      const state = reviewDraftToItem(saved);
+      updateItem(item.id, current => ({ ...current, reviewDraft: state.reviewDraft,
+        baseline: item.draft, dirty: JSON.stringify(current.draft) !== JSON.stringify(item.draft),
+        saving: false, validationErrors: {}, persistenceNotice: { tone: "success", message: "Annonsutkastet har sparats. Bilen ingår ännu inte i jämförelsen." } }));
+      setDraftConflict(null);
+      await refreshReviewDrafts();
+      return true;
+    } catch (error) {
+      if (error instanceof HouseholdApiError && error.reviewDraftId &&
+          ["reviewDraftAlreadyExists", "reviewDraftRevisionConflict"].includes(error.code)) {
+        try { setDraftConflict({ itemId: item.id, existing: await reviewDraftApi.read(error.reviewDraftId) }); }
+        catch (readError) { setItemPersistenceError(item.id, savedErrorMessage(readError)); }
+      }
+      setItemPersistenceError(item.id, savedErrorMessage(error));
+      return false;
+    } finally { updateItem(item.id, current => ({ ...current, saving: false })); }
+  }
+
+  async function adoptReviewDraft(item: ListingWorkspaceItem, existing?: { vehicleId: string; revision: import("@/features/url-analysis/exact").ListingNumber }, replacement?: ListingReviewDraft): Promise<boolean> {
+    if (!item.reviewDraft) return false;
+    const draft = replacement ?? item.draft;
+    const built = buildSavedListingRequest(item.submittedUrl, item.normalizedUrl, item.context, draft);
+    if (!built.request) { updateItem(item.id, current => ({ ...current, validationErrors: built.errors })); return false; }
+    updateItem(item.id, current => ({ ...current, saving: true }));
+    try {
+      let revision = item.reviewDraft.revision;
+      if (item.dirty || replacement) {
+        const saved = await reviewDraftApi.replace(item.reviewDraft.id, revision, built.request.listing);
+        revision = saved.revision;
+        updateItem(item.id, current => ({ ...current, reviewDraft: { id: saved.id, revision }, baseline: draft,
+          dirty: JSON.stringify(current.draft) !== JSON.stringify(draft) }));
+      }
+      const saved = await reviewDraftApi.adopt(item.reviewDraft.id, revision, existing?.vehicleId, existing?.revision);
+      acceptSavedResponse(item.id, saved, "Bilen har lagts till. Annonsutkastet har förbrukats.", item.draft);
+      if (existing) householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(existing.revision)));
+      vehicleChanged(saved.vehicleId);
+      setComparison(null); setPendingAttach(null);
+      await refreshReviewDrafts(); await refreshSavedListings();
+      return true;
+    } catch (error) {
+      if (error instanceof HouseholdApiError && error.code === "registrationNumberConflict" && error.vehicleId)
+        await prepareDuplicateResolution(item.id, built.registrationNumber!, error.vehicleId, error.actualRevision ?? n(1));
+      else setItemPersistenceError(item.id, savedErrorMessage(error));
+      return false;
+    } finally { updateItem(item.id, current => ({ ...current, saving: false })); }
   }
 
   async function handleSaveError(itemId: string, registrationNumber: string, error: unknown) {
@@ -511,6 +637,9 @@ export function UrlAnalysisPage() {
       comparison.choices,
     );
     const built = buildSavedListingRequest(candidate.submittedUrl, candidate.normalizedUrl, candidate.context, merged);
+    if (candidate.reviewDraft) {
+      await adoptReviewDraft(candidate, comparison.existing, merged); return;
+    }
     if (!built.request) {
       updateItem(candidate.id, (item) => ({ ...item, draft: merged, validationErrors: built.errors }));
       setComparison(null);
@@ -525,7 +654,9 @@ export function UrlAnalysisPage() {
         expectedRevision: comparison.existing.revision,
         listing: built.request.listing,
       });
-      acceptSavedResponse(candidate.id, saved, "Den sparade bilen har ersatts med dina val.");
+      acceptSavedResponse(candidate.id, saved, "Den sparade bilen har ersatts med dina val.", candidate.draft);
+      householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(comparison.existing.revision)));
+      vehicleChanged(saved.vehicleId);
       setComparison(null);
       await refreshSavedListings();
     } catch (error) {
@@ -560,6 +691,9 @@ export function UrlAnalysisPage() {
       setPendingAttach(null);
       return;
     }
+    if (item.reviewDraft) {
+      await adoptReviewDraft(item, { vehicleId: pendingAttach.vehicleId, revision: pendingAttach.expectedRevision }); return;
+    }
     const built = buildSavedListingRequest(item.submittedUrl, item.normalizedUrl, item.context, item.draft);
     if (!built.request) {
       updateItem(item.id, (current) => ({ ...current, validationErrors: built.errors }));
@@ -573,7 +707,9 @@ export function UrlAnalysisPage() {
         expectedRevision: pendingAttach.expectedRevision,
         listing: built.request.listing,
       });
-      acceptSavedResponse(item.id, saved, "Annonsen har kopplats till bilen. Den sparade kalkylen finns kvar.");
+      acceptSavedResponse(item.id, saved, "Annonsen har kopplats till bilen. Den sparade kalkylen finns kvar.", item.draft);
+      householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(pendingAttach.expectedRevision)));
+      vehicleChanged(saved.vehicleId);
       setPendingAttach(null);
       await refreshSavedListings();
     } catch (error) {
@@ -630,13 +766,16 @@ export function UrlAnalysisPage() {
     }
   }
 
-  function acceptSavedResponse(itemId: string, saved: SavedListingResponse, message: string) {
+  function acceptSavedResponse(itemId: string, saved: SavedListingResponse, message: string, submitted?: ListingReviewDraft) {
     const state = savedListingToReviewState(saved);
     updateItem(itemId, (item) => ({
       ...item,
       ...state,
       householdBaseRevision: undefined,
-      dirty: false,
+      baseline: state.draft,
+      reviewDraft: undefined,
+      draft: submitted && JSON.stringify(item.draft) !== JSON.stringify(submitted) ? item.draft : state.draft,
+      dirty: !!submitted && JSON.stringify(item.draft) !== JSON.stringify(submitted),
       error: null,
       persistenceNotice: { tone: "success", message },
       saving: false,
@@ -716,6 +855,40 @@ export function UrlAnalysisPage() {
           {pageNotice.message}
         </div>
       )}
+      {deepLinkKind === "analysis" && deepLink && !items.some(item => item.id === deepLink) && <p role="alert">
+        Det osparade annonsunderlaget finns inte kvar efter omladdningen. Öppna ett sparat utkast eller analysera annonsen igen.
+      </p>}
+      <section className="space-y-3 rounded-xl border border-slate-700 p-4" aria-label="Sparade annonsutkast">
+        <h2 className="text-lg font-semibold">Sparade annonsutkast</h2>
+        <p className="text-sm text-slate-400">Utkast ingår i jämförelsen först efter att du kompletterat registreringsnummer och valt Lägg till bil.</p>
+        {reviewDraftError && <p role="alert">{reviewDraftError}</p>}
+        {!reviewDraftError && !reviewDrafts.length && <p>Inga sparade annonsutkast.</p>}
+        {reviewDrafts.map(value => <div key={value.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-800 p-3">
+          <span className="min-w-0 flex-1 break-all">{[value.input.draft.make?.value, value.input.draft.model?.value].filter(Boolean).join(" ") || value.listingReference}</span>
+          <Button type="button" onClick={() => openReviewDraft(value)}>Öppna utkast</Button>
+          <Button type="button" variant="ghost" onClick={() => setDeleteDraft(value)}>Radera utkast</Button>
+        </div>)}
+      </section>
+      {deleteDraft && <EditorDialog open title="Radera annonsutkast?" onClose={() => setDeleteDraft(null)} actions={<Button type="button" onClick={() => {
+        void reviewDraftApi.remove(deleteDraft.id, deleteDraft.revision).then(async () => {
+          setItems(current => current.filter(item => item.reviewDraft?.id !== deleteDraft.id)); setDeleteDraft(null); await refreshReviewDrafts();
+        }).catch(error => { setPageNotice({ tone: "error", message: savedErrorMessage(error) }); setDeleteDraft(null); });
+      }}>Radera detta utkast</Button>}><p>Hela utkastet tas bort. Sparade bilar påverkas inte.</p></EditorDialog>}
+      {draftConflict && <EditorDialog open title="Granska sparat annonsutkast" onClose={() => setDraftConflict(null)}>
+        <p>Det finns redan ett utkast för samma annons. Kontrollera skillnaderna innan du ersätter det.</p>
+        {(() => {
+          const candidate = items.find(item => item.id === draftConflict.itemId);
+          if (!candidate) return null;
+          const previous = reviewDraftToItem(draftConflict.existing);
+          const changes = compareListingDrafts(previous.draft, candidate.draft);
+          return <><dl className="space-y-3">{[{ key: "registrationNumber", label: "Registreringsnummer", existingValue: previous.draft.fields.registrationNumber.input || "Saknas",
+            candidateValue: candidate.draft.fields.registrationNumber.input || "Saknas" }, ...changes].map(change => <div key={change.key}>
+            <dt className="font-semibold">{change.label}</dt><dd className="whitespace-pre-wrap break-words">Sparat: {change.existingValue}</dd>
+            <dd className="whitespace-pre-wrap break-words">Nytt: {change.candidateValue}</dd></div>)}</dl>
+            <div className="mt-4 flex flex-wrap gap-3"><Button type="button" disabled={candidate.saving} onClick={() => void saveReviewDraft(candidate, draftConflict.existing)}>Ersätt utkastet med de nya uppgifterna</Button>
+              <Button type="button" variant="secondary" onClick={() => { openReviewDraft(draftConflict.existing); setDraftConflict(null); }}>Öppna sparat utkast</Button></div></>;
+        })()}
+      </EditorDialog>}
       {pausedQueue && <div role="alert" className="rounded-lg border p-4 space-y-2">
         <p>{pausedQueue.message}</p>
         <Button type="button" onClick={() => {
@@ -803,14 +976,14 @@ export function UrlAnalysisPage() {
       </Card>
 
       {pendingBatch && (
-        <PendingActionPanel ref={actionRef} title="Ersätt den öppna arbetsytan?">
+        <PendingActionPanel ref={actionRef} title="Ersätt den öppna arbetsytan?" onClose={() => setPendingBatch(null)}>
           <p>Den nya listan stänger alla öppna kort. Osparade ändringar försvinner.</p>
           <ActionButtons confirmLabel="Ersätt arbetsytan" onConfirm={() => startBatch(pendingBatch.mode, pendingBatch.urls)} onCancel={() => setPendingBatch(null)} />
         </PendingActionPanel>
       )}
 
       {pendingReload && (
-        <PendingActionPanel ref={actionRef} title="Läs in den sparade bilen igen?">
+        <PendingActionPanel ref={actionRef} title="Läs in den sparade bilen igen?" onClose={() => setPendingReload(null)}>
           <p>Lokala ändringar i det öppna kortet ersätts med den sparade versionen.</p>
           <ActionButtons
             confirmLabel="Läs in sparad version"
@@ -825,14 +998,23 @@ export function UrlAnalysisPage() {
       )}
 
       {pendingClose && (
-        <PendingActionPanel ref={actionRef} title="Stäng kortet utan att spara?">
-          <p>De osparade ändringarna tas bort från arbetsytan. Den sparade bilen i databasen påverkas inte.</p>
-          <ActionButtons confirmLabel="Stäng kort" onConfirm={() => closeItem(pendingClose.itemId)} onCancel={() => setPendingClose(null)} />
+        <PendingActionPanel ref={actionRef} title="Spara ändringarna innan du stänger kortet?" onClose={() => setPendingClose(null)}>
+          <p>Annonsens osparade ändringar finns kvar tills du väljer hur de ska hanteras.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button disabled={items.find(item => item.id === pendingClose.itemId)?.saving} onClick={async () => {
+              const item = itemsRef.current.find(item => item.id === pendingClose.itemId);
+              if (!item || !await saveItem(item)) return;
+              await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+              if (!itemsRef.current.find(current => current.id === item.id)?.dirty) closeItem(item.id);
+            }}>Spara och stäng</Button>
+            <Button variant="secondary" disabled={items.find(item => item.id === pendingClose.itemId)?.saving} onClick={() => closeItem(pendingClose.itemId)}>Kasta ändringar</Button>
+            <Button variant="ghost" onClick={() => setPendingClose(null)}>Fortsätt redigera</Button>
+          </div>
         </PendingActionPanel>
       )}
 
       {pendingAttach && (
-        <PendingActionPanel ref={actionRef} title={`Bilen ${pendingAttach.registrationNumber} har redan en sparad kalkyl`}>
+        <PendingActionPanel ref={actionRef} title={`Bilen ${pendingAttach.registrationNumber} har redan en sparad kalkyl`} onClose={() => setPendingAttach(null)}>
           <p>Det finns ingen sparad annons att jämföra med. Du kan koppla den nya annonsen till bilen utan att ändra eller ta bort kalkylen.</p>
           <ActionButtons
             confirmLabel="Koppla annons till befintlig bil"
@@ -844,7 +1026,7 @@ export function UrlAnalysisPage() {
       )}
 
       {pendingDelete && (
-        <PendingActionPanel ref={actionRef} title={`Radera ${pendingDelete.registrationNumber} permanent?`} danger>
+        <PendingActionPanel ref={actionRef} title={`Radera ${pendingDelete.registrationNumber} permanent?`} onClose={() => setPendingDelete(null)} danger>
           <p>Hela bilen och den sparade annonsen tas bort permanent.</p>
           {pendingDelete.hasSavedCostScenario && (
             <p className="mt-2 font-semibold text-rose-100">Bilen har också en sparad kalkyl som raderas samtidigt.</p>
@@ -860,6 +1042,7 @@ export function UrlAnalysisPage() {
       )}
 
       {comparison && (
+        <EditorDialog open title="Granska skillnader mot sparad bil" onClose={() => { if (!comparison.busy) setComparison(null); }}>
         <ListingComparisonPanel
           ref={actionRef}
           registrationNumber={comparison.existing.registrationNumber}
@@ -877,6 +1060,7 @@ export function UrlAnalysisPage() {
           }}
           onCancel={() => setComparison(null)}
         />
+        </EditorDialog>
       )}
 
       <section aria-labelledby="analysis-results" className="space-y-5">
@@ -896,7 +1080,9 @@ export function UrlAnalysisPage() {
                   calculationStatus={householdWorkspace && item.saved ? calculationStatuses[item.saved.vehicleId] ?? "Kalkylstatus kunde inte läsas" : undefined}
                   onChange={(draft, errors) => updateDraft(item.id, draft, errors)}
                   onRetry={() => retryItem(item)}
-                  onSave={() => void saveItem(item)}
+                  onSave={() => saveItem(item)}
+                  onAdopt={item.reviewDraft ? () => adoptReviewDraft(item) : undefined}
+                  onDiscard={() => updateItem(item.id, current => ({ ...current, draft: current.baseline ?? createEmptyReviewDraft(), dirty: false, validationErrors: {} }))}
                   onCalculate={item.saved
                     ? () => navigate(`/manual?listingVehicleId=${item.saved!.vehicleId}`)
                     : undefined}
@@ -1010,7 +1196,7 @@ function analysisErrorMessage(error: unknown) {
 }
 
 function savedErrorMessage(error: unknown) {
-  if (error instanceof SavedListingApiError) return error.message;
+  if (error instanceof SavedListingApiError || error instanceof HouseholdApiError) return error.message;
   return "Sparade annonser kunde inte hanteras just nu. Kontrollera anslutningen och försök igen.";
 }
 
@@ -1024,7 +1210,8 @@ function focusLater(ref: Ref<HTMLDivElement>) {
   }
 }
 
-function PendingActionPanel({ ref, title, danger = false, children }: {
+function PendingActionPanel({ ref, title, danger = false, children, onClose }: {
+  onClose: () => void;
   ref: Ref<HTMLDivElement>;
   title: string;
   danger?: boolean;
@@ -1033,7 +1220,7 @@ function PendingActionPanel({ ref, title, danger = false, children }: {
   const titleId = useId();
   useEffect(() => focusLater(ref), [ref]);
   return (
-    <div
+    <EditorDialog open title={title} onClose={onClose}><div
       ref={ref}
       tabIndex={-1}
       role="alertdialog"
@@ -1042,7 +1229,7 @@ function PendingActionPanel({ ref, title, danger = false, children }: {
     >
       <h2 id={titleId} className={`font-semibold ${danger ? "text-rose-100" : "text-amber-100"}`}>{title}</h2>
       <div className={`mt-2 text-sm leading-6 ${danger ? "text-rose-100/80" : "text-amber-100/80"}`}>{children}</div>
-    </div>
+    </div></EditorDialog>
   );
 }
 

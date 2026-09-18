@@ -90,7 +90,7 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_vehicle_comparison_facts_payload", "jsonb_typeof(input) = 'object'");
 
-                            t.HasCheckConstraint("ck_vehicle_comparison_facts_version", "schema_version >= 1 AND (reviewed_listing_version IS NULL OR reviewed_listing_version >= 1)");
+                            t.HasCheckConstraint("ck_vehicle_comparison_facts_version", "schema_version IN (1, 2) AND (reviewed_listing_version IS NULL OR reviewed_listing_version >= 1)");
                         });
                 });
 
@@ -164,7 +164,7 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_vehicle_cost_inputs_payload", "jsonb_typeof(input) = 'object'");
 
-                            t.HasCheckConstraint("ck_vehicle_cost_inputs_version", "schema_version >= 1 AND (source_listing_version IS NULL OR source_listing_version >= 1)");
+                            t.HasCheckConstraint("ck_vehicle_cost_inputs_version", "schema_version IN (1, 2) AND (source_listing_version IS NULL OR source_listing_version >= 1)");
                         });
                 });
 
@@ -212,7 +212,7 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_vehicle_draft_registration", "registration_number IS NULL OR registration_number ~ '^[A-HJ-PR-UW-Z]{3}[0-9]{2}([0-9]|[A-HJ-NPR-UW-Z])$'");
 
-                            t.HasCheckConstraint("ck_vehicle_draft_revision", "revision >= 0 AND schema_version >= 1");
+                            t.HasCheckConstraint("ck_vehicle_draft_revision", "revision >= 0 AND schema_version IN (1, 2)");
 
                             t.HasCheckConstraint("ck_vehicle_draft_singleton", "id = 1");
                         });
@@ -223,6 +223,55 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Migrations
                             Id = 1,
                             Revision = 0L,
                             SchemaVersion = 1
+                        });
+                });
+
+            modelBuilder.Entity("CarExpenseCalculator.Infrastructure.Persistence.ListingReviewDrafts.ListingReviewDraftEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("InputJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("input");
+
+                    b.Property<string>("ListingReference")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("listing_reference");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("revision");
+
+                    b.Property<int>("SchemaVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("schema_version");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListingReference")
+                        .IsUnique();
+
+                    b.ToTable("listing_review_drafts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_listing_review_drafts_dates", "updated_at_utc >= created_at_utc");
+
+                            t.HasCheckConstraint("ck_listing_review_drafts_payload", "jsonb_typeof(input) = 'object'");
+
+                            t.HasCheckConstraint("ck_listing_review_drafts_version", "revision >= 1 AND schema_version = 1");
                         });
                 });
 
@@ -829,7 +878,7 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_vehicle_listings_urls", "length(submitted_url) BETWEEN 1 AND 2048 AND length(normalized_url) BETWEEN 1 AND 2048");
 
-                            t.HasCheckConstraint("ck_vehicle_listings_versions", "listing_version >= 1 AND listing_schema_version IN (1, 2)");
+                            t.HasCheckConstraint("ck_vehicle_listings_versions", "listing_version >= 1 AND listing_schema_version IN (1, 2, 3)");
                         });
                 });
 

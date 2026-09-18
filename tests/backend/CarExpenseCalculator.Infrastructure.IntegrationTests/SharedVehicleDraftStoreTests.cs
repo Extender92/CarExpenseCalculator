@@ -160,7 +160,7 @@ public sealed class SharedVehicleDraftStoreTests(PostgreSqlFixture fixture) : Ho
         await Costs(db).ReplaceAsync(car.VehicleId, 1, Write());
         await Drafts(db).SaveAsync(new(Reg(), Write(50), ListingFactory.ManualOnly(), car.VehicleId, 2), 0);
         // An unreadable current cost format is discovered after the listing child replacement begins.
-        await db.Database.ExecuteSqlRawAsync("UPDATE vehicle_cost_inputs SET schema_version = 999");
+        await db.Database.ExecuteSqlRawAsync("ALTER TABLE vehicle_cost_inputs DROP CONSTRAINT ck_vehicle_cost_inputs_version; UPDATE vehicle_cost_inputs SET schema_version = 999");
         await ErrorAsync("unsupportedHouseholdInputVersion", () => Drafts(db).AdoptAsync(1));
         var stillThere = (await Listings(db).GetAsync(car.VehicleId))!;
         Assert.Equal(2, stillThere.Revision);

@@ -695,6 +695,558 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/listing-reuse/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ListingReusePreviewRequest"];
+                    "application/*+json": components["schemas"]["ListingReusePreviewRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ListingReusePreviewResponse"];
+                        "application/json": components["schemas"]["ListingReusePreviewResponse"];
+                        "text/json": components["schemas"]["ListingReusePreviewResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listing-review-drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ListingReviewDraftResponse"][];
+                        "application/json": components["schemas"]["ListingReviewDraftResponse"][];
+                        "text/json": components["schemas"]["ListingReviewDraftResponse"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateListingReviewDraftRequest"];
+                    "application/*+json": components["schemas"]["CreateListingReviewDraftRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ListingReviewDraftResponse"];
+                        "application/json": components["schemas"]["ListingReviewDraftResponse"];
+                        "text/json": components["schemas"]["ListingReviewDraftResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listing-review-drafts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ListingReviewDraftResponse"];
+                        "application/json": components["schemas"]["ListingReviewDraftResponse"];
+                        "text/json": components["schemas"]["ListingReviewDraftResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReplaceListingReviewDraftRequest"];
+                    "application/*+json": components["schemas"]["ReplaceListingReviewDraftRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ListingReviewDraftResponse"];
+                        "application/json": components["schemas"]["ListingReviewDraftResponse"];
+                        "text/json": components["schemas"]["ListingReviewDraftResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query: {
+                    expectedRevision: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listing-review-drafts/{id}/adopt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AdoptListingReviewDraftRequest"];
+                    "application/*+json": components["schemas"]["AdoptListingReviewDraftRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SavedListingResponse"];
+                        "application/json": components["schemas"]["SavedListingResponse"];
+                        "text/json": components["schemas"]["SavedListingResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Payload Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HouseholdProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/manual-calculations": {
         parameters: {
             query?: never;
@@ -2415,6 +2967,14 @@ export interface components {
     schemas: {
         /** @enum {unknown} */
         AcquisitionType: "purchase" | "lease";
+        AdoptListingReviewDraftRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            /** Format: uuid */
+            existingVehicleId?: null | string;
+            /** Format: int64 */
+            expectedVehicleRevision?: null | number;
+        };
         AdoptVehicleDraftRequest: {
             /** Format: int64 */
             expectedRevision: number;
@@ -2687,7 +3247,7 @@ export interface components {
             views: components["schemas"]["CompleteComparisonViews"];
             /**
              * Format: int32
-             * @default 2
+             * @default 3
              */
             transportVersion: number;
             listings?: components["schemas"]["SavedListingResponse"][];
@@ -2727,6 +3287,9 @@ export interface components {
         };
         /** @enum {unknown} */
         CostSectionState: "complete" | "partial" | "unavailable" | "invalid" | "notApplicable";
+        CreateListingReviewDraftRequest: {
+            input: components["schemas"]["ReviewedListingInput"];
+        };
         CreateSavedCostScenarioRequest: {
             registrationNumber: string;
             scenario: components["schemas"]["ManualCalculationRequest"];
@@ -2750,8 +3313,17 @@ export interface components {
         };
         /** @enum {unknown} */
         Drivetrain: "frontWheelDrive" | "rearWheelDrive" | "allWheelDrive";
+        EffectiveElectricShare: {
+            origin: components["schemas"]["ElectricShareOrigin"];
+            /** Format: double */
+            percent: null | number;
+        };
         /** @enum {unknown} */
         ElectricityBasis: "battery" | "metered" | null;
+        /** @enum {unknown} */
+        ElectricShareMode: "inherit" | "override";
+        /** @enum {unknown} */
+        ElectricShareOrigin: "household" | "vehicle";
         EnergyBreakdownResult: {
             sources: components["schemas"]["EnergySourceResult"][];
             /** Format: double */
@@ -2802,7 +3374,7 @@ export interface components {
         /** @enum {unknown} */
         ExtractionMethod: "ai" | "manual" | "html";
         /** @enum {unknown} */
-        FactEditKind: "preserve" | "unknown" | "notApplicable" | "manual" | "listing" | "conflict" | "resolve";
+        FactEditKind: "preserve" | "unknown" | "notApplicable" | "manual" | "listing" | "conflict" | "resolve" | "editManual" | "confirmCurrent" | "resolveUnverified";
         FactEditOfBodyType: {
             kind: components["schemas"]["FactEditKind"];
             manual?: null | components["schemas"]["ManualFactValueOfBodyType"];
@@ -2917,7 +3489,7 @@ export interface components {
             sourceListingVersion: null | number;
         };
         /** @enum {unknown} */
-        FactSelectionKind: "current" | "listing" | "manual";
+        FactSelectionKind: "current" | "listing" | "manual" | "editManual";
         FactSelectionOfBodyType: {
             kind: components["schemas"]["FactSelectionKind"];
             /** Format: int32 */
@@ -3097,6 +3669,7 @@ export interface components {
             dueMonthOfYear?: null | number;
             evidenceNote?: null | string;
             sourceUrl?: null | string;
+            listingSource?: null | components["schemas"]["ListingValueSource"];
         };
         HouseholdCostItemResult: {
             key: string;
@@ -3125,6 +3698,7 @@ export interface components {
             cost: components["schemas"]["CostSectionResult"];
             sources: components["schemas"]["HouseholdEnergySourceResult"][];
             isIncluded: boolean;
+            electricDrivingShare: null | components["schemas"]["EffectiveElectricShare"];
         };
         HouseholdEnergySource: {
             key: string;
@@ -3133,6 +3707,9 @@ export interface components {
             consumptionPer100Kilometres?: null | components["schemas"]["SensitivityValue"];
             consumptionBasis?: null | components["schemas"]["ConsumptionBasis"];
             electricityBasis?: null | components["schemas"]["ElectricityBasis"];
+            consumptionLabel?: null | string;
+            fuelSource?: null | components["schemas"]["ListingValueSource"];
+            consumptionSource?: null | components["schemas"]["ListingValueSource"];
         };
         HouseholdEnergySourceResult: {
             key: string;
@@ -3291,6 +3868,8 @@ export interface components {
             code: string;
             /** Format: uuid */
             vehicleId?: null | string;
+            /** Format: uuid */
+            reviewDraftId?: null | string;
             /** Format: int64 */
             expectedRevision?: null | number;
             /** Format: int64 */
@@ -3540,10 +4119,76 @@ export interface components {
             conditionNotes: null | components["schemas"]["SourcedCollectionResponseOfstring"];
             details?: null | components["schemas"]["ListingDetailsResponse"];
         };
+        ListingFactReuseTarget: {
+            field: string;
+            requiresReplacement: boolean;
+            alreadyApplied: boolean;
+        };
         /** @enum {unknown} */
         ListingFieldCode: "registrationNumber" | "make" | "model" | "variant" | "modelYear" | "vin" | "priceSek" | "odometerKilometres" | "sellerType" | "locality" | "county" | "publishedDate" | "updatedDate" | "imageCount" | "fuelTypes" | "transmission" | "drivetrain" | "bodyType" | "colour" | "horsepower" | "engineDisplacementCubicCentimetres" | "energyConsumptions" | "annualVehicleTaxSek" | "ownerCount" | "firstRegistrationDate" | "lastInspectionDate" | "nextInspectionDate" | "towBar" | "equipment" | "sellerClaims" | "conditionNotes";
         /** @enum {unknown} */
         ListingLinkMode: "preserve" | "current";
+        /** @enum {unknown} */
+        ListingReuseField: "priceSek" | "annualVehicleTaxSek" | "fuelTypes" | "energyConsumptions";
+        ListingReusePreviewRequest: {
+            /** Format: uuid */
+            vehicleId?: null | string;
+            /** Format: int64 */
+            expectedVehicleRevision?: null | number;
+            /** Format: int64 */
+            expectedListingVersion?: null | number;
+            /** Format: uuid */
+            reviewDraftId?: null | string;
+            /** Format: int64 */
+            expectedReviewDraftRevision?: null | number;
+            unsavedListing?: null | components["schemas"]["ReviewedListingInput"];
+            target: components["schemas"]["VehicleCostInput"];
+            factEdits?: null | components["schemas"]["VehicleFactEdits"];
+        };
+        ListingReusePreviewResponse: {
+            purchasePrice: null | components["schemas"]["ListingReuseSuggestionOfdecimal"];
+            energySources: components["schemas"]["ListingReuseSuggestionOfHouseholdEnergySource"][];
+            annualTax: null | components["schemas"]["ListingReuseSuggestionOfHouseholdCostItem"];
+            facts: components["schemas"]["ComparisonFactSet"];
+            factTargets: components["schemas"]["ListingFactReuseTarget"][];
+            warnings: string[];
+        };
+        ListingReuseSuggestionOfdecimal: {
+            key: string;
+            /** Format: double */
+            value: number;
+            source: components["schemas"]["ListingValueSource"];
+            requiresReplacement: boolean;
+            alreadyApplied: boolean;
+        };
+        ListingReuseSuggestionOfHouseholdCostItem: {
+            key: string;
+            value: components["schemas"]["HouseholdCostItem"];
+            source: components["schemas"]["ListingValueSource"];
+            requiresReplacement: boolean;
+            alreadyApplied: boolean;
+        };
+        ListingReuseSuggestionOfHouseholdEnergySource: {
+            key: string;
+            value: components["schemas"]["HouseholdEnergySource"];
+            source: components["schemas"]["ListingValueSource"];
+            requiresReplacement: boolean;
+            alreadyApplied: boolean;
+        };
+        ListingReviewDraftResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int64 */
+            revision: number;
+            /** Format: int32 */
+            schemaVersion: number;
+            listingReference: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            updatedAtUtc: string;
+            input: components["schemas"]["ReviewedListingInput"];
+        };
         ListingSpecificationInput: {
             name: string;
             value: string;
@@ -3551,6 +4196,15 @@ export interface components {
         ListingSpecificationResponse: {
             name: string;
             value: string;
+        };
+        ListingValueSource: {
+            listingReference: string;
+            field: components["schemas"]["ListingReuseField"];
+            originalLabel?: null | string;
+            /** Format: int64 */
+            listingVersion?: null | number;
+            /** Format: int32 */
+            itemIndex?: null | number;
         };
         ListingVersionInput: {
             /** Format: int64 */
@@ -3767,6 +4421,11 @@ export interface components {
             cadence: components["schemas"]["RecurringCostCadence"];
             /** Format: double */
             costDuringPeriodSek: number;
+        };
+        ReplaceListingReviewDraftRequest: {
+            /** Format: int64 */
+            expectedRevision: number;
+            input: components["schemas"]["ReviewedListingInput"];
         };
         ReplaceSavedCostScenarioRequest: {
             /** Format: int64 */
@@ -4182,9 +4841,11 @@ export interface components {
             acquisitionType?: components["schemas"]["AcquisitionType"];
             /** Format: double */
             priceSek?: null | number;
+            priceSource?: null | components["schemas"]["ListingValueSource"];
             residual?: null | components["schemas"]["HouseholdResidualInput"];
             lease?: null | components["schemas"]["HouseholdLeaseInput"];
             energySources?: null | components["schemas"]["HouseholdEnergySource"][];
+            electricDrivingShare?: null | components["schemas"]["VehicleElectricShare"];
             tax?: null | components["schemas"]["HouseholdCostCategoryInput"];
             insurance?: null | components["schemas"]["HouseholdCostCategoryInput"];
             service?: null | components["schemas"]["HouseholdCostCategoryInput"];
@@ -4270,6 +4931,10 @@ export interface components {
             /** Format: int64 */
             revision: number;
             input: null | components["schemas"]["VehicleDraftInput"];
+        };
+        VehicleElectricShare: {
+            mode: components["schemas"]["ElectricShareMode"];
+            value?: null | components["schemas"]["SensitivityValue"];
         };
         VehicleFactEdits: {
             purchasePriceSek?: null | components["schemas"]["FactEditOfdecimal"];

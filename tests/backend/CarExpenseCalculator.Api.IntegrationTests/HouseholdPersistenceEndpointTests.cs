@@ -230,11 +230,12 @@ public sealed class HouseholdPersistenceEndpointTests(SavedCostScenarioApiFactor
     public async Task Corrupt_current_payload_or_unsupported_storage_version_is_typed(bool version, HttpStatusCode status)
     {
         var vehicle = await Json(await _client.PostAsJsonAsync("/api/vehicle-cost-inputs", Create()), HttpStatusCode.Created);
-        await factory.ExecuteDatabaseCommandAsync(version ? "UPDATE vehicle_cost_inputs SET schema_version = 99"
+        await factory.ExecuteDatabaseCommandAsync(version ? "ALTER TABLE vehicle_cost_inputs DROP CONSTRAINT ck_vehicle_cost_inputs_version; UPDATE vehicle_cost_inputs SET schema_version = 99"
             : "UPDATE vehicle_cost_inputs SET input = jsonb_build_object()");
         var problem = await Json(await _client.GetAsync($"/api/vehicle-cost-inputs/{vehicle["vehicleId"]!.GetValue<Guid>()}"), status);
         Assert.Equal(version ? "unsupportedHouseholdInputVersion" : "householdStorageUnavailable", problem["code"]!.GetValue<string>());
         Assert.DoesNotContain("Npgsql", problem.ToJsonString());
+        if (version) await factory.ExecuteDatabaseCommandAsync("UPDATE vehicle_cost_inputs SET schema_version = 2; ALTER TABLE vehicle_cost_inputs ADD CONSTRAINT ck_vehicle_cost_inputs_version CHECK (schema_version IN (1, 2) AND (source_listing_version IS NULL OR source_listing_version >= 1))");
     }
 
     [Fact]

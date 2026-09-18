@@ -67,6 +67,7 @@ public sealed class CostAssumptionConfirmation
         RegistrationNumber.TryParse(a.CandidateKey, out var registrationA) &&
         RegistrationNumber.TryParse(b.CandidateKey, out var registrationB) && registrationA == registrationB &&
         a.AcquisitionType == b.AcquisitionType && a.PriceSek == b.PriceSek && a.Residual == b.Residual &&
+        a.ElectricDrivingShare == b.ElectricDrivingShare &&
         Sequence(a.EnergySources, b.EnergySources) && Category(a.Tax, b.Tax) && Category(a.Insurance, b.Insurance) &&
         Category(a.Service, b.Service) && Category(a.Repairs, b.Repairs) && Category(a.CustomCosts, b.CustomCosts) &&
         a.AdditionalRepairAllowancePerMonthSek == b.AdditionalRepairAllowancePerMonthSek && Lease(a.Lease, b.Lease);

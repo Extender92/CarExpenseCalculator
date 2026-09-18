@@ -132,8 +132,8 @@ export function response(
     asOfDate: request.asOfDate,
     ruleVersion: n(1),
     resultSchemaVersion: n(1),
-    calculationVersion: n(2),
-    householdResultSchemaVersion: n(2),
+    calculationVersion: n(3),
+    householdResultSchemaVersion: n(3),
     profileErrors: [],
     candidates: cloneExact(results),
     costOrder: results.map((r) => r.vehicleId),
@@ -152,7 +152,7 @@ export function response(
       favorable: view("favorable"),
       cautious: view("cautious"),
     },
-    transportVersion: n(2),
+    transportVersion: n(3),
     listings: [],
   };
 }

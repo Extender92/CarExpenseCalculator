@@ -265,18 +265,25 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
     [Fact]
     public async Task Caller_cancellation_is_propagated_and_not_retried()
     {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _extractionService.ExtractionHandler = async (_, cancellationToken) =>
         {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            started.SetResult();
+            try { await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); }
+            finally { if (cancellationToken.IsCancellationRequested) cancelled.TrySetResult(); }
             throw new InvalidOperationException("Unreachable");
         };
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        using var cancellation = new CancellationTokenSource();
+        var request = _client.PostAsJsonAsync(
+            "/api/listing-analyses",
+            new { url = "https://example.com/item/1" },
+            cancellation.Token);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            _client.PostAsJsonAsync(
-                "/api/listing-analyses",
-                new { url = "https://example.com/item/1" },
-                cancellation.Token));
+        try { await started.Task.WaitAsync(TimeSpan.FromSeconds(10)); }
+        finally { await cancellation.CancelAsync(); }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request.WaitAsync(TimeSpan.FromSeconds(10)));
+        await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Equal(1, _extractionService.ExtractionCallCount);
     }
@@ -345,15 +352,22 @@ public sealed class ListingAnalysisEndpointTests : IClassFixture<ListingAnalysis
     [Fact]
     public async Task System_status_propagates_caller_cancellation()
     {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _extractionService.StatusHandler = async cancellationToken =>
         {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            started.SetResult();
+            try { await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); }
+            finally { if (cancellationToken.IsCancellationRequested) cancelled.TrySetResult(); }
             throw new InvalidOperationException("Unreachable");
         };
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        using var cancellation = new CancellationTokenSource();
+        var request = _client.GetAsync("/api/system/status", cancellation.Token);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            _client.GetAsync("/api/system/status", cancellation.Token));
+        try { await started.Task.WaitAsync(TimeSpan.FromSeconds(10)); }
+        finally { await cancellation.CancelAsync(); }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request.WaitAsync(TimeSpan.FromSeconds(10)));
+        await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Equal(1, _extractionService.StatusCallCount);
         Assert.Equal(0, _extractionService.ExtractionCallCount);

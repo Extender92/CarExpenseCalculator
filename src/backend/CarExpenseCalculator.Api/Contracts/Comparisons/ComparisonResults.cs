@@ -80,7 +80,7 @@ public sealed record CompleteComparisonViews(ComparisonPreviewResponse Baseline,
     ComparisonPreviewResponse Cautious);
 public sealed record CompleteComparisonResponse(string RequestId, Guid GenerationId, ComparisonPreviewMode Mode,
     string? BaselineToken, int CandidateCount, H.SensitivityMode ActiveSensitivityMode, CompleteComparisonViews Views,
-    int TransportVersion = 2)
+    int TransportVersion = 3)
 {
     public IReadOnlyList<CarExpenseCalculator.Api.Contracts.SavedListings.SavedListingResponse> Listings { get; init; } = [];
 }

@@ -18,6 +18,16 @@ public static class HouseholdCostInputValidator
             || (vehicle.AcquisitionType == AcquisitionType.Lease && (vehicle.PriceSek is not null || vehicle.Residual is not null)))
             errors.Add(new(path, "invalidStructure", "Purchase and lease inputs are mutually exclusive."));
         ValidateLease(vehicle.Lease, $"{path}.lease", errors);
+        if (vehicle.ElectricDrivingShare is not { } share)
+            errors.Add(new($"{path}.electricDrivingShare", "invalidStructure", "An electric share choice is required."));
+        else
+        {
+            if (!Enum.IsDefined(share.Mode))
+                errors.Add(new($"{path}.electricDrivingShare.mode", "unsupportedValue", "Electric share mode is not supported."));
+            if (share.Mode == ElectricShareMode.Inherit && share.Value is not null)
+                errors.Add(new($"{path}.electricDrivingShare.value", "invalidStructure", "An inherited share cannot contain an override."));
+            HouseholdInputValidator.Sensitivity(share.Value, 0m, 100m, $"{path}.electricDrivingShare.value", errors);
+        }
         if (vehicle.Residual is { } residual)
         {
             var maximum = residual.Mode == ResidualMode.AnnualPercentage ? 100m
@@ -64,6 +74,12 @@ public static class HouseholdCostInputValidator
         }
 
         ValidateEnergy(vehicle.EnergySources, $"{path}.energySources", errors);
+        foreach (var (sourcePath, source) in ListingCostSources.Enumerate(vehicle))
+        {
+            if (!ListingUrl.TryParse(source.ListingReference, out _) || !Enum.IsDefined(source.Field) ||
+                source.ListingVersion is <= 0 || source.ItemIndex is < 0 or > 99 || source.OriginalLabel?.Length > 120)
+                errors.Add(new($"{path}.{sourcePath}", "invalidListingSource", "Invalid listing source reference."));
+        }
         return errors.AsReadOnly();
     }
 
@@ -139,6 +155,8 @@ public static class HouseholdCostInputValidator
             EnumValue(source.Unit, $"{sourcePath}.unit", errors);
             EnumValue(source.ConsumptionBasis, $"{sourcePath}.consumptionBasis", errors);
             EnumValue(source.ElectricityBasis, $"{sourcePath}.electricityBasis", errors);
+            if (source.ConsumptionLabel?.Length > 120)
+                errors.Add(new($"{sourcePath}.consumptionLabel", "tooLong", "Consumption label is limited to 120 characters."));
             HouseholdInputValidator.Sensitivity(source.ConsumptionPer100Kilometres, 0.0000000000000000000000000001m,
                 10_000m, $"{sourcePath}.consumptionPer100Kilometres", errors);
             if (source.Fuel == FuelType.Electricity && source.Unit is not null and not EnergyUnit.KilowattHour)

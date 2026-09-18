@@ -48,7 +48,8 @@ internal static class HouseholdResultMapper
     public static A.HouseholdEnergyResult? ToApi(C.HouseholdEnergyResult? x) => x is null ? null : new(
         ToApi(x.Cost),
         x.Sources.Select(item => ToApi(item)!).ToArray(),
-        x.IsIncluded);
+        x.IsIncluded,
+        x.ElectricDrivingShare is not { } share ? null : new((A.ElectricShareOrigin)share.Origin, share.Percent));
 
     [return: NotNullIfNotNull(nameof(x))]
     public static A.HouseholdEnergySourceResult? ToApi(C.HouseholdEnergySourceResult? x) => x is null ? null : new(

@@ -247,8 +247,8 @@ public sealed class HouseholdCostCalculatorTests
         Assert.Equal((decimal)expectedB, result.Vehicles[1].Totals.OwnershipCost.CompleteTotalSek);
         Assert.Equal(mode, result.ActiveSensitivityMode);
         Assert.Equal("SEK", result.Currency);
-        Assert.Equal(2, result.CalculationVersion);
-        Assert.Equal(2, result.ResultSchemaVersion);
+        Assert.Equal(3, result.CalculationVersion);
+        Assert.Equal(3, result.ResultSchemaVersion);
     }
 }
 

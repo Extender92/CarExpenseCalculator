@@ -4,6 +4,9 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.SavedListings;
 
 public interface ISavedListingStore
 {
+    /// <summary>Validates and normalizes a complete review payload without writing or requiring registration.</summary>
+    SavedListingInput NormalizeReviewDraft(SavedListingInput input);
+
     Task<SavedListing> CreateAsync(
         RegistrationNumber registrationNumber,
         SavedListingInput input,

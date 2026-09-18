@@ -56,6 +56,18 @@ function manual() {
 }
 
 describe("comparison workspace", () => {
+  it("discarding manual fact edits restores their original cost confirmation association", () => {
+    const id = manual();
+    workspace.ensureManualCost(id);
+    workspace.confirmPreview(id, "confirm");
+    const baseline = cloneExact(workspace.state.manual[0]);
+    workspace.editManual(id, { costInput: { ...workspace.manualCost(id)!, priceSek: n(12345) } });
+    workspace.confirmPreview(id, "confirm");
+    expect(workspace.state.manual[0].confirmedCost).not.toBe(baseline.confirmedCost);
+    workspace.restoreManualFacts(id, baseline.candidate.facts, baseline.confirmedCost);
+    expect(workspace.state.manual[0].confirmedCost).toBe(baseline.confirmedCost);
+    expect(workspace.manualCost(id)?.priceSek?.text).toBe("12345");
+  });
   it("does not silently accept an unrelated inventory change concurrent with an own save", async () => {
     await stored();
     await workspace.select(vehicleId());

@@ -48,7 +48,7 @@ describe("listing review mapping", () => {
     expect(changed.fields.make.provenance).toEqual({
       origin: "user",
       extractionMethod: "manual",
-      verification: "userConfirmed",
+      verification: "unverified",
       sourceUrl: completeListingAnalysisResponse.normalizedUrl,
     });
     expect(changed.fields.model.provenance).toEqual(draft.fields.model.provenance);

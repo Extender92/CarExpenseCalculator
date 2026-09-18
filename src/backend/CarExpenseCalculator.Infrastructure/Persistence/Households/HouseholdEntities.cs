@@ -68,7 +68,7 @@ internal sealed class VehicleCostInputConfiguration : IEntityTypeConfiguration<V
     {
         builder.ToTable("vehicle_cost_inputs", table =>
         {
-            table.HasCheckConstraint("ck_vehicle_cost_inputs_version", "schema_version >= 1 AND (source_listing_version IS NULL OR source_listing_version >= 1)");
+            table.HasCheckConstraint("ck_vehicle_cost_inputs_version", "schema_version IN (1, 2) AND (source_listing_version IS NULL OR source_listing_version >= 1)");
             table.HasCheckConstraint("ck_vehicle_cost_inputs_payload", "jsonb_typeof(input) = 'object'");
         });
         builder.HasKey(x => x.VehicleId);
@@ -88,7 +88,7 @@ internal sealed class VehicleDraftConfiguration : IEntityTypeConfiguration<Vehic
         builder.ToTable("vehicle_draft", table =>
         {
             table.HasCheckConstraint("ck_vehicle_draft_singleton", "id = 1");
-            table.HasCheckConstraint("ck_vehicle_draft_revision", "revision >= 0 AND schema_version >= 1");
+            table.HasCheckConstraint("ck_vehicle_draft_revision", "revision >= 0 AND schema_version IN (1, 2)");
             table.HasCheckConstraint("ck_vehicle_draft_payload", "(input IS NULL AND registration_number IS NULL AND base_vehicle_id IS NULL AND base_vehicle_revision IS NULL) OR (input IS NOT NULL AND jsonb_typeof(input) = 'object' AND registration_number IS NOT NULL)");
             table.HasCheckConstraint("ck_vehicle_draft_base", "(base_vehicle_id IS NULL AND base_vehicle_revision IS NULL) OR (base_vehicle_id IS NOT NULL AND base_vehicle_revision IS NOT NULL AND base_vehicle_revision >= 1)");
             table.HasCheckConstraint("ck_vehicle_draft_registration", "registration_number IS NULL OR registration_number ~ '^[A-HJ-PR-UW-Z]{3}[0-9]{2}([0-9]|[A-HJ-NPR-UW-Z])$'");

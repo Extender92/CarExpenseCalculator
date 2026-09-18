@@ -1,4 +1,5 @@
 import {describe, expect, it} from "vitest";
+import {useState} from "react";
 import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {fromOrdinary, n, stringifyExact} from "@/features/household/numbers";
@@ -14,6 +15,20 @@ import {ListingContent} from "./ListingContent";
 const url = completeListingAnalysisResponse.normalizedUrl;
 const provenance = completeListingAnalysisResponse.listing.priceSek!.provenance;
 describe("complete listing details", () => {
+  it("confirms only the selected seller answer and invalidates confirmation after editing", async () => {
+    let changed = detailsFromResponse({sellerAnswers: [{value: {question: "Finns skulder?", answer: "Nej"}, provenance}]});
+    function Harness() {
+      const [value, setValue] = useState(changed);
+      return <ListingDetailsEditor value={value} url={url} disabled={false} errors={{}} onChange={next => { changed = next; setValue(next); }} />;
+    }
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("button", {name: "Bekräfta post 1"}));
+    expect(changed.sellerAnswers.entries[0].provenance).toMatchObject({origin: "user", extractionMethod: "manual", verification: "userConfirmed", sourceUrl: url});
+    expect(changed.sellerAnswers.entries[0].second).toBe("Nej");
+    await userEvent.type(screen.getByLabelText("Svar 1"), ", enligt säljaren");
+    expect(changed.sellerAnswers.entries[0].provenance?.verification).toBe("unverified");
+    expect(detailsToInput(changed,url)?.sellerAnswers?.[0].value.answer).toBe("Nej, enligt säljaren");
+  });
   it.each([
     ["dealer", "Handlare"],
     ["private", "Privat"],
@@ -74,7 +89,7 @@ describe("complete listing details", () => {
     let changed = form;
     render(<ListingDetailsEditor value={form} url={url} disabled={false} errors={{}} onChange={value=>{changed=value;}} />);
     await userEvent.selectOptions(screen.getByLabelText("Viktkategori"),"curb");
-    expect(changed.fields.weightCategory.provenance!.verification).toBe("userConfirmed");
+    expect(changed.fields.weightCategory.provenance!.verification).toBe("unverified");
     expect(changed.fields.description.provenance!.verification).toBe("unverified");
   });
   it("does not lose a difference beyond JavaScript precision during listing replacement review", () => {

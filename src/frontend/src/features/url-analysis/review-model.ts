@@ -119,6 +119,10 @@ export interface ListingWorkspaceItem {
   saving: boolean;
   validationErrors: Record<string, string>;
   controller: AbortController | null;
+  reviewDraft?: { id: string; revision: ListingNumber };
+  baseline?: ListingReviewDraft;
+  /** Changes when a saved/deep-linked editor should receive focus. */
+  editorRequest?: number;
 }
 
 const missingScalarFields: ReadonlyArray<readonly [ListingFieldCode, ScalarFieldName]> = [
@@ -253,6 +257,7 @@ export function editScalarField(
   input: string,
   normalizedUrl: string,
 ): ListingReviewDraft {
+  if (draft.fields[name].input === input) return draft;
   return {
     ...draft,
     fields: {
@@ -271,6 +276,7 @@ export function editCollection<T>(
   values: T[],
   normalizedUrl: string,
 ): CollectionDraft<T> {
+  if (draft.mode === mode && JSON.stringify(draft.values) === JSON.stringify(values)) return draft;
   return {
     mode,
     values,
@@ -311,7 +317,7 @@ export function manualProvenance(normalizedUrl: string): FieldProvenance {
   return {
     origin: "user",
     extractionMethod: "manual",
-    verification: "userConfirmed",
+    verification: "unverified",
     sourceUrl: normalizedUrl,
   };
 }

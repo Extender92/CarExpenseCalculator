@@ -1,4 +1,5 @@
 import { ListingContent } from "@/features/url-analysis/ListingContent";
+import { ElectricShareSource } from "@/features/household/ElectricShareSource";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -463,6 +464,7 @@ export function ComparisonTables({
           <>
             {r.cost.energy.isIncluded && <p>Ingår</p>}
             {cost(r, r.cost.energy.cost)}
+            <ElectricShareSource value={r.cost.energy.electricDrivingShare} />
             {r.cost.energy.sources.map((s) => (
               <div className="mt-3" key={s.key}>
                 <p>

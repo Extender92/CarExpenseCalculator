@@ -6,9 +6,21 @@ namespace CarExpenseCalculator.Core.Households;
 internal static class HouseholdEnergyCalculator
 {
     public static (CostSection Cost, HouseholdEnergyResult Result) Calculate(
-        IReadOnlyList<HouseholdEnergySource>? sources, string path, CostSection distance, HouseholdCostContext context,
+        VehicleCostInput vehicle, string vehiclePath, CostSection distance, HouseholdCostContext context,
         out IReadOnlyList<CostSection> rawSources)
     {
+        var sources = vehicle.EnergySources;
+        var path = $"{vehiclePath}.energySources";
+        var ownShare = vehicle.ElectricDrivingShare.Mode == ElectricShareMode.Override;
+        var shareValue = ownShare ? vehicle.ElectricDrivingShare.Value : context.Profile.ElectricDrivingSharePercent;
+        var sharePath = ownShare ? $"{vehiclePath}.electricDrivingShare.value" : "profile.electricDrivingSharePercent";
+        EffectiveElectricShare? effectiveShare = null;
+        if (sources is { Count: > 1 } && sources.Any(source => source.ConsumptionBasis == ConsumptionBasis.DrivingMode))
+        {
+            var shareSection = new CostSection(sharePath);
+            effectiveShare = new(ownShare ? ElectricShareOrigin.Vehicle : ElectricShareOrigin.Household,
+                context.Value(shareValue, sharePath, shareSection));
+        }
         var total = new CostSection(path);
         var rows = new List<HouseholdEnergySourceResult>();
         var costs = new List<CostSection>();
@@ -28,7 +40,7 @@ internal static class HouseholdEnergyCalculator
         {
             for (var index = 0; index < sources!.Count; index++)
             {
-                var (cost, row) = CalculateSource(sources, index, path, distance, context);
+                var (cost, row) = CalculateSource(sources, index, path, distance, context, shareValue, sharePath);
                 total.Merge(cost);
                 costs.Add(cost);
                 rows.Add(row);
@@ -36,11 +48,12 @@ internal static class HouseholdEnergyCalculator
         }
 
         rawSources = costs.AsReadOnly();
-        return (total, new(total.Result(), rows.AsReadOnly()));
+        return (total, new(total.Result(), rows.AsReadOnly(), ElectricDrivingShare: effectiveShare));
     }
 
     private static (CostSection Cost, HouseholdEnergySourceResult Result) CalculateSource(
-        IReadOnlyList<HouseholdEnergySource> sources, int index, string path, CostSection distance, HouseholdCostContext context)
+        IReadOnlyList<HouseholdEnergySource> sources, int index, string path, CostSection distance, HouseholdCostContext context,
+        SensitivityValue? shareValue, string sharePath)
     {
         var source = sources[index];
         var sourcePath = $"{path}[{index}]";
@@ -55,7 +68,7 @@ internal static class HouseholdEnergyCalculator
                 var fuelsAvailable = true;
                 for (var i = 0; i < sources.Count; i++)
                     fuelsAvailable &= context.Available($"{path}[{i}].fuel", sources[i].Fuel is not null, quantity);
-                var electricShare = context.Value(context.Profile.ElectricDrivingSharePercent, "profile.electricDrivingSharePercent", quantity);
+                var electricShare = context.Value(shareValue, sharePath, quantity);
                 if (fuelsAvailable && electricShare is not null)
                     share = source.Fuel == FuelType.Electricity ? electricShare : 100m - electricShare;
             }

@@ -70,6 +70,29 @@ function ProfileHarness({
 }
 
 describe("Swedish household form semantics", () => {
+  it("keeps a car's explicit unknown electric share separate from inheritance", async () => {
+    render(<VehicleHarness />);
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Energi", { selector: "summary" }));
+    const choice = screen.getByLabelText("Elandel för denna bil");
+    expect(choice).toHaveValue("inherit");
+    await user.selectOptions(choice, "override");
+    expect(screen.getByTestId("input")).toHaveTextContent('"electricDrivingShare":{"mode":"override","value":null}');
+    await user.selectOptions(screen.getByLabelText("Typ av värde för Bilens elandel av körsträckan (%)"), "single");
+    await user.type(screen.getByLabelText("Bilens elandel av körsträckan (%)", { exact: true }), "0");
+    expect(screen.getByTestId("input")).toHaveTextContent('"value":{"single":0}');
+    await user.selectOptions(choice, "inherit");
+    expect(screen.getByTestId("input")).toHaveTextContent('"electricDrivingShare":{"mode":"inherit","value":null}');
+  });
+
+  it("rejects incomplete car share trios and out-of-range values while accepting exact boundary values", () => {
+    for (const value of [n(0), n(100), n("20.123456789012345678901234567")])
+      expect(validateVehicle({ ...initialVehicle(), electricDrivingShare: { mode: "override", value: { single: value } } })).toEqual({});
+    expect(validateVehicle({ ...initialVehicle(), electricDrivingShare: { mode: "override", value: { favorable: n(100), baseline: n(30), cautious: null } } })["input.electricDrivingShare.value.cautious"])
+      .toBeDefined();
+    expect(validateVehicle({ ...initialVehicle(), electricDrivingShare: { mode: "override", value: { single: n("100.1") } } })["input.electricDrivingShare.value.single"])
+      .toBeDefined();
+  });
   it("reads a stored sensitivity trio even when the API includes single: null", () => {
     const input = parseExact<ProfileInput>(
       '{"electricDrivingSharePercent":{"single":null,"favorable":70,"baseline":50,"cautious":30}}',

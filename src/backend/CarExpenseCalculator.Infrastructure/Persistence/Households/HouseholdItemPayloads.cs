@@ -28,19 +28,22 @@ internal static partial class HouseholdJson
     }
 
     internal sealed record EnergySourcePayload(string Key, FuelType? Fuel, EnergyUnit? Unit,
-        SensitivityValue? ConsumptionPer100Kilometres, ConsumptionBasis? ConsumptionBasis, ElectricityBasis? ElectricityBasis)
+        SensitivityValue? ConsumptionPer100Kilometres, ConsumptionBasis? ConsumptionBasis, ElectricityBasis? ElectricityBasis,
+        string? ConsumptionLabel = null, ListingValueSource? FuelSource = null, ListingValueSource? ConsumptionSource = null)
     {
         public static EnergySourcePayload FromCore(HouseholdEnergySource x) => new(x.Key, x.Fuel, x.Unit,
-            x.ConsumptionPer100Kilometres, x.ConsumptionBasis, x.ElectricityBasis);
-        public HouseholdEnergySource ToCore() => new(Key, Fuel, Unit, ConsumptionPer100Kilometres, ConsumptionBasis, ElectricityBasis);
+            x.ConsumptionPer100Kilometres, x.ConsumptionBasis, x.ElectricityBasis, x.ConsumptionLabel, x.FuelSource, x.ConsumptionSource);
+        public HouseholdEnergySource ToCore() => new(Key, Fuel, Unit, ConsumptionPer100Kilometres, ConsumptionBasis, ElectricityBasis,
+            ConsumptionLabel, FuelSource, ConsumptionSource);
     }
 
     internal sealed record CostItemPayload(string Key, string Label, SensitivityValue? AmountSek,
-        HouseholdCostCadence? Cadence, int? MonthOffset, int? DueMonthOfYear, string? EvidenceNote, string? SourceUrl)
+        HouseholdCostCadence? Cadence, int? MonthOffset, int? DueMonthOfYear, string? EvidenceNote, string? SourceUrl,
+        ListingValueSource? ListingSource = null)
     {
         public static CostItemPayload FromCore(HouseholdCostItem x) => new(x.Key, x.Label, x.AmountSek, x.Cadence,
-            x.MonthOffset, x.DueMonthOfYear, x.EvidenceNote, x.SourceUrl);
-        public HouseholdCostItem ToCore() => new(Key, Label, AmountSek, Cadence, MonthOffset, DueMonthOfYear, EvidenceNote, SourceUrl);
+            x.MonthOffset, x.DueMonthOfYear, x.EvidenceNote, x.SourceUrl, x.ListingSource);
+        public HouseholdCostItem ToCore() => new(Key, Label, AmountSek, Cadence, MonthOffset, DueMonthOfYear, EvidenceNote, SourceUrl, ListingSource);
     }
 
     internal sealed record LeasePaymentPayload(int MonthOffset, decimal? AmountSek)

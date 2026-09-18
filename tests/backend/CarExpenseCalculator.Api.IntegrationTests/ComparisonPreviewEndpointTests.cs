@@ -177,7 +177,7 @@ public sealed class ComparisonPreviewEndpointTests
         Assert.Equal(lower, car["score"]!["lower"]!.GetValue<decimal>());
         Assert.Equal(upper, car["score"]!["upper"]!.GetValue<decimal>());
         Assert.Equal(coverage, car["coveragePercent"]!.GetValue<decimal>());
-        Assert.Equal(1, result["ruleVersion"]!.GetValue<int>()); Assert.Equal(2, result["calculationVersion"]!.GetValue<int>());
+        Assert.Equal(1, result["ruleVersion"]!.GetValue<int>()); Assert.Equal(3, result["calculationVersion"]!.GetValue<int>());
     }
 
     [Fact]

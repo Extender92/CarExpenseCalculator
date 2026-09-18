@@ -35,6 +35,12 @@ public sealed class SharedVehicleDraftStore(CarExpenseDbContext dbContext, Listi
         var original = await ResolveBaseAsync(input, cancellationToken);
         if (cost is not null)
         {
+            var existingCost = original is null ? null : HouseholdStoreData.Vehicle(original).Input;
+            var existingListing = original?.Listing is null ? null : SavedListingStore.ToSavedListing(original);
+            var sourceErrors = ListingCostSources.ValidateClaims(cost.Input, existingCost, listing?.Listing ?? existingListing?.ProcessingResult.Listing,
+                listing is null ? existingListing?.NormalizedUrl : ListingUrl.Parse(listing.SubmittedUrl),
+                listing is null ? existingListing?.ListingVersion : null);
+            if (sourceErrors.Count > 0) throw new Core.Households.HouseholdInputValidationException(sourceErrors);
             if (listing is not null && cost.VehicleLabel is { } label && label != listing.Listing.VehicleLabel?.Value)
                 throw new HouseholdStoreException("listingLabelRequiresReview", "The draft label must agree with its reviewed listing.", original?.Id);
             if (listing is null && original is not null) HouseholdStoreData.ValidateListingLabel(original, cost);
@@ -44,7 +50,7 @@ public sealed class SharedVehicleDraftStore(CarExpenseDbContext dbContext, Listi
                 throw new HouseholdStoreException("listingRequired", "There is no listing version to confirm.", original?.Id);
         }
         slot.Revision = checked(slot.Revision + 1);
-        slot.SchemaVersion = HouseholdJson.SchemaVersion;
+        slot.SchemaVersion = HouseholdJson.DraftSchemaVersion;
         slot.RegistrationNumber = input.RegistrationNumber.Value;
         slot.BaseVehicleId = input.BaseVehicleId;
         slot.BaseVehicleRevision = input.BaseVehicleRevision;
@@ -78,7 +84,9 @@ public sealed class SharedVehicleDraftStore(CarExpenseDbContext dbContext, Listi
         if (vehicle.Scenario is not null && input.Listing is not null) session.LegacyChanged();
         if (input.Listing is not null)
             await new SavedListingStore(dbContext, processor, timeProvider).ApplyDraftAsync(vehicle, input.Listing, cancellationToken);
-        if (input.Cost is not null) HouseholdStoreData.ApplyCost(vehicle, input.Cost);
+        if (input.Cost is not null)
+            HouseholdStoreData.ApplyCost(vehicle, input.Listing is null ? input.Cost
+                : input.Cost with { Input = ListingCostSources.BindDraft(input.Cost.Input, vehicle.Listing!.ListingVersion) });
         if (isNew) dbContext.Vehicles.Add(vehicle);
         else vehicle.Revision = checked(vehicle.Revision + 1);
         vehicle.UpdatedAtUtc = timeProvider.GetUtcNow();

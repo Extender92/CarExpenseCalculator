@@ -1,3 +1,4 @@
+import { closeEditor, editingScope, openHouseholdProfile, showHouseholdResults } from "./editor-helpers";
 import { corruptOwnedLegacyResults } from "./legacy-test-data";
 import {
   expect,
@@ -66,7 +67,7 @@ const cost = (
   ],
 });
 const resultRegion = (page: Page) =>
-  page.getByRole("region", { name: "Beräkningsresultat för vald bil" });
+  page.locator("dialog[open]").last().getByRole("region", { name: "Beräkningsresultat för vald bil" });
 
 test.beforeEach(async ({ request }) => {
   await clearDraft(request);
@@ -128,8 +129,8 @@ test("A1 and A2 allocate cash per alternative and reconcile the exact ownership 
     );
   await open(page, cars[2]);
   const preview = await calculate(page);
-  expect(preview.calculationVersion).toBe(2);
-  expect(preview.resultSchemaVersion).toBe(2);
+  expect(preview.calculationVersion).toBe(3);
+  expect(preview.resultSchemaVersion).toBe(3);
   for (const [index, car] of cars.entries()) {
     const allocation = sections(preview, car).financingDetails!.allocation!;
     expect(allocation.cashAppliedSek).toBe([25000, 30000, 30000][index]);
@@ -156,6 +157,7 @@ test("A1 and A2 allocate cash per alternative and reconcile the exact ownership 
       .getByRole("cell")
       .first(),
   ).toHaveText(/0,00\s*kr/);
+  await openHouseholdProfile(page);
   await page.getByLabel("Kontanter till bilköpet (kr)").fill("10000");
   const changed = await calculate(page);
   for (const [index, car] of cars.entries())
@@ -232,6 +234,7 @@ test("A3 and A4 preserve fixed horizons while percentage residuals follow profil
     [24, 81000, "81 000,00"],
     [6, 94868.33, "94 868,33"],
   ] as const) {
+    await openHouseholdProfile(page);
     await page.getByLabel("Ägandeperiod (månader, 1–120)").fill(String(months));
     expect(
       sections(await calculate(page), percent).depreciation.residualValueSek,
@@ -239,7 +242,10 @@ test("A3 and A4 preserve fixed horizons while percentage residuals follow profil
     await expandResults(page);
     await money(resultRegion(page), "Restvärde", displayed);
   }
+  while (await page.locator("dialog[open]").count()) await closeEditor(page);
   await page.getByRole("button", { name: "Öppna SAA006", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Redigera SAA006", exact: true })).toBeVisible();
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("36");
   const mismatch = sections(await calculate(page), fixed);
   expect(mismatch.totals.ownershipCost.completeTotalSek).toBeNull();
@@ -257,6 +263,7 @@ test("A3 and A4 preserve fixed horizons while percentage residuals follow profil
       .getByText(/Fast restvärde gäller en annan/)
       .first(),
   ).toBeVisible();
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("24");
   expect(
     sections(await calculate(page), fixed).totals.ownershipCost
@@ -372,6 +379,7 @@ test("A5 and A6 use the stated energy bases and keep all candidates coherent thr
   await expect(
     page.getByRole("article").filter({ hasText: "SAA008" }),
   ).toContainText(/10\s320,00/);
+  await openHouseholdProfile(page);
   await page.getByLabel("Årlig körsträcka (mil)").fill("2400");
   preview = await calculate(page);
   expect(sections(preview, hybrid).energy.cost.completeTotalSek).toBe(19008);
@@ -416,11 +424,11 @@ test("A5 and A6 use the stated energy bases and keep all candidates coherent thr
     },
   );
   expect(incomplete.status(), await incomplete.text()).toBe(200);
-  await page
+  await (await editingScope(page))
     .getByRole("button", { name: "Uppdatera serverläget", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Uppdatera serverläget", exact: true }),
+    (await editingScope(page)).getByRole("button", { name: "Uppdatera serverläget", exact: true }),
   ).toBeVisible();
   preview = await calculate(page);
   expect(
@@ -430,6 +438,7 @@ test("A5 and A6 use the stated energy bases and keep all candidates coherent thr
   expect(
     sections(preview, battery).totals.ownershipCost.completeTotalSek,
   ).toBeNull();
+  await openHouseholdProfile(page);
   await page.getByLabel("Årlig körsträcka (mil)").fill("0");
   preview = await calculate(page);
   expect(sections(preview, hybrid).energy.cost.completeTotalSek).toBe(0);
@@ -493,8 +502,11 @@ test("A7, A8 and A11 separate accrual, annual bills, repair saving and strict av
       .getByRole("row")
       .filter({ hasText: "2026-03" }),
   ).toContainText(/1\s200,00/);
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("12");
+  while (await page.locator("dialog[open]").count()) await closeEditor(page);
   await page.getByRole("button", { name: "Öppna SAA012", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Redigera SAA012", exact: true })).toBeVisible();
   s = sections(await calculate(page), repair);
   expect(s.totals.ownershipCost.completeTotalSek).toBe(7200);
   expect(s.payments.externalOutflow.completeTotalSek).toBe(3600);
@@ -502,7 +514,9 @@ test("A7, A8 and A11 separate accrual, annual bills, repair saving and strict av
   await expandResults(page);
   await money(resultRegion(page), "Ägandekostnad för perioden", "7 200,00");
   await money(resultRegion(page), "Internt reparationssparande", "3 600,00");
+  while (await page.locator("dialog[open]").count()) await closeEditor(page);
   await page.getByRole("button", { name: "Öppna SAA013", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Redigera SAA013", exact: true })).toBeVisible();
   s = sections(await calculate(page), spike);
   expect(s.monthlyBudget).toMatchObject({
     status: "withinLimit",
@@ -510,6 +524,7 @@ test("A7, A8 and A11 separate accrual, annual bills, repair saving and strict av
   });
   expect(s.startupBudget.fundingRequired.completeTotalSek).toBe(500);
   await expect(resultRegion(page).getByText("Inom budget")).toHaveCount(2);
+  await openHouseholdProfile(page);
   await page.getByLabel("Löpande månadsbudget (kr)").fill("199");
   expect(sections(await calculate(page), spike).monthlyBudget.status).toBe(
     "exceeded",
@@ -574,6 +589,7 @@ test("A9 and A10 display the exact lease contract at matching, shorter and longe
     [12, 33000, 0],
     [36, 63000, 3000],
   ]) {
+    await openHouseholdProfile(page);
     await page.getByLabel("Ägandeperiod (månader, 1–120)").fill(String(period));
     s = sections(await calculate(page), car);
     expect(s.totals.ownershipCost.completeTotalSek).toBeNull();
@@ -614,40 +630,44 @@ test("two browsers share explicit saves while later edits and unsaved reloads re
       await release;
       await route.fulfill({ response });
     });
+    await openHouseholdProfile(page);
     await page.getByLabel("Kontanter till bilköpet (kr)").fill("20000");
     await page
       .getByRole("button", { name: "Spara hushållsprofil", exact: true })
       .click();
     await serverSaved;
+    await openHouseholdProfile(page);
     await page.getByLabel("Kontanter till bilköpet (kr)").fill("30000");
     releaseSave();
-    await expect(page.getByText("Hushållsprofilen har sparats.")).toBeVisible();
+    await expect((await editingScope(page)).getByText("Hushållsprofilen har sparats.")).toBeVisible();
     await expect(page.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
       "30000",
     );
-    await expect(page.getByText("Osparade profiländringar")).toBeVisible();
+    await expect((await editingScope(page)).getByText("Osparade profiländringar", { exact: true })).toBeVisible();
     const other = await otherContext.newPage();
     await open(other, car);
+    await openHouseholdProfile(other);
     await expect(other.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
       "20000",
     );
+    await openHouseholdProfile(other);
     await other.getByLabel("Kontanter till bilköpet (kr)").fill("40000");
     await other
       .getByRole("button", { name: "Spara hushållsprofil", exact: true })
       .click();
     await expect(
-      other.getByText("Hushållsprofilen har sparats."),
+      (await editingScope(other)).getByText("Hushållsprofilen har sparats."),
     ).toBeVisible();
     await page
       .getByRole("button", { name: "Spara hushållsprofil", exact: true })
       .click();
     await expect(
-      page.getByText(/Hushållsprofilen har ändrats i ett annat fönster/),
+      (await editingScope(page)).getByText(/Hushållsprofilen har ändrats i ett annat fönster/),
     ).toBeVisible();
     await expect(page.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
       "30000",
     );
-    await page
+    await (await editingScope(page))
       .getByRole("button", { name: "Uppdatera serverläget", exact: true })
       .click();
     await expect(
@@ -661,20 +681,24 @@ test("two browsers share explicit saves while later edits and unsaved reloads re
     await expect(page.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
       "40000",
     );
+    await openHouseholdProfile(page);
     await page.getByLabel("Kontanter till bilköpet (kr)").fill("50000");
+    await closeEditor(page, "discard");
     await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("26000");
     await page
       .getByRole("button", { name: "Spara bilunderlag", exact: true })
       .click();
-    await expect(page.getByText("Bilunderlaget har sparats.")).toBeVisible();
+    await expect((await editingScope(page)).getByText("Bilunderlaget har sparats.")).toBeVisible();
     expect(
       (await (await request.get("/api/household-profile")).json()).input
         .purchaseCashSek,
     ).toBe(40000);
     await page.reload();
+    await openHouseholdProfile(page);
     await expect(page.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
       "40000",
     );
+    await closeEditor(page);
     await expect(
       page.getByLabel("Inköpspris (kr)", { exact: true }),
     ).toHaveValue("26000");
@@ -722,7 +746,7 @@ test("two-browser draft conflicts and failed adoption preserve recovery until ex
       .getByRole("button", { name: "Spara utkast", exact: true })
       .click();
     await expect(
-      other.getByText(/Det gemensamma utkastet har ändrats/),
+      (await editingScope(other)).getByText(/Det gemensamma utkastet har ändrats/),
     ).toBeVisible();
     await expect(
       other.getByLabel("Inköpspris (kr)", { exact: true }),
@@ -739,12 +763,13 @@ test("two-browser draft conflicts and failed adoption preserve recovery until ex
     expect(updated.status()).toBe(200);
     await page.getByRole("button", { name: "Ta utkastet i bruk" }).click();
     await expect(
-      page.getByText(/Bilen har ändrats sedan den öppnades/),
+      (await editingScope(page)).getByText(/Bilen har ändrats sedan den öppnades/),
     ).toBeVisible();
     const preserved = await (await request.get("/api/vehicle-draft")).json();
     expect(preserved.input.cost.input.priceSek).toBe(21000);
     // Opening the saved new draft after a reload must still retain its stale base.
     await page.reload();
+    await closeEditor(page);
     await page
       .getByRole("button", { name: "Öppna sparat utkast", exact: true })
       .click();
@@ -752,6 +777,7 @@ test("two-browser draft conflicts and failed adoption preserve recovery until ex
       page.getByLabel("Inköpspris (kr)", { exact: true }),
     ).toHaveValue("21000");
     // Replace with a new registered draft through the explicit UI choice.
+    while (await page.locator("dialog[open]").count()) await closeEditor(page);
     await page.getByRole("button", { name: "Ny bil", exact: true }).click();
     owned.add("SAA017");
     await page
@@ -783,6 +809,7 @@ test("two-browser draft conflicts and failed adoption preserve recovery until ex
       .getByRole("button", { name: "Spara utkast", exact: true })
       .click();
     await expect(page.getByText(/Sparat utkast: SAA017/)).toBeVisible();
+    await closeEditor(page);
     await page
       .getByRole("button", { name: "Radera SAA017", exact: true })
       .click();
@@ -852,7 +879,9 @@ test("atomic two-car legacy review recovers corrupt results and preserves every 
   corruptOwnedLegacyResults(ids);
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/manual/transition");
+  await openHouseholdProfile(page);
   await expect(page.getByLabel("Årlig körsträcka (mil)")).toHaveValue("0");
+  if (await page.locator("dialog[open]").count()) await closeEditor(page);
   const first = page.locator(`[data-vehicle-id="${ids[0]}"]`);
   const second = page.locator(`[data-vehicle-id="${ids[1]}"]`);
   for (const [section, original] of [
@@ -878,7 +907,9 @@ test("atomic two-car legacy review recovers corrupt results and preserves every 
   await first
     .getByLabel("Beslut för Engång 0", { exact: true })
     .selectOption("discard");
+  await openHouseholdProfile(page);
   await page.getByLabel("Årlig körsträcka (mil)").fill("1200");
+  if (await page.locator("dialog[open]").count()) await closeEditor(page);
   const confirmation = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/household-transition") &&
@@ -923,6 +954,7 @@ test("atomic two-car legacy review recovers corrupt results and preserves every 
       ).toHaveLength(1);
       await open(page, current);
       // Vehicle detail and the shared profile load independently after navigation.
+      await openHouseholdProfile(page);
       await expect(page.getByLabel("Ägandeperiod (månader, 1–120)")).toHaveValue("12");
       await expect(page.getByLabel("Årlig körsträcka (mil)")).toHaveValue("1200");
       const s = sections(await calculate(page), current);
@@ -977,12 +1009,12 @@ async function clearDraft(request: APIRequestContext) {
 }
 async function open(page: Page, car: SavedVehicle) {
   page.on("dialog", (dialog) => void dialog.accept());
-  const profileRead = page.waitForResponse(response =>
-    response.url().endsWith("/api/household-profile") && response.request().method() === "GET");
   await page.goto(`/manual?vehicleId=${car.vehicleId}`);
-  const loadedProfile = await (await profileRead).json();
-  await expect(page.getByLabel("Ägandeperiod (månader, 1–120)"))
-    .toHaveValue(String(loadedProfile.input.periodMonths ?? ""));
+  // Wait for the loaded profile in the UI, not a response from the page being
+  // replaced. Chromium can discard an old document's response body on navigation.
+  await expect(page.getByRole("region", {
+    name: "Gemensam hushållsprofil", includeHidden: true,
+  }).first()).toContainText(/Period:\s+\d+ månader/);
   await expect(
     page.getByRole("heading", {
       name: `Redigera ${car.registrationNumber}`,
@@ -996,11 +1028,12 @@ async function calculate(page: Page): Promise<Preview> {
       response.url().endsWith("/api/household-calculations/preview") &&
       response.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
+  await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
   const result = await response;
   expect(result.status(), await result.text()).toBe(200);
+  await showHouseholdResults(page);
   await expect(
-    page.getByText(
+    (await editingScope(page)).getByText(
       "Förhandsvisningen gäller nuvarande uppgifter, inklusive osparade ändringar.",
       { exact: true },
     ),
@@ -1015,6 +1048,7 @@ function sections(preview: Preview, car: SavedVehicle) {
   return candidate!.sections;
 }
 async function expandResults(page: Page) {
+  await showHouseholdResults(page);
   for (const summary of await resultRegion(page)
     .locator(":scope > details > summary")
     .all()) {

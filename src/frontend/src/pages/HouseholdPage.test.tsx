@@ -29,19 +29,20 @@ it("starts a new car without reopening the previous URL, and can return with Bac
       <RouterProvider router={router} />
     </WorkspaceContext.Provider>,
   );
-  const registration = screen.getByLabelText("Registreringsnummer", { exact: true });
-  await waitFor(() => expect(registration).toHaveValue("ABC123"));
-  expect(registration).toBeDisabled();
+  const registration = () => screen.getByLabelText("Registreringsnummer", { exact: true });
+  await waitFor(() => expect(registration()).toHaveValue("ABC123"));
+  expect(registration()).toBeDisabled();
   expect(read).toHaveBeenCalledTimes(1);
 
+  await user.click(screen.getAllByRole("button", { name: "Stäng" })[0]);
   await user.click(screen.getByRole("button", { name: "Ny bil" }));
   await waitFor(() => expect(router.state.location.search).toBe(""));
-  expect(registration).toBeEnabled();
-  expect(registration).toHaveValue("");
+  expect(registration()).toBeEnabled();
+  expect(registration()).toHaveValue("");
   expect(read).toHaveBeenCalledTimes(1);
 
   await act(() => router.navigate(-1));
-  await waitFor(() => expect(registration).toHaveValue("ABC123"));
-  expect(registration).toBeDisabled();
+  await waitFor(() => expect(registration()).toHaveValue("ABC123"));
+  expect(registration()).toBeDisabled();
   expect(read).toHaveBeenCalledTimes(2);
 });

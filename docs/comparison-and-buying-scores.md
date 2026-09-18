@@ -1,5 +1,14 @@
 # Comparison and buying scores specification
 
+## Review workflow extension (#95)
+
+The [review workflow](review-and-calculation-workflow.md) separates unverified
+manual editing from explicit confirmation. Stored fact payloads write version 2
+and still read version 1; complete comparison transport is 3. Cost results
+include the effective per-car electric share and its origin. Listing reuse can
+propose supported facts without confirming them. Rule/scoring versions, evidence
+requirements and purchase-price authority remain unchanged.
+
 ## Status and scope
 
 Normative specification for completed stage 3B. The #62 Core fact foundation is merged through

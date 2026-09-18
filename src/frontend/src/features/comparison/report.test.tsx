@@ -12,6 +12,18 @@ import { manualRequest, response } from "./test-fixtures";
 afterEach(() => vi.restoreAllMocks());
 
 describe("immutable complete comparison reports", () => {
+  it("keeps exact individual electric shares and their origins in the frozen report", () => {
+    const source = response(manualRequest(2));
+    source.views.baseline.candidates[0].cost.energy.electricDrivingShare = { percent: n("20.1234567890123456789"), origin: "vehicle" };
+    source.views.baseline.candidates[1].cost.energy.electricDrivingShare = { percent: null, origin: "household" };
+    const report = captureReport(source, "cost");
+    source.views.baseline.candidates[0].cost.energy.electricDrivingShare.percent = n(80);
+    render(<ReportDocument report={report} />);
+    expect(screen.getByText("Elandel: 20,1234567890123456789 % · Bilens eget val")).toBeVisible();
+    expect(screen.getByText("Elandel: Okänd · Hushållets gemensamma värde")).toBeVisible();
+    expect(inputRows({ electricDrivingShare: { mode: "override", value: { single: n(20) } } })[0].label)
+      .toBe("Bilens elandel av körsträckan – Val av elandel");
+  });
   it("names payment directions and categories in Swedish without rewriting source text", () => {
     const rows = inputRows({
       sources: [

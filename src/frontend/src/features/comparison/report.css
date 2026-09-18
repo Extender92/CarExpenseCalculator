@@ -125,7 +125,7 @@
   margin: 12mm;
 }
 @media print {
-  html,
+  html:root,
   body {
     min-width: 0;
     min-height: 0;

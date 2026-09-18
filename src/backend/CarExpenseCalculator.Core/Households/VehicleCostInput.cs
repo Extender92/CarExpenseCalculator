@@ -16,8 +16,15 @@ public sealed record VehicleCostInput
     public AcquisitionType AcquisitionType { get; init; }
     public HouseholdLeaseInput? Lease { get; init; }
     public decimal? PriceSek { get; init; }
+    public ListingValueSource? PriceSource { get; init; }
     public HouseholdResidualInput? Residual { get; init; }
-    public IReadOnlyList<HouseholdEnergySource>? EnergySources { get; }
+    private IReadOnlyList<HouseholdEnergySource>? energySources;
+    public IReadOnlyList<HouseholdEnergySource>? EnergySources
+    {
+        get => energySources;
+        init => energySources = value is null ? null : Array.AsReadOnly(value.ToArray());
+    }
+    public VehicleElectricShare ElectricDrivingShare { get; init; } = VehicleElectricShare.Inherit;
     public HouseholdCostCategoryInput? Tax { get; init; }
     public HouseholdCostCategoryInput? Insurance { get; init; }
     public HouseholdCostCategoryInput? Service { get; init; }
@@ -31,6 +38,17 @@ public sealed record VehicleCostInput
 }
 
 public enum AcquisitionType { Purchase, Lease }
+
+public enum ElectricShareMode { Inherit, Override }
+
+// An explicit unknown override deliberately does not fall back to the household.
+public sealed record VehicleElectricShare(ElectricShareMode Mode, SensitivityValue? Value = null)
+{
+    public static VehicleElectricShare Inherit { get; } = new(ElectricShareMode.Inherit);
+}
+
+public enum ElectricShareOrigin { Household, Vehicle }
+public sealed record EffectiveElectricShare(ElectricShareOrigin Origin, decimal? Percent);
 
 public enum ResidualMode { FixedAmount, AnnualPercentage }
 
@@ -63,7 +81,10 @@ public sealed record HouseholdEnergySource(
     EnergyUnit? Unit,
     SensitivityValue? ConsumptionPer100Kilometres,
     ConsumptionBasis? ConsumptionBasis,
-    ElectricityBasis? ElectricityBasis = null);
+    ElectricityBasis? ElectricityBasis = null,
+    string? ConsumptionLabel = null,
+    ListingValueSource? FuelSource = null,
+    ListingValueSource? ConsumptionSource = null);
 
 public enum HouseholdCostCadence { Monthly, Annual, Once }
 
@@ -75,7 +96,8 @@ public sealed record HouseholdCostItem(
     int? MonthOffset = null,
     int? DueMonthOfYear = null,
     string? EvidenceNote = null,
-    string? SourceUrl = null);
+    string? SourceUrl = null,
+    ListingValueSource? ListingSource = null);
 
 public sealed record HouseholdCostCategoryInput
 {

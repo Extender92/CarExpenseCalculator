@@ -697,6 +697,19 @@ export class ComparisonWorkspace {
     }
     this.schedule();
   }
+  discardFacts(id: string) {
+    const current = this.state.facts[id];
+    if (!current) return;
+    this.set({ facts: { ...this.state.facts, [id]: { ...current, input: {}, dirty: false, edit: current.edit + 1 } },
+      errors: {}, notice: null });
+    this.schedule();
+  }
+  discardRules() {
+    this.set({ rules: cloneExact(this.state.savedRules.input ?? emptyRules()), rulesDirty: false,
+      rulesEdit: this.state.rulesEdit + 1, errors: {}, notice: null });
+    this.schedule();
+  }
+  closeEditor() { this.set({ selected: null }); }
   addManual() {
     const id = newIdentity();
     this.set({
@@ -737,6 +750,12 @@ export class ComparisonWorkspace {
       this.state.manual.find((m) => m.candidate.vehicleId === id)?.candidate
         .costInput ?? null
     );
+  }
+  restoreManualFacts(id: string, facts: Candidate["facts"], confirmedCost: string | undefined) {
+    this.set({ manual: this.state.manual.map(item => item.candidate.vehicleId === id
+      ? { ...item, candidate: { ...item.candidate, facts: cloneExact(facts) }, confirmedCost, edit: item.edit + 1 }
+      : item) });
+    this.schedule();
   }
   ensureManualCost(id: string) {
     if (!this.manualCost(id))

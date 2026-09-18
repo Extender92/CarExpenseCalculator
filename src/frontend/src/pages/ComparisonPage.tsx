@@ -1,30 +1,46 @@
+import { BaselineReview } from "@/features/comparison/BaselineReview";
+import { ComparisonEditorActions } from "@/features/comparison/ComparisonEditorActions";
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ProfileFields, panelClass } from "@/features/household/Fields";
-import { InputComparison } from "@/features/household/Review";
+import { panelClass } from "@/features/household/Fields";
 import { formatNumeric } from "@/features/household/numbers";
 import { useWorkspace } from "@/features/household/use-workspace";
 import { useComparison } from "@/features/comparison/use-comparison";
 import { localDate } from "@/features/comparison/workspace";
 import { RulesEditor, RulesSummary } from "@/features/comparison/RulesEditor";
-import { FactsEditor } from "@/features/comparison/FactsEditor";
 import { ComparisonTables } from "@/features/comparison/Tables";
 import { SelectField, TextField } from "@/features/comparison/controls";
 import { labelFor, reasonText } from "@/features/comparison/catalogue";
 import { economicLink, focusField } from "@/features/comparison/navigation";
 import {
-  profileFields,
   type FormErrors,
 } from "@/features/household/form-model";
+
+import { ManualCarEditor } from "@/components/editing/ManualCarEditor";
+import { CarEditor, type CarEditorTab } from "@/components/editing/CarEditor";
+import { EditorDialog } from "@/components/editing/EditorDialog";
+import { rulesResource } from "@/components/editing/resources";
+import { HouseholdProfilePanel } from "@/features/household/HouseholdProfilePanel";
 
 const linkClass = "text-cyan-300 underline underline-offset-4";
 export function ComparisonPage() {
   const { workspace, state } = useComparison();
-  const { workspace: household, state: h } = useWorkspace();
+  const { state: h } = useWorkspace();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [profileField, setProfileField] = useState<string | null>(null);
+  const [manualField, setManualField] = useState<string | null>(null);
+  const requestedVehicle = params.get("vehicleId");
+  const requestedProfileField = params.get("field")?.startsWith("profile.") ? params.get("field") : null;
+  const requestedTab: CarEditorTab = params.get("tab") === "cost" ? "cost" : params.get("tab") === "listing" ? "listing" : "facts";
+  useEffect(() => {
+    if (requestedProfileField) workspace.closeEditor();
+    else if (requestedVehicle) { workspace.setMode("stored"); void workspace.select(requestedVehicle); }
+    else if (workspace.state.mode === "stored") workspace.closeEditor();
+  }, [requestedVehicle, requestedProfileField, workspace]);
   const [focusErrors, setFocusErrors] = useState(false);
-  const selectedRef = useRef<HTMLElement>(null);
   useEffect(() => {
     workspace.enter();
   }, [workspace]);
@@ -32,29 +48,14 @@ export function ComparisonPage() {
   const cheapestCount = rows.filter((r) => r.isCheapestEligibleComplete).length;
   const pageRows = rows.slice((state.page - 1) * 50, state.page * 50);
   const selected = state.selected;
-  const edit = selected ? state.facts[selected] : undefined;
-  const manual = state.manual.find((m) => m.candidate.vehicleId === selected);
-  const selectedResult = selected ? workspace.result(selected) : undefined;
   const isManual = state.mode === "manual";
-  const profileErrors = {
-    ...h.errors,
-    ...state.errors,
-    ...Object.fromEntries(
-      (!state.stale
-        ? (state.response?.views.baseline.profileErrors ?? [])
-        : []
-      ).map((e) => [
-        e.path,
-        [reasonText[e.code] ?? "Kontrollera hushållsuppgiften."],
-      ]),
-    ),
-  };
   const selection = async (id: string, field?: string) => {
-    await workspace.select(id);
-    if (field) requestAnimationFrame(() => focusField(field));
-    else selectedRef.current?.focus();
+    if (isManual) { setManualField(field ?? null); await workspace.select(id); }
+    else setParams({ vehicleId: id, tab: "facts", ...(field ? { field } : {}) });
   };
   const toError = async (path: string) => {
+    if (path.startsWith("profile.")) { setProfileField(path); return; }
+    if (path.startsWith("rules.")) { setRulesOpen(true); requestAnimationFrame(() => focusField(path)); return; }
     const match = /^vehicle\.([\da-f-]+)\.(.*)/.exec(path);
     if (match) {
       if (
@@ -71,7 +72,8 @@ export function ComparisonPage() {
         );
         return;
       }
-      await workspace.select(match[1]);
+      await selection(match[1], path);
+      return;
     }
     requestAnimationFrame(() => focusField(path));
   };
@@ -169,53 +171,17 @@ export function ComparisonPage() {
         {state.rulesDirty && (
           <p className="text-amber-200">Osparade köpkrav och prioriteringar</p>
         )}
-        <details
-          open={state.editorPanels.includes("profile")}
-          onToggle={(e) =>
-            workspace.setEditorPanel("profile", e.currentTarget.open)
-          }
-        >
-          <summary className="cursor-pointer font-semibold">
-            Hushållsprofil – visa och redigera
-          </summary>
-          <div className="mt-4 space-y-4">
-            <ProfileFields
-              value={h.profile}
-              errors={profileErrors}
-              onChange={(profile) => household.editProfile(profile)}
-            />
-            <Button
-              disabled={!!h.busy || !!state.busy}
-              onClick={() => run(() => void household.saveProfile())}
-            >
-              Spara hushållsprofil
-            </Button>
-            {h.notice && <p role="status">{h.notice}</p>}
-          </div>
-        </details>
-        <details
-          open={state.editorPanels.includes("rules")}
-          onToggle={(e) =>
-            workspace.setEditorPanel("rules", e.currentTarget.open)
-          }
-        >
-          <summary className="cursor-pointer font-semibold">
-            Köpkrav och prioriteringar
-          </summary>
-          <div className="mt-4 space-y-4">
-            <RulesEditor
-              value={state.rules}
-              errors={state.errors}
-              onChange={(rules) => workspace.editRules(rules)}
-            />
-            <Button
-              disabled={!!state.busy}
-              onClick={() => run(() => void workspace.saveRules())}
-            >
-              Spara köpkrav och prioriteringar
-            </Button>
-          </div>
-        </details>
+        <HouseholdProfilePanel comparisonActions={<ComparisonEditorActions />} requestedField={requestedProfileField ?? profileField} onClosed={navigating => { setProfileField(null); if (requestedProfileField && !navigating) setParams({}, { replace: true }); }} />
+        <section className="space-y-3" aria-label="Köpkrav och prioriteringar">
+          <RulesSummary value={state.rules} />
+          <Button variant="secondary" onClick={() => setRulesOpen(true)}>Redigera köpkrav och prioriteringar</Button>
+          {rulesOpen && <EditorDialog open title="Köpkrav och prioriteringar" onClose={() => setRulesOpen(false)}
+            resources={[rulesResource(workspace)]} activeResource="rules">
+            <RulesEditor value={state.rules} errors={state.errors} onChange={rules => workspace.editRules(rules)} />
+            <ComparisonEditorActions />
+            {state.notice && <p role="status">{state.notice}</p>}
+          </EditorDialog>}
+        </section>
       </section>
       {(state.loading || state.calculating || state.stale || state.notice) && (
         <div className={panelClass} role="status">
@@ -244,65 +210,7 @@ export function ComparisonPage() {
         onFocused={() => setFocusErrors(false)}
         navigate={(path) => void toError(path)}
       />
-      {state.remote && (
-        <section
-          className={`${panelClass} space-y-3`}
-          aria-label="Granska ändrat serverunderlag"
-        >
-          <h2 className="text-xl font-semibold">
-            Serverunderlaget har ändrats
-          </h2>
-          <p>
-            Bilantal: {state.baseline?.candidateCount.text ?? "okänt"} →{" "}
-            {state.remote.candidateCount.text}. Profilrevision:{" "}
-            {state.baseline?.householdProfileRevision.text} →{" "}
-            {state.remote.householdProfileRevision.text}. Regelrevision:{" "}
-            {state.baseline?.ruleProfileRevision.text} →{" "}
-            {state.remote.ruleProfileRevision.text}.
-          </p>
-          <InputComparison
-            local={h.profile}
-            remote={state.remote.profile}
-            fields={profileFields}
-          />
-          <details>
-            <summary>Jämför lokala och aktuella köpkrav</summary>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h3>Lokala köpkrav</h3>
-                <RulesSummary value={state.rules} />
-              </div>
-              <div>
-                <h3>Aktuella köpkrav från servern</h3>
-                <RulesSummary value={state.remote.rules ?? {}} />
-              </div>
-            </div>
-          </details>
-          <p>
-            Öppna berörda biluppgifter för aktuell annons och faktarevision.
-            Ekonomiska konflikter granskas i{" "}
-            <Link className={linkClass} to="/manual">
-              Manuell kalkyl
-            </Link>
-            .
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={!!state.busy}
-              onClick={() => void workspace.acceptRemote(true)}
-            >
-              Behåll granskade lokala ändringar
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={!!state.busy}
-              onClick={() => void workspace.acceptRemote(false)}
-            >
-              Använd serverunderlaget
-            </Button>
-          </div>
-        </section>
-      )}
+      {!rulesOpen && !selected && <BaselineReview />}
       <section className="min-w-0 space-y-4" aria-label="Alla jämförda bilar">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -439,215 +347,9 @@ export function ComparisonPage() {
           </Button>
         </nav>
       </section>
-      {selected && (
-        <section
-          ref={selectedRef}
-          tabIndex={-1}
-          className={`${panelClass} space-y-4 outline-none focus:ring-2 focus:ring-cyan-400`}
-          aria-label="Biluppgifter"
-        >
-          <h2 className="text-xl font-semibold">
-            Biluppgifter –{" "}
-            {manual?.candidate.registrationNumber ||
-              edit?.base.registrationNumber ||
-              selectedResult?.registrationNumber ||
-              "Ny bil"}
-          </h2>
-          {isManual && manual && (
-            <TextField
-              label="Registreringsnummer"
-              path={`vehicle.${selected}.registrationNumber`}
-              value={manual.candidate.registrationNumber}
-              errors={state.errors}
-              onChange={(registrationNumber) =>
-                workspace.editManual(selected, { registrationNumber })
-              }
-            />
-          )}
-          {selectedResult?.effectiveCostInput?.acquisitionType ===
-            "purchase" && (
-            <p>
-              Köpkrav och prispoäng använder kalkylens köppris, även när det
-              saknas.{" "}
-              <Link className={linkClass} to={economicLink(selected, isManual)}>
-                Redigera kalkylpriset
-              </Link>
-              .
-            </p>
-          )}
-          {(isManual ? manual : edit) ? (
-            <>
-              {edit && !isManual && (
-                <div className="text-sm text-slate-300">
-                  <p>
-                    Fordonsrevision {edit.base.revision.text}. Aktuell
-                    annonsversion{" "}
-                    {edit.base.currentListingVersion?.text ?? "saknas"}. Fakta
-                    granskade mot{" "}
-                    {edit.base.factsReviewedListingVersion?.text ??
-                      "ingen annons"}
-                    ; kostnader mot{" "}
-                    {edit.base.costReviewedListingVersion?.text ??
-                      "ingen annons"}
-                    .
-                  </p>
-                  {edit.base.needsListingReview && (
-                    <p>Annonsen behöver granskas; äldre fakta har behållits.</p>
-                  )}
-                  <Button
-                    variant="secondary"
-                    onClick={() => void workspace.select(selected, true)}
-                  >
-                    Läs aktuella biluppgifter
-                  </Button>
-                  {edit.remote && (
-                    <section
-                      className="my-4 space-y-3"
-                      aria-label="Granska ändrade biluppgifter"
-                    >
-                      <h3 className="font-semibold">
-                        Aktuella biluppgifter finns att granska
-                      </h3>
-                      <p>
-                        Fordonsrevision {edit.base.revision.text} →{" "}
-                        {edit.remote.revision.text}. Annonsversion{" "}
-                        {edit.base.currentListingVersion?.text ?? "saknas"} →{" "}
-                        {edit.remote.currentListingVersion?.text ?? "saknas"}.
-                      </p>
-                      <p>
-                        Dina lokala val finns kvar nedan. Granska serverns
-                        värden och källor innan du väljer underlag.
-                      </p>
-                      <details>
-                        <summary>Visa aktuella serverfakta och källor</summary>
-                        <FactsEditor
-                          input={{}}
-                          value={edit.remote.input}
-                          manualMode={false}
-                          prefix="remoteFacts"
-                          errors={{}}
-                          onChange={() => undefined}
-                          readOnly
-                        />
-                      </details>
-                      <div className="flex flex-wrap gap-3">
-                        <Button
-                          variant="secondary"
-                          onClick={() => workspace.reviewFacts(selected, true)}
-                        >
-                          Behåll lokala faktaval efter granskning
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          onClick={() => workspace.reviewFacts(selected, false)}
-                        >
-                          Använd aktuella biluppgifter
-                        </Button>
-                      </div>
-                    </section>
-                  )}
-                </div>
-              )}
-              <FactsEditor
-                input={isManual ? (manual!.candidate.facts ?? {}) : edit!.input}
-                value={
-                  isManual ? selectedResult?.effectiveFacts : edit!.base.input
-                }
-                proposal={isManual ? null : edit!.base.listingProposal}
-                listingVersion={edit?.base.currentListingVersion}
-                manualMode={isManual}
-                prefix={`vehicle.${selected}.facts`}
-                errors={state.errors}
-                onChange={(input) => workspace.editFacts(selected, input)}
-              />
-              <div className="flex flex-wrap gap-3">
-                {!isManual && (
-                  <Button
-                    disabled={!!state.busy}
-                    onClick={() =>
-                      run(() => void workspace.saveFacts(selected))
-                    }
-                  >
-                    Spara biluppgifter
-                  </Button>
-                )}
-                <Link
-                  className={linkClass}
-                  to={economicLink(selected, isManual)}
-                >
-                  Redigera ekonomiskt underlag
-                </Link>
-                <Button
-                  variant="secondary"
-                  disabled={!!state.busy}
-                  onClick={() => void workspace.remove(selected)}
-                >
-                  {isManual ? "Ta bort manuell bil" : "Radera bilen permanent"}
-                </Button>
-              </div>
-              <fieldset className={`${panelClass} space-y-3`}>
-                <legend>Kostnadsbekräftelse</legend>
-                <p>
-                  Bekräftelsen gäller exakt bilens kostnadsunderlag. Gemensamma
-                  hushållsvärden är fortfarande antaganden.
-                </p>
-                <p>
-                  {selectedResult?.costConfirmedAt
-                    ? `Underlaget i förhandsvisningen bekräftades ${selectedResult.costConfirmedAt}.`
-                    : "Kostnadsunderlaget är inte bekräftat i en aktuell förhandsvisning."}
-                </p>
-                {(isManual
-                  ? manual!.candidate.facts?.costConfirmation
-                  : edit!.input.costConfirmation) === "confirm" && (
-                  <p className="text-amber-200">
-                    Uttrycklig osparad bekräftelse för förhandsvisningen. En
-                    ändring av kostnadsunderlaget kräver nytt val.
-                  </p>
-                )}
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      workspace.confirmPreview(selected, "confirm")
-                    }
-                  >
-                    Bekräfta endast förhandsvisningen
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => workspace.confirmPreview(selected, "clear")}
-                  >
-                    Återkalla i förhandsvisningen
-                  </Button>
-                  {!isManual && (
-                    <>
-                      <Button
-                        disabled={!!state.busy}
-                        onClick={() =>
-                          void workspace.saveFacts(selected, "confirm")
-                        }
-                      >
-                        Bekräfta sparat kostnadsunderlag
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        disabled={!!state.busy}
-                        onClick={() =>
-                          void workspace.saveFacts(selected, "clear")
-                        }
-                      >
-                        Återkalla sparad bekräftelse
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </fieldset>
-            </>
-          ) : (
-            <p>Läser bilens fakta och källor…</p>
-          )}
-        </section>
-      )}
+      {selected && !isManual && <CarEditor key={selected} open vehicleId={selected} initialTab={requestedTab}
+        field={params.get("field")} onClose={navigating => { workspace.closeEditor(); if (!navigating) setParams({}, { replace: true }); }} />}
+      {selected && isManual && state.manual.some(row => row.candidate.vehicleId === selected) && <ManualCarEditor key={selected} id={selected} field={manualField} onClose={() => workspace.closeEditor()} />}
     </div>
   );
 }

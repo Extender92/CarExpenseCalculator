@@ -130,7 +130,9 @@ jobs:
         run: npm run e2e -- --project=chromium
         working-directory: src/frontend
       - name: Verify URL analysis acceptance boundaries
-        run: node scripts/verify-url-analysis-acceptance.mjs
+        run: |
+          node --test scripts/log-content-scanner.test.mjs
+          node scripts/verify-url-analysis-acceptance.mjs
       - name: Show container logs on failure
         if: failure()
         run: docker compose logs --no-color

@@ -2,15 +2,14 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useWorkspace } from "@/features/household/use-workspace";
-import { VehicleFields, panelClass } from "@/features/household/Fields";
+import { VehicleFields, ProfileFields, panelClass } from "@/features/household/Fields";
 import { InputFacts, LegacyReviewEditor } from "@/features/household/Review";
 import { CostHeadline, VehicleResults } from "@/features/household/Results";
 import { ErrorSummary } from "@/features/household/ErrorSummary";
 import {
-  HouseholdProfilePanel,
   WorkspaceMessages,
-  householdLink,
-} from "./HouseholdPage";
+} from "@/features/household/HouseholdProfilePanel";
+import { householdLink } from "./HouseholdPage";
 
 export function HouseholdTransitionPage() {
   const { workspace, state } = useWorkspace();
@@ -41,7 +40,11 @@ export function HouseholdTransitionPage() {
         </div>
       </header>
       <WorkspaceMessages />
-      <HouseholdProfilePanel />
+      <section className={panelClass} aria-label="Gemensam profil för hela övergången">
+        <h2 className="mb-3 text-xl font-semibold">Hushållets gemensamma förutsättningar</h2>
+        <p className="mb-4 text-sm text-slate-300">Profilen och samtliga äldre bilar sparas tillsammans när hela övergången bekräftas.</p>
+        <ProfileFields value={state.profile} errors={state.errors} onChange={profile => workspace.editProfile(profile)} />
+      </section>
       <ErrorSummary
         errors={Object.fromEntries(
           Object.entries(state.errors).filter(

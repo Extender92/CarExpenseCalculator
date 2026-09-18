@@ -7,6 +7,18 @@ import {
 } from "./form-model";
 
 export const labels: Record<string, string> = {
+  electricDrivingShare: "Bilens val av elandel",
+  inherit: "Hushållets gemensamma värde",
+  override: "Bilens eget val",
+  priceSource: "Inköpsprisets annonskälla",
+  fuelSource: "Drivmedlets annonskälla",
+  consumptionSource: "Förbrukningens annonskälla",
+  consumptionLabel: "Förbrukningens originalbeteckning",
+  listingSource: "Annonskälla",
+  listingVersion: "Annonsversion",
+  sourceField: "Källfält",
+  originalLabel: "Originalbeteckning",
+  sourceIndex: "Källpost",
   ownership: "Ägandekostnad",
   payments: "Betalningar",
   startupBudget: "Startbudget",

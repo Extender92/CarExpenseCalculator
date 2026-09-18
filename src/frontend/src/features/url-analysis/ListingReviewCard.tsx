@@ -1,58 +1,21 @@
-import { ListingDetailsEditor } from "./ListingDetailsEditor";
-import { emptyDetails } from "./details";
-import {canonicalNumber,formatNumeric,n,shiftDecimal} from "@/features/household/numbers";
-import {
-  AlertTriangle,
-  Calculator,
-  ChevronDown,
-  ExternalLink,
-  LoaderCircle,
-  Plus,
-  RefreshCw,
-  Save,
-  Trash2,
-  X,
-} from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { AlertTriangle, Calculator, ChevronDown, LoaderCircle, RefreshCw, Save, Trash2, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  createEnergyEntry,
-  createStringEntry,
-  deriveMissingFields,
-  editCollection,
-  editScalarField,
-  type CollectionDraft,
-  type EnergyConsumptionDraft,
-  type ListingReviewDraft,
-  type ListingWorkspaceItem,
-  type ScalarFieldName,
-  type StringCollectionEntry,
-} from "./review-model";
-import {
-  advertisementFields,
-  energyUnitOptions,
-  formatDateTime,
-  formatMoneyInput,
-  fuelOptions,
-  historyFields,
-  identityFields,
-  inputClassName,
-  missingFieldLabels,
-  provenanceLabel,
-  technicalFields,
-  textareaClassName,
-  type ScalarFieldDefinition,
-} from "./presentation";
-import { normalizeScalarInput, parseLocalizedNumber, validateReviewDraft } from "./validation";
+import { deriveMissingFields, type ListingReviewDraft, type ListingWorkspaceItem } from "./review-model";
+import { formatDateTime, formatMoneyInput } from "./presentation";
+import { validateReviewDraft } from "./validation";
 import { ListingDraftAction } from "@/features/household/ListingDraftAction";
+import { CarEditor } from "@/components/editing/CarEditor";
 
 interface ListingReviewCardProps {
   item: ListingWorkspaceItem;
   onChange: (draft: ListingReviewDraft, errors?: Record<string, string>) => void;
   onRetry: () => void;
-  onSave: () => void;
+  onSave: () => Promise<boolean> | void;
+  onDiscard?: () => void;
+  onAdopt?: () => Promise<boolean>;
   onCalculate?: () => void;
   calculationStatus?: string;
   onClose: () => void;
@@ -75,75 +38,31 @@ export function ListingReviewCard({
   onChange,
   onRetry,
   onSave,
+  onDiscard,
+  onAdopt,
   onCalculate,
   calculationStatus,
   onClose,
   onDelete,
   onCompareLatest,
 }: ListingReviewCardProps) {
-  const [reviewOpen, setReviewOpen] = useState(item.phase === "unavailable" || item.phase === "failed");
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [retryConfirmation, setRetryConfirmation] = useState(false);
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  const errorSummaryRef = useRef<HTMLDivElement>(null);
-  const busy = item.phase === "queued" || item.phase === "analyzing" || item.phase === "retrying" || item.saving;
+  const [closedRequest, setClosedRequest] = useState<number | undefined>();
+  const busy = ["queued", "analyzing", "retrying"].includes(item.phase) || item.saving;
   const missing = deriveMissingFields(item.draft);
   const fields = item.draft.fields;
-  const heading = fields.vehicleLabel.input
-    || [fields.make.input, fields.model.input, fields.variant.input].filter(Boolean).join(" ")
-    || "Tillfälligt annonsutkast";
-  const hasServerValidation = item.persistenceNotice?.tone === "error"
-    && Object.keys(item.validationErrors).length > 0;
-  const isReviewOpen = reviewOpen || hasServerValidation;
-  const displayedValidationMessage = validationMessage
-    ?? (hasServerValidation
-      ? "Servern kunde inte godkänna alla uppgifter. Rätta fälten nedan och försök igen."
-      : null);
+  const heading = fields.vehicleLabel.input || [fields.make.input, fields.model.input, fields.variant.input].filter(Boolean).join(" ") || "Tillfälligt annonsutkast";
+  const isReviewOpen = reviewOpen || (item.editorRequest !== undefined && item.editorRequest !== closedRequest);
 
-  useEffect(() => {
-    if (!hasServerValidation) return;
-    queueMicrotask(() => errorSummaryRef.current?.focus());
-  }, [hasServerValidation]);
-
-  function updateDraft(draft: ListingReviewDraft) {
-    setValidationMessage(null);
-    onChange(draft, validateReviewDraft(draft));
-  }
-
-  function updateScalar(name: ScalarFieldName, input: string) {
-    updateDraft(editScalarField(item.draft, name, input, item.normalizedUrl));
-  }
-
-  function normalizeScalar(name: ScalarFieldName) {
-    const current = item.draft.fields[name].input;
-    const normalized = normalizeScalarInput(name, current);
-    if (normalized !== current) updateScalar(name, normalized);
-  }
-
-  function validateAndFocus() {
+  async function requestSave(): Promise<boolean> {
     const errors = validateReviewDraft(item.draft);
     onChange(item.draft, errors);
     if (Object.keys(errors).length > 0) {
-      setValidationMessage("Rätta fälten nedan innan underlaget används vidare.");
-      queueMicrotask(() => errorSummaryRef.current?.focus());
-    } else {
-      setValidationMessage(item.saved && !item.dirty
-        ? "Alla ifyllda uppgifter har giltigt format och annonsen är sparad."
-        : "Alla ifyllda uppgifter har giltigt format.");
+      setReviewOpen(true);
+      return false;
     }
-  }
-
-  function requestSave() {
-    const errors = validateReviewDraft(item.draft);
-    if (!item.draft.fields.registrationNumber.input) {
-      errors.registrationNumber = "Ange registreringsnummer för att spara bilen.";
-    }
-    onChange(item.draft, errors);
-    if (Object.keys(errors).length > 0) {
-      setValidationMessage("Rätta fälten nedan innan bilen sparas.");
-      queueMicrotask(() => errorSummaryRef.current?.focus());
-      return;
-    }
-    onSave();
+    return (await onSave()) ?? false;
   }
 
   function requestRetry() {
@@ -164,7 +83,7 @@ export function ListingReviewCard({
               <Badge variant={phaseBadge(item.phase)}>{phaseLabels[item.phase]}</Badge>
               <Badge variant="muted">{missing.length} okända fält</Badge>
               <Badge variant={item.saved && !item.dirty ? "success" : "warning"}>
-                {item.saved ? (item.dirty ? "Ändrad sedan sparning" : "Sparad") : "Osparat utkast"}
+                {item.saved || item.reviewDraft ? (item.dirty ? "Ändrad sedan sparning" : item.reviewDraft ? "Sparat annonsutkast" : "Sparad") : "Osparat utkast"}
               </Badge>
               {calculationStatus ? <Badge variant="muted">{calculationStatus}</Badge> : item.saved?.hasSavedCostScenario && (item.saved.savedCostScenarioOutdated
                 ? <Badge variant="warning">Kalkyl inaktuell</Badge>
@@ -187,7 +106,7 @@ export function ListingReviewCard({
           <div className="flex flex-wrap gap-2">
             {!busy && (!item.saved || item.dirty) && (
               <Button type="button" size="sm" onClick={requestSave}>
-                <Save size={15} /> {item.saved ? "Spara ändringar" : "Spara bil"}
+                <Save size={15} /> {item.saved ? "Spara ändringar" : item.reviewDraft || !fields.registrationNumber.input ? "Spara utkast" : "Lägg till bil"}
               </Button>
             )}
             {!busy && (
@@ -264,6 +183,9 @@ export function ListingReviewCard({
           {!item.context.sources.some(s => s.matchesSubmittedUrl) && " Metadata om öppnad sida saknas. Annonsadressen är en referens; granska uppgifterna."}
         </p>}
         <Summary draft={item.draft} />
+        {!fields.registrationNumber.input && <p className="flex items-center gap-2 text-sm text-rose-300">
+          <AlertTriangle aria-hidden="true" size={16} /> Registreringsnummer saknas för att lägga till i jämförelsen. Du kan spara utkastet.
+        </p>}
 
         {retryConfirmation && (
           <div role="alertdialog" aria-labelledby={`retry-title-${item.id}`} className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">
@@ -282,88 +204,13 @@ export function ListingReviewCard({
           aria-expanded={isReviewOpen}
           onClick={() => setReviewOpen((open) => !open)}
         >
-          Granska och komplettera alla uppgifter
+          Redigera bil
           <ChevronDown size={18} className={isReviewOpen ? "rotate-180 transition" : "transition"} />
         </button>
 
         {isReviewOpen && (
-          <div className="space-y-6">
-            <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm leading-6 text-slate-300">
-              Ett ändrat värde markeras som manuellt och användarbekräftat. Osparade ändringar finns bara
-              i minnet tills du lämnar eller laddar om sidan.
-            </p>
-
-            {Object.keys(item.validationErrors).length > 0 && (
-              <div ref={errorSummaryRef} tabIndex={-1} role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 outline-none focus:ring-2 focus:ring-rose-300">
-                <p className="font-semibold text-rose-200">Några uppgifter behöver rättas</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-100/80">
-                  {Object.entries(item.validationErrors).map(([path, message]) => <li key={path}>{message}</li>)}
-                </ul>
-              </div>
-            )}
-
-            <ListingDetailsEditor value={item.draft.details ?? emptyDetails()} url={item.normalizedUrl} disabled={busy}
-              errors={item.validationErrors} onChange={details => updateDraft({...item.draft, details})} />
-            <FieldSection title="Identitet">
-              <ScalarFields definitions={identityFields} item={item} disabled={busy} onInput={updateScalar} onBlur={normalizeScalar} />
-            </FieldSection>
-
-            <FieldSection title="Annons">
-              <ScalarFields definitions={advertisementFields} item={item} disabled={busy} onInput={updateScalar} onBlur={normalizeScalar} />
-              {fields.odometerKilometres.input && !parseLocalizedNumber(fields.odometerKilometres.input).error && (
-                <p className="text-xs text-slate-500">
-                  Motsvarar {formatNumeric(n(shiftDecimal(canonicalNumber(fields.odometerKilometres.input),1)),3)} km.
-                </p>
-              )}
-            </FieldSection>
-
-            <FieldSection title="Tekniska uppgifter">
-              <FuelTypesEditor draft={item.draft} normalizedUrl={item.normalizedUrl} disabled={busy} onChange={updateDraft} errors={item.validationErrors} />
-              <ScalarFields definitions={technicalFields} item={item} disabled={busy} onInput={updateScalar} onBlur={normalizeScalar} />
-              <EnergyEditor draft={item.draft} normalizedUrl={item.normalizedUrl} disabled={busy} onChange={updateDraft} errors={item.validationErrors} />
-            </FieldSection>
-
-            <FieldSection title="Historik och besiktning">
-              <ScalarFields definitions={historyFields} item={item} disabled={busy} onInput={updateScalar} onBlur={normalizeScalar} />
-            </FieldSection>
-
-            <FieldSection title="Utrustning och uppgifter från säljaren">
-              <StringCollectionEditor name="equipment" label="Utrustning" maximum={100} draft={item.draft} normalizedUrl={item.normalizedUrl} disabled={busy} onChange={updateDraft} errors={item.validationErrors} />
-              <StringCollectionEditor name="sellerClaims" label="Säljarens påståenden" maximum={20} draft={item.draft} normalizedUrl={item.normalizedUrl} disabled={busy} onChange={updateDraft} errors={item.validationErrors} />
-              <p className="text-xs leading-5 text-amber-300">Säljarens uppgifter är påståenden från annonsen och ska inte tolkas som verifierade fakta.</p>
-              <StringCollectionEditor name="conditionNotes" label="Korta skicknoteringar" maximum={10} draft={item.draft} normalizedUrl={item.normalizedUrl} disabled={busy} onChange={updateDraft} errors={item.validationErrors} multiline />
-            </FieldSection>
-
-            <FieldSection title="Saknade uppgifter">
-              {missing.length === 0
-                ? <p className="text-sm text-emerald-300">Inga fält är markerade som okända.</p>
-                : <ul className="grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
-                    {missing.map((code) => <li key={code} className="rounded-lg bg-slate-950/50 px-3 py-2">{missingFieldLabels[code]}</li>)}
-                  </ul>}
-            </FieldSection>
-
-            <FieldSection title="Källor och proveniens">
-              {item.context.sources.length
-                ? <ul className="space-y-2">
-                    {item.context.sources.map((source) => (
-                      <li key={source.url} className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <a href={source.url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-cyan-300 hover:underline">
-                          {source.url} <ExternalLink className="inline" size={13} />
-                        </a>
-                        <Badge variant={source.matchesSubmittedUrl ? "success" : "muted"}>
-                          {source.matchesSubmittedUrl ? "Matchar annonsen" : "Kompletterande källa"}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                : <p className="text-sm text-slate-400">Inga öppnade webbkällor kunde styrkas.</p>}
-            </FieldSection>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" variant="secondary" onClick={validateAndFocus}>Kontrollera uppgifter</Button>
-              {displayedValidationMessage && <p role="status" className="text-sm text-slate-300">{displayedValidationMessage}</p>}
-            </div>
-          </div>
+          <CarEditor open vehicleId={item.saved?.vehicleId ?? null} onClose={() => { setReviewOpen(false); setClosedRequest(item.editorRequest); }}
+            listingEditor={{ item, onChange, save: requestSave, discard: () => onDiscard?.(), adopt: onAdopt }} />
         )}
       </CardContent>
     </Card>
@@ -392,235 +239,6 @@ function Summary({ draft }: { draft: ListingReviewDraft }) {
   );
 }
 
-function ScalarFields({ definitions, item, disabled, onInput, onBlur }: {
-  definitions: ScalarFieldDefinition[];
-  item: ListingWorkspaceItem;
-  disabled: boolean;
-  onInput: (name: ScalarFieldName, value: string) => void;
-  onBlur: (name: ScalarFieldName) => void;
-}) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {definitions.map((definition) => {
-        const field = item.draft.fields[definition.name];
-        const error = item.validationErrors[definition.name];
-        const id = `${item.id}-${definition.name}`;
-        const readOnly = definition.name === "registrationNumber" && item.saved !== null;
-        return (
-          <label key={definition.name} htmlFor={id} className="block text-sm font-medium text-slate-300">
-            {definition.label}{definition.suffix ? ` (${definition.suffix})` : ""}
-            {definition.kind === "select" || definition.kind === "boolean" ? (
-              <select id={id} aria-label={definition.label} value={field.input} disabled={disabled} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : `${id}-source`} className={inputClassName} onChange={(event) => onInput(definition.name, event.target.value)}>
-                <option value="">Okänt</option>
-                {(definition.kind === "boolean"
-                  ? [{ value: "true", label: "Ja" }, { value: "false", label: "Nej" }]
-                  : definition.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            ) : (
-              <input
-                id={id}
-                aria-label={definition.label}
-                type={definition.kind === "date" ? "date" : "text"}
-                inputMode={definition.kind === "decimal" ? "decimal" : definition.kind === "integer" ? "numeric" : undefined}
-                value={field.input}
-                disabled={disabled}
-                readOnly={readOnly}
-                aria-invalid={Boolean(error)}
-                aria-describedby={error ? `${id}-error` : `${id}-source`}
-                className={inputClassName}
-                onChange={(event) => onInput(definition.name, event.target.value)}
-                onBlur={() => onBlur(definition.name)}
-              />
-            )}
-            {readOnly && <span className="mt-1 block text-xs text-cyan-300">Registreringsnumret kan inte ändras för en sparad bil.</span>}
-            {error
-              ? <span id={`${id}-error`} className="mt-1 block text-xs text-rose-300">{error}</span>
-              : <span id={`${id}-source`} className="mt-1 block break-all text-xs font-normal text-slate-500">
-                  {provenanceLabel(field.provenance)}{field.provenance ? ` · ${field.provenance.sourceUrl}` : ""}
-                </span>}
-          </label>
-        );
-      })}
-    </div>
-  );
-}
-
-function FuelTypesEditor({ draft, normalizedUrl, disabled, onChange, errors }: EditorProps) {
-  const collection = draft.fuelTypes;
-  function setMode(mode: CollectionDraft<string>["mode"]) {
-    onChange({ ...draft, fuelTypes: editCollection(collection, mode, collection.values, normalizedUrl) });
-  }
-  function toggle(value: string) {
-    const values = collection.values.includes(value)
-      ? collection.values.filter((entry) => entry !== value)
-      : [...collection.values, value];
-    onChange({ ...draft, fuelTypes: editCollection(collection, "values", values, normalizedUrl) });
-  }
-  return (
-    <CollectionFrame label="Bränsletyper" mode={collection.mode} provenance={collection.provenance} disabled={disabled} onMode={setMode} error={errors.fuelTypes}>
-      <div className="flex flex-wrap gap-2">
-        {fuelOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm">
-            <input type="checkbox" checked={collection.values.includes(option.value)} disabled={disabled} onChange={() => toggle(option.value)} />
-            {option.label}
-          </label>
-        ))}
-      </div>
-    </CollectionFrame>
-  );
-}
-
-function EnergyEditor({ draft, normalizedUrl, disabled, onChange, errors }: EditorProps) {
-  const collection = draft.energyConsumptions;
-  function commit(mode: CollectionDraft<EnergyConsumptionDraft>["mode"], values = collection.values) {
-    onChange({ ...draft, energyConsumptions: editCollection(collection, mode, values, normalizedUrl) });
-  }
-  function setMode(mode: CollectionDraft<EnergyConsumptionDraft>["mode"]) {
-    commit(mode, mode === "values" && collection.values.length === 0 ? [createEnergyEntry()] : collection.values);
-  }
-  function patch(id: string, update: Partial<EnergyConsumptionDraft>) {
-    commit("values", collection.values.map((entry) => entry.id === id ? { ...entry, ...update } : entry));
-  }
-  return (
-    <CollectionFrame label="Energiförbrukning" mode={collection.mode} provenance={collection.provenance} disabled={disabled} onMode={setMode} error={errors.energyConsumptions}>
-      <div className="space-y-3">
-        {collection.values.map((entry, index) => {
-          const base = `energyConsumptions.values[${index}]`;
-          return (
-            <div key={entry.id} className="grid gap-3 rounded-xl border border-slate-800 p-3 md:grid-cols-[1fr_0.8fr_1fr_auto]">
-              <SmallInput
-                id={`${entry.id}-label`}
-                label="Etikett"
-                value={entry.label}
-                disabled={disabled}
-                error={errors[`${base}.label`]}
-                onChange={(value) => patch(entry.id, { label: value })}
-                onBlur={() => patch(entry.id, { label: normalizeCollectionText(entry.label) })}
-              />
-              <label className="text-xs text-slate-400">Enhet
-                <select aria-label={`Enhet ${index + 1}`} className={inputClassName} value={entry.unit} disabled={disabled} onChange={(event) => patch(entry.id, { unit: event.target.value as EnergyConsumptionDraft["unit"] })}>
-                  {energyUnitOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-              <SmallInput
-                id={`${entry.id}-consumption`}
-                label="Per 100 km"
-                inputMode="decimal"
-                value={entry.consumptionPer100Kilometres}
-                disabled={disabled}
-                error={errors[`${base}.consumptionPer100Kilometres`]}
-                onChange={(value) => patch(entry.id, { consumptionPer100Kilometres: value })}
-                onBlur={() => patch(entry.id, { consumptionPer100Kilometres: entry.consumptionPer100Kilometres.trim() })}
-              />
-              <Button type="button" variant="ghost" size="sm" className="self-end" disabled={disabled} aria-label={`Ta bort energiförbrukning ${index + 1}`} onClick={() => commit("values", collection.values.filter((value) => value.id !== entry.id))}><Trash2 size={15} /></Button>
-            </div>
-          );
-        })}
-        <Button type="button" variant="secondary" size="sm" disabled={disabled || collection.values.length >= 2} onClick={() => commit("values", [...collection.values, createEnergyEntry()])}><Plus size={15} /> Lägg till förbrukning</Button>
-      </div>
-    </CollectionFrame>
-  );
-}
-
-type StringCollectionName = "equipment" | "sellerClaims" | "conditionNotes";
-
-function StringCollectionEditor({ name, label, maximum, draft, normalizedUrl, disabled, onChange, errors, multiline = false }: EditorProps & {
-  name: StringCollectionName;
-  label: string;
-  maximum: number;
-  multiline?: boolean;
-}) {
-  const collection = draft[name];
-  function commit(mode: CollectionDraft<StringCollectionEntry>["mode"], values = collection.values) {
-    onChange({ ...draft, [name]: editCollection(collection, mode, values, normalizedUrl) });
-  }
-  function setMode(mode: CollectionDraft<StringCollectionEntry>["mode"]) {
-    commit(mode, mode === "values" && collection.values.length === 0 ? [createStringEntry()] : collection.values);
-  }
-  return (
-    <CollectionFrame label={label} mode={collection.mode} provenance={collection.provenance} disabled={disabled} onMode={setMode} error={errors[name]}>
-      <div className="space-y-2">
-        {collection.values.map((entry, index) => (
-          <div key={entry.id} className="flex items-start gap-2">
-            {multiline
-              ? <textarea aria-label={`${label} ${index + 1}`} className={textareaClassName} value={entry.value} disabled={disabled} aria-invalid={Boolean(errors[`${name}.values[${index}]`])} aria-describedby={errors[`${name}.values[${index}]`] ? `${entry.id}-error` : undefined} onChange={(event) => commit("values", collection.values.map((value) => value.id === entry.id ? { ...value, value: event.target.value } : value))} onBlur={() => commit("values", collection.values.map((value) => value.id === entry.id ? { ...value, value: normalizeCollectionText(value.value) } : value))} />
-              : <input aria-label={`${label} ${index + 1}`} className={inputClassName} value={entry.value} disabled={disabled} aria-invalid={Boolean(errors[`${name}.values[${index}]`])} aria-describedby={errors[`${name}.values[${index}]`] ? `${entry.id}-error` : undefined} onChange={(event) => commit("values", collection.values.map((value) => value.id === entry.id ? { ...value, value: event.target.value } : value))} onBlur={() => commit("values", collection.values.map((value) => value.id === entry.id ? { ...value, value: normalizeCollectionText(value.value) } : value))} />}
-            <Button type="button" variant="ghost" size="sm" className="mt-2 shrink-0" disabled={disabled} aria-label={`Ta bort ${label.toLocaleLowerCase("sv-SE")} ${index + 1}`} onClick={() => commit("values", collection.values.filter((value) => value.id !== entry.id))}><Trash2 size={15} /></Button>
-            {errors[`${name}.values[${index}]`] && <span id={`${entry.id}-error`} className="sr-only">{errors[`${name}.values[${index}]`]}</span>}
-          </div>
-        ))}
-        {Object.entries(errors).filter(([path]) => path.startsWith(`${name}.values`)).map(([path, error]) => <p key={path} className="text-xs text-rose-300">{error}</p>)}
-        <Button type="button" variant="secondary" size="sm" disabled={disabled || collection.values.length >= maximum} onClick={() => commit("values", [...collection.values, createStringEntry()])}><Plus size={15} /> Lägg till</Button>
-      </div>
-    </CollectionFrame>
-  );
-}
-
-interface EditorProps {
-  draft: ListingReviewDraft;
-  normalizedUrl: string;
-  disabled: boolean;
-  onChange: (draft: ListingReviewDraft) => void;
-  errors: Record<string, string>;
-}
-
-function CollectionFrame({ label, mode, provenance, disabled, onMode, error, children }: {
-  label: string;
-  mode: CollectionDraft<unknown>["mode"];
-  provenance: CollectionDraft<unknown>["provenance"];
-  disabled: boolean;
-  onMode: (mode: CollectionDraft<unknown>["mode"]) => void;
-  error?: string;
-  children: ReactNode;
-}) {
-  const errorId = useId();
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-        <label className="text-sm font-medium text-slate-300">{label}
-          <select aria-label={label} value={mode} disabled={disabled} className={`${inputClassName} sm:w-52`} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined} onChange={(event) => onMode(event.target.value as CollectionDraft<unknown>["mode"])}>
-            <option value="unknown">Okänt</option>
-            <option value="empty">Inga</option>
-            <option value="values">Ange värden</option>
-          </select>
-        </label>
-        <span className="break-all text-xs text-slate-500">
-          {provenanceLabel(provenance)}{provenance ? ` · ${provenance.sourceUrl}` : ""}
-        </span>
-      </div>
-      {error && <p id={errorId} className="mt-2 text-xs text-rose-300">{error}</p>}
-      {mode === "values" && <div className="mt-4">{children}</div>}
-    </div>
-  );
-}
-
-function FieldSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 sm:p-5">
-      <h4 className="text-base font-semibold text-white">{title}</h4>
-      {children}
-    </section>
-  );
-}
-
-function SmallInput({ id, label, value, disabled, error, inputMode, onChange, onBlur }: {
-  id: string;
-  label: string;
-  value: string;
-  disabled: boolean;
-  error?: string;
-  inputMode?: "decimal";
-  onChange: (value: string) => void;
-  onBlur?: () => void;
-}) {
-  return (
-    <label htmlFor={id} className="text-xs text-slate-400">{label}
-      <input id={id} aria-label={label} className={inputClassName} value={value} disabled={disabled} inputMode={inputMode} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} />
-      {error && <span id={`${id}-error`} className="mt-1 block text-xs text-rose-300">{error}</span>}
-    </label>
-  );
-}
-
 function Notice({ tone, children }: { tone: "success" | "warning" | "error"; children: ReactNode }) {
   const classes = tone === "error"
     ? "border-rose-400/30 bg-rose-400/10 text-rose-100"
@@ -632,10 +250,6 @@ function Notice({ tone, children }: { tone: "success" | "warning" | "error"; chi
       <AlertTriangle size={18} className="mt-0.5 shrink-0" /> <span>{children}</span>
     </div>
   );
-}
-
-function normalizeCollectionText(value: string) {
-  return value.trim().normalize("NFC");
 }
 
 function phaseBadge(phase: ListingWorkspaceItem["phase"]): "success" | "warning" | "muted" | "default" {
