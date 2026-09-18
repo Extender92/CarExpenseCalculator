@@ -134,11 +134,19 @@ The same guard applies in CI.
 
 ## Cleanup and delivery
 
-Helpers, screenshots, PDFs, logs and tool downloads were collected under ignored
-`temp/issue-95/`. The delivery records removal of disposable stack resources
-and helper artifacts, including any blocked paths. The feature worktree and branch
-remain available for review. Existing local documentation edits, private
-installation notes, older deferred temp inventories and backups are preserved.
+The disposable stack's four containers, database volume, two networks and four
+test image tags were removed. No work-owned browser or API process remains.
+The feature worktree and branch remain available for review.
+
+Automatic execution policy rejected bulk removal of helper artifacts with
+`blocked by policy`; deletion was not retried through another mechanism. Helpers,
+screenshots, PDFs, logs and tool downloads under `temp/issue-95/` therefore remain.
+The local `temp/issue-95/cleanup-manifest.txt` lists exact absolute paths, including
+build outputs, a diagnostic `temp/chromium-mobile-release/` directory and its log,
+and three identified Playwright temp directories. Do not remove the feature
+worktree's source while cleaning helpers. This is a cleanup limitation, not an
+unreported successful deletion. Existing local documentation edits, private
+installation notes, older deferred inventories and backups are preserved.
 
 The PR includes this report, migration and generated types. Registry lookup and
 advisory AI remain separate work. Merge and installation updates require separate
