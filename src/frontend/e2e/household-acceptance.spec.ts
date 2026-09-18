@@ -1009,11 +1009,12 @@ async function clearDraft(request: APIRequestContext) {
 }
 async function open(page: Page, car: SavedVehicle) {
   page.on("dialog", (dialog) => void dialog.accept());
-  const profileRead = page.waitForResponse(response =>
-    response.url().endsWith("/api/household-profile") && response.request().method() === "GET");
   await page.goto(`/manual?vehicleId=${car.vehicleId}`);
-  const loadedProfile = await (await profileRead).json();
-  expect(loadedProfile.input).toBeDefined();
+  // Wait for the loaded profile in the UI, not a response from the page being
+  // replaced. Chromium can discard an old document's response body on navigation.
+  await expect(page.getByRole("region", {
+    name: "Gemensam hushållsprofil", includeHidden: true,
+  }).first()).toContainText(/Period:\s+\d+ månader/);
   await expect(
     page.getByRole("heading", {
       name: `Redigera ${car.registrationNumber}`,

@@ -132,6 +132,18 @@ regressions cover conversion precision, choice labels, missing/zero/false/empty
 values and unchanged free text; the browser reuse test checks the visible unit
 and translated fuel value. This increased the frontend total from 301 to 305.
 
+Published CI then exposed a pre-existing cancellation-test race: a fixed 100 ms
+timer could cancel the HTTP request before the fake extraction handler started
+(expected one call, observed zero). Both cancellation tests in that fixture now
+wait for handler entry before cancelling and also assert that the handler receives
+the cancellation. No production timeout changed. The failed run recorded 1,168
+backend passes and one failure; the corrected tests and full suite were rerun.
+
+Another CI retry exposed a household helper reading a response body from a
+document already replaced by navigation. The helper now waits for the loaded
+profile summary and completed refresh in the new page before calculating.
+All existing exact cost assertions remain; no network failure is ignored.
+
 Early native-print helpers timed out because Chrome's internal print target is
 not a normal Playwright page. One interrupted helper left two fictional fixtures;
 they were removed by exact identity/revision before retry. Using the browser
