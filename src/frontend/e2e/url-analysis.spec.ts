@@ -172,6 +172,13 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await expect(savedSummary).toContainText("Volvo V70 2008");
   await savedSummary.getByRole("button", { name: "Öppna", exact: true }).click();
   const opened = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Volvo V70 2.4" });
+  // Load the saved cost form before reopening. The helper must expand only
+  // Annons even when the other tab's controls are already mounted but hidden.
+  await opened.getByRole("button", { name: "Redigera bil", exact: true }).click();
+  const hiddenCost = opened.locator('[role="tabpanel"][id$="-panel-cost"]');
+  await expect(hiddenCost.getByLabel("Registreringsnummer", { exact: true })).toBeAttached();
+  await expect(hiddenCost).toBeHidden();
+  await closeEditor(page);
   await openListingEditor(opened);
   await expect(opened.getByRole("textbox", { name: "Registreringsnummer", exact: true })).toHaveAttribute("readonly", "");
   await closeEditor(page);

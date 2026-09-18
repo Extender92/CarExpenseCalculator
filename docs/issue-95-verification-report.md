@@ -115,6 +115,16 @@ buffer. It now scans all log chunks with bounded overlap, preserving every
 forbidden-content check. Three utility regressions cover split matches, safe
 content and inspection beyond 128 MiB; CI runs them before URL acceptance.
 
+Initial published CI passed, but both checks on the cleanup-documentation commit
+reported one flaky URL lifecycle test (two retries). Its helper enumerated hidden
+cost-tab summaries while reviewing the listing tab; timing of background loading
+determined whether they were present. A strengthened regression preloads that
+hidden form before reopening. Reintroducing the old selector reproduced a click
+timeout on hidden **Energi**; scoping expansion to the **Annons** panel passed
+three consecutive focused runs. The correction changes the test helper, without
+relaxing assertions or increasing timeouts. Full local and published checks were
+rerun after the correction.
+
 Early native-print helpers timed out because Chrome's internal print target is
 not a normal Playwright page. One interrupted helper left two fictional fixtures;
 they were removed by exact identity/revision before retry. Using the browser

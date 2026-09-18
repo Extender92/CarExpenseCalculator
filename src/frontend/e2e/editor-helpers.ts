@@ -9,7 +9,11 @@ export async function openListingEditor(card: Locator) {
   await card.getByRole("button", { name: "Redigera bil", exact: true }).click();
   const dialog = card.getByRole("dialog", { name: /Redigera bil/ });
   await expect(dialog).toBeVisible();
-  for (const summary of await dialog.locator("summary").all()) {
+  // Other tabs keep their forms mounted. Their hidden summaries must not be
+  // clicked when background cost loading happens to finish before this loop.
+  const listing = dialog.getByRole("tabpanel", { name: "Annons", exact: true });
+  await expect(listing).toBeVisible();
+  for (const summary of await listing.locator("summary").all()) {
     if (!await summary.evaluate(element => element.parentElement?.hasAttribute("open"))) await summary.click();
   }
   return dialog;
