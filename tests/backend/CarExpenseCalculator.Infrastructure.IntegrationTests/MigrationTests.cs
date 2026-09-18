@@ -29,7 +29,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         await using (var dbContext = fixture.CreateDbContext())
         {
             var applied = await dbContext.Database.GetAppliedMigrationsAsync();
-            Assert.Equal(7, applied.Count());
+            Assert.Equal(8, applied.Count());
             var migrator = dbContext.Database.GetService<IMigrator>();
             await migrator.MigrateAsync(Migration.InitialDatabase);
         }
@@ -253,7 +253,7 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
     ];
 
     private static readonly string[] ProductTables = [.. ScenarioTables, .. ListingTables,
-        "household_state", "vehicle_cost_inputs", "vehicle_draft", "rule_profile", "vehicle_comparison_facts"];
+        "household_state", "vehicle_cost_inputs", "vehicle_draft", "rule_profile", "vehicle_comparison_facts", "listing_review_drafts"];
 
     private ServiceProvider CreateMigrationServices()
     {

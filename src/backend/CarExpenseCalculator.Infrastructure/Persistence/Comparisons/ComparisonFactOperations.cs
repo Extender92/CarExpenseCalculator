@@ -36,9 +36,9 @@ public static class ComparisonFactOperations
             if (!Enum.IsDefined(edit.Kind)) throw Error(key, "invalidEnum", "Unknown fact operation.");
             if (edit.Kind != FactEditKind.Conflict && edit.Observations is not null)
                 throw Error(key, "invalidFactOperation", "Only a conflict contains observation selections.");
-            if (edit.Kind is not (FactEditKind.Manual or FactEditKind.Resolve) && edit.Manual is not null)
+            if (edit.Kind is not (FactEditKind.Manual or FactEditKind.Resolve or FactEditKind.EditManual or FactEditKind.ResolveUnverified) && edit.Manual is not null)
                 throw Error(key, "invalidFactOperation", "This operation does not accept a manual value.");
-            if (old.State == VehicleFactState.Conflicting && edit.Kind is FactEditKind.Manual or FactEditKind.Listing)
+            if (old.State == VehicleFactState.Conflicting && edit.Kind is FactEditKind.Manual or FactEditKind.EditManual or FactEditKind.Listing or FactEditKind.ConfirmCurrent)
                 throw Error(key, "conflictResolutionRequired", "Resolve or explicitly clear the existing conflict.");
             var selected = new List<(FactObservation<T> Observation, long? Version)>();
             (FactObservation<T>, long?) Selection(FactSelection<T> selection)
@@ -58,6 +58,9 @@ public static class ComparisonFactOperations
                     return (source.Observations[0], listingVersion);
                 }
                 if (selection.Manual is not { } manual) throw Error(key, "required", "A manual value is required.");
+                if (selection.Kind == FactSelectionKind.EditManual)
+                    return (new(manual.Value, new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified,
+                        ObservedAt: manual.ObservedAt)), null);
                 return (old.ReplaceWithManual(manual.Value, now, manual.ObservedAt).Observations[0], null);
             }
             VehicleFact<T> result;
@@ -65,6 +68,26 @@ public static class ComparisonFactOperations
             {
                 case FactEditKind.Unknown: result = VehicleFact<T>.Unknown(); break;
                 case FactEditKind.NotApplicable: result = VehicleFact<T>.NotApplicable(); break;
+                case FactEditKind.EditManual:
+                case FactEditKind.ResolveUnverified:
+                    if (edit.Manual is not { } unverified) throw Error(key, "required", "A manual value is required.");
+                    if (edit.Kind == FactEditKind.ResolveUnverified && old.State != VehicleFactState.Conflicting)
+                        throw Error(key, "invalidState", "Only conflicting facts can be explicitly resolved.");
+                    result = VehicleFact<T>.Known(unverified.Value,
+                        new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified,
+                            SourceUrl: old.State == VehicleFactState.Known ? old.Observations[0].Evidence.SourceUrl : null,
+                            ObservedAt: unverified.ObservedAt));
+                    selected.Add((result.Observations[0], null));
+                    break;
+                case FactEditKind.ConfirmCurrent:
+                    if (old.State != VehicleFactState.Known)
+                        throw Error(key, "invalidState", "Confirmation requires a single current value.");
+                    var observation = old.Observations[0];
+                    result = VehicleFact<T>.Known(observation.Value,
+                        new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.UserConfirmed,
+                            observation.Evidence.SourceUrl, observation.Evidence.ObservedAt, now));
+                    selected.Add((result.Observations[0], oldVersions[0]));
+                    break;
                 case FactEditKind.Manual:
                 case FactEditKind.Resolve:
                     if (edit.Manual is not { } value) throw Error(key, "required", "A manual value is required.");

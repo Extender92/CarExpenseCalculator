@@ -31,7 +31,7 @@ test("browser receives partial household sections through the shared origin", as
     return { status: response.status, body: await response.json() };
   }, preview);
   expect(result.status).toBe(200);
-  expect(result.body).toMatchObject({ requestId: "browser-generation", calculationVersion: 2, resultSchemaVersion: 2 });
+  expect(result.body).toMatchObject({ requestId: "browser-generation", calculationVersion: 3, resultSchemaVersion: 3 });
   expect(result.body.vehicles[0].sections.totals).toMatchObject({
     ownershipCost: { state: "complete", completeTotalSek: 10000 },
     costPerMil: { completeTotalSek: null, missingComponents: ["zeroDistance"] },

@@ -1,4 +1,5 @@
 import type { SectionResult, VehiclePreview } from "./api";
+import { ElectricShareSource } from "./ElectricShareSource";
 import { formatMoney, formatNumeric, numericText } from "./numbers";
 import { fieldLabel, labels, paymentLabel } from "./labels";
 import { fuels, units } from "./form-model";
@@ -186,6 +187,7 @@ export function VehicleResults({ result }: { result: VehiclePreview }) {
           label={`Energi${s.energy.isIncluded ? " (ingår)" : ""}`}
           value={s.energy.cost}
         />
+        <ElectricShareSource value={s.energy.electricDrivingShare} />
         {s.energy.sources.map((source) => (
           <div
             key={source.key}

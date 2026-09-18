@@ -1,3 +1,4 @@
+import { MemoryRouter } from "react-router-dom";
 import { n } from "@/features/household/numbers";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -42,6 +43,8 @@ vi.mock("@/api/client", async (importOriginal) => {
   };
 });
 
+vi.mock("@/features/url-analysis/review-drafts-api", () => ({ reviewDraftApi: { list: vi.fn().mockResolvedValue([]) } }));
+
 const healthyStatus = {
   version: "1.0.0",
   status: "healthy",
@@ -67,7 +70,7 @@ describe("Swedish URL analysis workspace", () => {
     vi.mocked(analyzeListing).mockRejectedValueOnce(new ListingAnalysisApiError("Blocket nekade åtkomst.", 503, "listingSourceBlocked"))
       .mockResolvedValue(completeListingAnalysisResponse);
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
     await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
     await screen.findByRole("button", { name: "Fortsätt kön" });
@@ -79,7 +82,7 @@ describe("Swedish URL analysis workspace", () => {
   it("keeps the source queue paused until Retry-After has elapsed", async () => {
     vi.mocked(analyzeListing).mockRejectedValueOnce(new ListingAnalysisApiError("Vänta på Blocket.", 429, "listingSourceRateLimited", undefined, 60));
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
     await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
     await user.click(await screen.findByRole("button", { name: "Fortsätt kön" }));
@@ -88,7 +91,7 @@ describe("Swedish URL analysis workspace", () => {
   });
   it("starts safely and reports invalid, duplicate, local, and excessive URLs", async () => {
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     expect(screen.getByText("Inga annonsunderlag är öppna ännu.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
@@ -109,7 +112,7 @@ describe("Swedish URL analysis workspace", () => {
   it("analyzes and renders every review area, source evidence, values, and provenance", async () => {
     vi.mocked(analyzeListing).mockResolvedValue(completeListingAnalysisResponse);
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
@@ -117,11 +120,12 @@ describe("Swedish URL analysis workspace", () => {
     expect(await screen.findByText("Volvo V70 2.4")).toBeInTheDocument();
     expect(screen.getByText("20 000 kr")).toBeInTheDocument();
     expect(screen.getByText("16710 mil")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Granska och komplettera alla uppgifter" }));
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
 
-    for (const heading of ["Identitet", "Annons", "Tekniska uppgifter", "Historik och besiktning", "Utrustning och uppgifter från säljaren", "Källor och proveniens"]) {
-      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+    for (const heading of ["Övrig identitet", "Annons", "Tekniska uppgifter", "Historik och besiktning", "Utrustning och uppgifter från säljaren", "Källor och proveniens", "Saknade uppgifter"]) {
+      await user.click(screen.getByText(heading, { selector: "summary" }));
     }
+    expect(screen.getByText("Viktiga uppgifter")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /cars\.example\/item\/1/ })).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getByText("Matchar annonsen")).toBeInTheDocument();
     expect(screen.getAllByText(/Annons · AI · Inte verifierad/).length).toBeGreaterThan(20);
@@ -131,7 +135,7 @@ describe("Swedish URL analysis workspace", () => {
     const make = screen.getByLabelText("Märke");
     await user.clear(make);
     await user.type(make, "Saab");
-    expect(screen.getAllByText(/Användare · Manuell · Bekräftad/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Användare · Manuell · Obekräftad/).length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Modell")).toHaveValue("V70");
     expect(screen.getByText((content) => content.startsWith("Motsvarar") && content.includes("167") && content.includes("km"))).toBeInTheDocument();
 
@@ -147,7 +151,7 @@ describe("Swedish URL analysis workspace", () => {
       integrations: { codexListingExtractionConfigured: false },
     });
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), "https://cars.example/item/manual");
     await waitFor(() => expect(screen.getByRole("button", { name: "Analysera URL:er" })).toBeDisabled());
@@ -155,12 +159,13 @@ describe("Swedish URL analysis workspace", () => {
     await user.click(screen.getByRole("button", { name: "Skapa manuella utkast" }));
 
     expect(screen.getByText(/skapades utan automatisk extraktion/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
     expect(screen.getByLabelText("Annonspris")).toHaveValue("");
     await user.type(screen.getByLabelText("Annonspris"), "0");
     await user.selectOptions(screen.getByLabelText("Dragkrok"), "false");
     expect(screen.getByText("0 kr")).toBeInTheDocument();
     expect(screen.getAllByText("Nej").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Användare · Manuell · Bekräftad/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Användare · Manuell · Obekräftad/).length).toBeGreaterThanOrEqual(2);
     expect(analyzeListing).not.toHaveBeenCalled();
   });
 
@@ -168,7 +173,7 @@ describe("Swedish URL analysis workspace", () => {
     const deferred = [createDeferred<ListingAnalysisResponse>(), createDeferred<ListingAnalysisResponse>(), createDeferred<ListingAnalysisResponse>()];
     deferred.forEach((promise) => vi.mocked(analyzeListing).mockImplementationOnce(() => promise.promise));
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), [
       "https://cars.example/item/1",
@@ -202,7 +207,7 @@ describe("Swedish URL analysis workspace", () => {
       };
     });
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     const urls = Array.from({ length: 10 }, (_, index) => `https://cars.example/item/${index + 1}`);
     await user.type(screen.getByLabelText("URL:er"), urls.join("\n"));
@@ -217,12 +222,12 @@ describe("Swedish URL analysis workspace", () => {
   it("requires confirmation before a successful retry can replace edited values", async () => {
     vi.mocked(analyzeListing).mockResolvedValue(completeListingAnalysisResponse);
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Granska och komplettera alla uppgifter" }));
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
     await user.clear(screen.getByLabelText("Märke"));
     await user.type(screen.getByLabelText("Märke"), "Saab");
     await user.click(screen.getByRole("button", { name: "Analysera igen" }));
@@ -236,10 +241,12 @@ describe("Swedish URL analysis workspace", () => {
 
   it("supports collection unknown, known-empty, and entered states with accessible controls", async () => {
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
     await user.type(screen.getByLabelText("URL:er"), "https://cars.example/item/manual");
     await user.click(screen.getByRole("button", { name: "Skapa manuella utkast" }));
 
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
+    await user.click(screen.getByText("Utrustning och uppgifter från säljaren", { selector: "summary" }));
     const equipment = screen.getByLabelText("Utrustning");
     await user.selectOptions(equipment, "empty");
     expect(equipment).toHaveValue("empty");
@@ -258,7 +265,7 @@ describe("Swedish URL analysis workspace", () => {
       .mockRejectedValueOnce(new SavedListingApiError("Databasen svarar inte."))
       .mockResolvedValueOnce([savedListingSummary]);
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Databasen svarar inte");
     await user.click(screen.getByRole("button", { name: "Försök igen" }));
@@ -276,7 +283,7 @@ describe("Swedish URL analysis workspace", () => {
     vi.mocked(listSavedListings).mockResolvedValue([savedListingSummary]);
     vi.mocked(getSavedListing).mockResolvedValue(savedListingResponse);
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.click(await screen.findByRole("button", { name: "Öppna" }));
     const heading = await screen.findByText("Volvo V70 2.4");
@@ -288,7 +295,7 @@ describe("Swedish URL analysis workspace", () => {
     expect(getSavedListing).toHaveBeenCalledTimes(1);
     expect(card).toHaveFocus();
 
-    await user.click(screen.getByRole("button", { name: "Granska och komplettera alla uppgifter" }));
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
     await user.clear(screen.getByLabelText("Märke"));
     await user.type(screen.getByLabelText("Märke"), "Saab");
     await user.click(screen.getByRole("button", { name: "Visa öppet kort" }));
@@ -312,19 +319,19 @@ describe("Swedish URL analysis workspace", () => {
           provenance: {
             origin: "user",
             extractionMethod: "manual",
-            verification: "userConfirmed",
+            verification: "unverified",
             sourceUrl: savedListingResponse.normalizedUrl,
           },
         },
       },
     });
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Spara bil" }));
+    await user.click(screen.getByRole("button", { name: "Lägg till bil" }));
 
     await waitFor(() => expect(createSavedListing).toHaveBeenCalledTimes(1));
     expect(vi.mocked(createSavedListing).mock.calls[0][0]).toMatchObject({
@@ -334,7 +341,7 @@ describe("Swedish URL analysis workspace", () => {
     expect(await screen.findByText("Bilen har sparats.")).toBeInTheDocument();
     expect(screen.getByText("Sparad")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Granska och komplettera alla uppgifter" }));
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
     expect(screen.getByLabelText("Registreringsnummer")).toHaveAttribute("readonly");
     await user.clear(screen.getByLabelText("Märke"));
     await user.type(screen.getByLabelText("Märke"), "Saab");
@@ -373,12 +380,12 @@ describe("Swedish URL analysis workspace", () => {
     vi.mocked(getSavedListing).mockResolvedValue(savedListingResponse);
     vi.mocked(replaceSavedListing).mockResolvedValue({ ...savedListingResponse, revision: 4, listingVersion: 3 });
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), candidate.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
     await screen.findByText("Saab V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Spara bil" }));
+    await user.click(screen.getByRole("button", { name: "Lägg till bil" }));
 
     const dialog = await screen.findByRole("alertdialog", { name: /ABC123 finns redan/ });
     const replaceButton = screen.getByRole("button", { name: "Ersätt sparad bil" });
@@ -392,7 +399,7 @@ describe("Swedish URL analysis workspace", () => {
     const request = vi.mocked(replaceSavedListing).mock.calls[0][1];
     expect(request.listing.draft.make).toMatchObject({
       value: "Volvo",
-      provenance: { origin: "user", extractionMethod: "manual", verification: "userConfirmed" },
+      provenance: { origin: "user", extractionMethod: "manual", verification: "unverified" },
     });
   });
 
@@ -421,12 +428,12 @@ describe("Swedish URL analysis workspace", () => {
       hasSavedCostScenario: true,
     });
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Spara bil" }));
+    await user.click(screen.getByRole("button", { name: "Lägg till bil" }));
 
     expect(await screen.findByRole("alertdialog", { name: /har redan en sparad kalkyl/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Koppla annons till befintlig bil" }));
@@ -448,11 +455,11 @@ describe("Swedish URL analysis workspace", () => {
       { code: "revisionConflict", expectedRevision: 3, actualRevision: 4 },
     ));
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.click(await screen.findByRole("button", { name: "Öppna" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Granska och komplettera alla uppgifter" }));
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
     await user.clear(screen.getByLabelText("Märke"));
     await user.type(screen.getByLabelText("Märke"), "Saab");
     await user.click(screen.getByRole("button", { name: "Spara ändringar" }));
@@ -474,7 +481,7 @@ describe("Swedish URL analysis workspace", () => {
     vi.mocked(getSavedListing).mockResolvedValue(combinedResponse);
     vi.mocked(deleteSavedListing).mockResolvedValue();
     const user = userEvent.setup();
-    render(<UrlAnalysisPage />);
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.click(await screen.findByRole("button", { name: "Öppna" }));
     await screen.findByText("Volvo V70 2.4");

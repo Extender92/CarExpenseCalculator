@@ -41,7 +41,7 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
             var saved = await new SavedListingStore(writer, new(), TimeProvider.System)
                 .CreateAsync(RegistrationNumber.Parse("TST123"), Input(Details()));
             id = saved.VehicleId;
-            Assert.Equal(2, saved.ListingSchemaVersion);
+            Assert.Equal(3, saved.ListingSchemaVersion);
             Assert.Empty(saved.ProcessingResult.Sources);
         }
         await using var reader = fixture.CreateDbContext();
@@ -89,6 +89,27 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Version_two_listing_reads_without_rewriting_values_evidence_or_metadata()
+    {
+        await fixture.ResetDatabaseAsync();
+        await using var db = fixture.CreateDbContext();
+        var original = await new SavedListingStore(db, new(), TimeProvider.System)
+            .CreateAsync(RegistrationNumber.Parse("TST129"), Input(Details()));
+        // This fixture uses only fields/evidence supported by the existing v2
+        // format. Seed its historic storage marker, without introducing v3 edits.
+        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE vehicle_listings SET listing_schema_version = 2 WHERE vehicle_id = {original.VehicleId}");
+        await using var reader = fixture.CreateDbContext();
+        var saved = (await new SavedListingStore(reader, new(), TimeProvider.System).GetAsync(original.VehicleId))!;
+        Assert.Equal(2, saved.ListingSchemaVersion);
+        Assert.Equal(original.Revision, saved.Revision);
+        Assert.Equal(original.AnalyzedAtUtc, saved.AnalyzedAtUtc);
+        Assert.Equal(original.PromptVersion, saved.PromptVersion);
+        Assert.Equal(original.ExtractionSchemaVersion, saved.ExtractionSchemaVersion);
+        Assert.Equivalent(original.ProcessingResult.Listing, saved.ProcessingResult.Listing, strict: true);
+        Assert.Equal(2, await reader.Database.SqlQueryRaw<int>("SELECT listing_schema_version AS \"Value\" FROM vehicle_listings").SingleAsync());
+    }
+
+    [Fact]
     public async Task Rollback_rejects_new_data_atomically_and_leaves_it_readable()
     {
         await fixture.ResetDatabaseAsync();
@@ -96,7 +117,7 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
         var saved = await new SavedListingStore(db, new(), TimeProvider.System).CreateAsync(RegistrationNumber.Parse("TST126"), Input(Details()));
         var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.GetService<IMigrator>()
             .MigrateAsync("20260908103211_AddComparisonPersistence"));
-        Assert.Contains("cannot be downgraded", error.MessageText);
+        Assert.Contains("Cannot downgrade listing review workflow", error.MessageText);
         await using var reader = fixture.CreateDbContext();
         Assert.Equivalent(Details(), (await new SavedListingStore(reader, new(), TimeProvider.System).GetAsync(saved.VehicleId))!.ProcessingResult.Listing.Details, strict: true);
     }
@@ -154,7 +175,7 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
         if (adopt) await drafts.AdoptAsync(saved.Revision);
         var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.GetService<IMigrator>()
             .MigrateAsync("20260910132449_AddListingDetails"));
-        Assert.Contains("HTML listing content cannot be downgraded", error.MessageText);
+        Assert.Contains("Cannot downgrade listing review workflow", error.MessageText);
         await using var reader = fixture.CreateDbContext();
         if (adopt)
         {
@@ -179,14 +200,15 @@ public sealed class ListingDetailsPersistenceTests(PostgreSqlFixture fixture)
     }
 
     [Fact]
-    public async Task Prompt_three_survives_the_followup_migration_down_and_up()
+    public async Task Prompt_three_in_current_storage_survives_rejected_rollback_without_relabeling()
     {
         await fixture.ResetDatabaseAsync();
         await using var db = fixture.CreateDbContext();
         var listing = await new SavedListingStore(db, new(), TimeProvider.System)
             .CreateAsync(RegistrationNumber.Parse("TST130"), Input(Details()));
         var migrator = db.Database.GetService<IMigrator>();
-        await migrator.MigrateAsync("20260910132449_AddListingDetails");
+        var error = await Assert.ThrowsAsync<PostgresException>(() => migrator.MigrateAsync("20260910132449_AddListingDetails"));
+        Assert.Contains("Cannot downgrade listing review workflow", error.MessageText);
         await migrator.MigrateAsync();
         await using var reader = fixture.CreateDbContext();
         var read = (await new SavedListingStore(reader, new(), TimeProvider.System).GetAsync(listing.VehicleId))!;

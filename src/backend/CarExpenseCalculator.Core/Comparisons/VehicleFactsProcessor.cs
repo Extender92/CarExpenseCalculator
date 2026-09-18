@@ -183,10 +183,10 @@ public sealed class VehicleFactsProcessor
         var listing = evidence.Origin == FieldOrigin.Listing && evidence.ExtractionMethod is ExtractionMethod.Ai or ExtractionMethod.Html &&
             evidence.Verification == VerificationStatus.Unverified;
         var manual = evidence.Origin == FieldOrigin.User && evidence.ExtractionMethod == ExtractionMethod.Manual &&
-            evidence.Verification == VerificationStatus.UserConfirmed;
+            evidence.Verification is VerificationStatus.Unverified or VerificationStatus.UserConfirmed;
         if (!listing && !manual)
         {
-            Add(errors, path, "unsupportedEvidence", "Only listing/ai-or-html/unverified and user/manual/userConfirmed evidence is supported.");
+            Add(errors, path, "unsupportedEvidence", "Only listing/ai-or-html/unverified and user/manual/unverified-or-userConfirmed evidence is supported.");
         }
 
         if (listing && evidence.SourceUrl is null)

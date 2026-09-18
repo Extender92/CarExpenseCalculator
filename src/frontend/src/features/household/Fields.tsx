@@ -75,7 +75,7 @@ export function ObjectFields({
           <FieldControl
             field={field}
             value={value[field.key]}
-            onChange={(entry) => onChange({ ...value, [field.key]: entry })}
+            onChange={(entry) => onChange(clearChangedSource(value, field.key, entry))}
             path={`${prefix}.${field.key}`}
             errors={errors}
           />
@@ -517,6 +517,7 @@ export function VehicleFields({
               {group.label}
             </summary>
             <div className="mt-4">
+              {group.label === "Energi" && <VehicleElectricShareEditor value={value} onChange={onChange} errors={errors} />}
               <ObjectFields
                 value={value as Record<string, unknown>}
                 fields={group.fields}
@@ -529,6 +530,36 @@ export function VehicleFields({
         ))}
     </div>
   );
+}
+
+function clearChangedSource(value: Record<string, unknown>, key: string, entry: unknown) {
+  const next = { ...value, [key]: entry };
+  if (key === "priceSek" && "priceSource" in value) next.priceSource = null;
+  if (key === "fuel" && "fuelSource" in value) next.fuelSource = null;
+  if (["consumptionPer100Kilometres", "unit"].includes(key) && "consumptionSource" in value) {
+    next.consumptionSource = null;
+    next.consumptionLabel = null;
+  }
+  if (["amountSek", "cadence"].includes(key) && "listingSource" in value) next.listingSource = null;
+  return next;
+}
+
+function VehicleElectricShareEditor({ value, onChange, errors }: {
+  value: VehicleInput; onChange: (value: VehicleInput) => void; errors: FormErrors;
+}) {
+  const share = value.electricDrivingShare ?? { mode: "inherit" as const };
+  return <div className="mb-5 space-y-3">
+    <Labeled label="Elandel för denna bil" path="input.electricDrivingShare.mode" errors={errors}>
+      {(id, describedBy) => <select id={id} aria-describedby={describedBy} className={inputClass} value={share.mode}
+        onChange={event => onChange({ ...value, electricDrivingShare: { mode: event.target.value as "inherit" | "override", value: null } })}>
+        <option value="inherit">Använd hushållets elandel</option><option value="override">Egen elandel för bilen</option>
+      </select>}
+    </Labeled>
+    {share.mode === "override" && <FieldControl field={{ key: "value", label: "Bilens elandel av körsträckan (%)", kind: "sensitivity" }}
+      value={share.value} path="input.electricDrivingShare.value" errors={errors}
+      onChange={entry => onChange({ ...value, electricDrivingShare: { mode: "override", value: entry as typeof share.value } })} />}
+    <p className="text-sm text-slate-400">Egen okänd elandel använder inte hushållets värde. Elandelen påverkar endast beräkningar som fördelar körsträckan mellan olika körlägen.</p>
+  </div>;
 }
 
 function FillLeasePayments({

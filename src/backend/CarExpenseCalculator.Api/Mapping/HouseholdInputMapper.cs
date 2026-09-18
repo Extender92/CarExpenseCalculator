@@ -10,6 +10,14 @@ namespace CarExpenseCalculator.Api.Mapping;
 
 internal static partial class HouseholdInputMapper
 {
+    public static L.ListingValueSource? ToCore(A.ListingValueSource? x) => x is null ? null
+        : new(x.ListingReference, (L.ListingReuseField)x.Field, x.OriginalLabel, x.ListingVersion, x.ItemIndex);
+
+    public static A.ListingValueSource? ToApi(L.ListingValueSource? x) => x is null ? null : new()
+    {
+        ListingReference = x.ListingReference, Field = (A.ListingReuseField)x.Field, OriginalLabel = x.OriginalLabel,
+        ListingVersion = x.ListingVersion, ItemIndex = x.ItemIndex,
+    };
     [return: NotNullIfNotNull(nameof(x))]
     public static C.CalendarMonth? ToCore(A.CalendarMonth? x, string path)
     {
@@ -145,7 +153,8 @@ internal static partial class HouseholdInputMapper
     public static C.HouseholdEnergySource? ToCore(A.HouseholdEnergySource? x, string path)
     {
         if (x is null) return null;
-        return new C.HouseholdEnergySource(x.Key, (L.FuelType?)x.Fuel, (M.EnergyUnit?)x.Unit, ToCore(x.ConsumptionPer100Kilometres, $"{path}.consumptionPer100Kilometres"), (C.ConsumptionBasis?)x.ConsumptionBasis, (C.ElectricityBasis?)x.ElectricityBasis);
+        return new C.HouseholdEnergySource(x.Key, (L.FuelType?)x.Fuel, (M.EnergyUnit?)x.Unit, ToCore(x.ConsumptionPer100Kilometres, $"{path}.consumptionPer100Kilometres"), (C.ConsumptionBasis?)x.ConsumptionBasis, (C.ElectricityBasis?)x.ElectricityBasis,
+            x.ConsumptionLabel, ToCore(x.FuelSource), ToCore(x.ConsumptionSource));
     }
 
     [return: NotNullIfNotNull(nameof(x))]
@@ -157,13 +166,14 @@ internal static partial class HouseholdInputMapper
         ConsumptionPer100Kilometres = ToApi(x.ConsumptionPer100Kilometres),
         ConsumptionBasis = (A.ConsumptionBasis?)x.ConsumptionBasis,
         ElectricityBasis = (A.ElectricityBasis?)x.ElectricityBasis,
+        ConsumptionLabel = x.ConsumptionLabel, FuelSource = ToApi(x.FuelSource), ConsumptionSource = ToApi(x.ConsumptionSource),
     };
 
     [return: NotNullIfNotNull(nameof(x))]
     public static C.HouseholdCostItem? ToCore(A.HouseholdCostItem? x, string path)
     {
         if (x is null) return null;
-        return new C.HouseholdCostItem(x.Key, x.Label, ToCore(x.AmountSek, $"{path}.amountSek"), (C.HouseholdCostCadence?)x.Cadence, x.MonthOffset, x.DueMonthOfYear, x.EvidenceNote, x.SourceUrl);
+        return new C.HouseholdCostItem(x.Key, x.Label, ToCore(x.AmountSek, $"{path}.amountSek"), (C.HouseholdCostCadence?)x.Cadence, x.MonthOffset, x.DueMonthOfYear, x.EvidenceNote, x.SourceUrl, ToCore(x.ListingSource));
     }
 
     [return: NotNullIfNotNull(nameof(x))]
@@ -175,6 +185,7 @@ internal static partial class HouseholdInputMapper
         Cadence = (A.HouseholdCostCadence?)x.Cadence,
         MonthOffset = x.MonthOffset,
         DueMonthOfYear = x.DueMonthOfYear,
+        ListingSource = ToApi(x.ListingSource),
         EvidenceNote = x.EvidenceNote,
         SourceUrl = x.SourceUrl,
     };
@@ -265,6 +276,9 @@ internal static partial class HouseholdInputMapper
         if (x is null) return null;
         return new C.VehicleCostInput(x.CandidateKey.Trim(), x.PriceSek, MapItems(x.EnergySources, $"{path}.energySources", ToCore))
         {
+            PriceSource = ToCore(x.PriceSource),
+            ElectricDrivingShare = x.ElectricDrivingShare is not { } share ? C.VehicleElectricShare.Inherit
+                : new((C.ElectricShareMode)share.Mode, ToCore(share.Value, $"{path}.electricDrivingShare.value")),
             AcquisitionType = (C.AcquisitionType)x.AcquisitionType,
             Residual = ToCore(x.Residual, $"{path}.residual"),
             Lease = ToCore(x.Lease, $"{path}.lease"),
@@ -281,11 +295,13 @@ internal static partial class HouseholdInputMapper
     public static A.VehicleCostInput? ToApi(C.VehicleCostInput? x) => x is null ? null : new()
     {
         CandidateKey = x.CandidateKey.Trim(),
+        PriceSource = ToApi(x.PriceSource),
         AcquisitionType = (A.AcquisitionType)x.AcquisitionType,
         PriceSek = x.PriceSek,
         Residual = ToApi(x.Residual),
         Lease = ToApi(x.Lease),
         EnergySources = x.EnergySources?.Select(item => ToApi(item)!).ToArray(),
+        ElectricDrivingShare = new() { Mode = (A.ElectricShareMode)x.ElectricDrivingShare.Mode, Value = ToApi(x.ElectricDrivingShare.Value) },
         Tax = ToApi(x.Tax),
         Insurance = ToApi(x.Insurance),
         Service = ToApi(x.Service),

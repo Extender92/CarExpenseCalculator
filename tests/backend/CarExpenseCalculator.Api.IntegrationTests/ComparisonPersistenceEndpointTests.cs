@@ -162,12 +162,13 @@ public sealed class ComparisonPersistenceEndpointTests(SavedCostScenarioApiFacto
         var id = saved["vehicleId"]!.GetValue<Guid>();
         await Json(await _client.PutAsJsonAsync($"/api/vehicle-facts/{id}", new { expectedRevision = 1, input = new { } }));
         await factory.ExecuteDatabaseCommandAsync(unsupported
-            ? "UPDATE vehicle_comparison_facts SET schema_version=999"
+            ? "ALTER TABLE vehicle_comparison_facts DROP CONSTRAINT ck_vehicle_comparison_facts_version; UPDATE vehicle_comparison_facts SET schema_version=999"
             : "UPDATE vehicle_comparison_facts SET input=jsonb_build_object()");
         var status = unsupported ? HttpStatusCode.Conflict : HttpStatusCode.ServiceUnavailable;
         var problem = await Json(await _client.GetAsync($"/api/vehicle-facts/{id}"), status);
         Assert.DoesNotContain("Password", problem.ToJsonString());
         await Json(await _client.PutAsJsonAsync($"/api/vehicle-facts/{id}", new { expectedRevision = 2, input = new { } }), status);
+        if (unsupported) await factory.ExecuteDatabaseCommandAsync("UPDATE vehicle_comparison_facts SET schema_version=2; ALTER TABLE vehicle_comparison_facts ADD CONSTRAINT ck_vehicle_comparison_facts_version CHECK (schema_version IN (1, 2) AND (reviewed_listing_version IS NULL OR reviewed_listing_version >= 1))");
     }
 
     [Fact]

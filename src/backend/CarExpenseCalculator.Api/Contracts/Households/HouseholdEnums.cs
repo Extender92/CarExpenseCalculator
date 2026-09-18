@@ -18,6 +18,12 @@ public enum ConsumptionBasis { WholeDistance, DrivingMode }
 [JsonConverter(typeof(StrictStringEnumConverter<ElectricityBasis>))]
 public enum ElectricityBasis { Battery, Metered }
 
+[JsonConverter(typeof(StrictStringEnumConverter<ElectricShareMode>))]
+public enum ElectricShareMode { Inherit, Override }
+
+[JsonConverter(typeof(StrictStringEnumConverter<ElectricShareOrigin>))]
+public enum ElectricShareOrigin { Household, Vehicle }
+
 [JsonConverter(typeof(StrictStringEnumConverter<HouseholdCostCadence>))]
 public enum HouseholdCostCadence { Monthly, Annual, Once }
 

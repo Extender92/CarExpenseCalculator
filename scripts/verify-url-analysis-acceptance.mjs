@@ -1,6 +1,7 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { createLogContentScanner } from "./log-content-scanner.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const docker = process.platform === "win32" ? "docker.exe" : "docker";
@@ -64,16 +65,13 @@ assert(fakeContainerId.length > 0, "The fake extractor container could not be re
 const [fakeContainer] = JSON.parse(runDocker(["inspect", fakeContainerId]));
 assert(fakeContainer.Mounts.length === 0, "The fake extractor must mount no authentication or application data.");
 
-const logs = runCompose(["logs", "--no-color", "api", "web", "fake-codex-extractor"]);
-for (const forbidden of [
+await verifyLogs([
   "cars.example",
   "fake-access-token",
   "thread.started",
   "item.completed",
   "Motor och växellåda fungerar bra",
-]) {
-  assert(!logs.includes(forbidden), `Container logs contain forbidden extraction content: ${forbidden}`);
-}
+]);
 
 console.log("URL-analysis acceptance state, concurrency, isolation, and safe-log checks are valid.");
 
@@ -85,12 +83,30 @@ function runCompose(args) {
   return runDocker([...compose, ...args]);
 }
 
+// Read every accumulated log byte without retaining hundreds of MiB after reruns.
+// Keep an overlap so a forbidden value split between stream chunks is still found.
+function verifyLogs(forbidden) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(docker, [...compose, "logs", "--no-color", "api", "web", "fake-codex-extractor"], {
+      cwd: repositoryRoot, env: process.env, stdio: ["ignore", "pipe", "inherit"],
+    });
+    const scanner = createLogContentScanner(forbidden);
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", chunk => scanner.write(chunk));
+    child.once("error", reject);
+    child.once("close", code => {
+      if (code !== 0) reject(new Error(`Cannot inspect acceptance logs: Docker exited with ${code}.`));
+      else if (scanner.violations().length) reject(new Error(`Container logs contain forbidden extraction content: ${scanner.violations().join(", ")}`));
+      else resolve();
+    });
+  });
+}
+
 function runDocker(args) {
   return execFileSync(docker, args, {
     cwd: repositoryRoot,
     encoding: "utf8",
-    // Repeated full browser suites can exceed 32 MiB of SQL/access logs.
-    // Inspect all accumulated output; do not truncate or weaken the checks.
+    // Bound control-command output; container logs are scanned separately.
     maxBuffer: 128 * 1024 * 1024,
     env: process.env,
     stdio: ["ignore", "pipe", "inherit"],

@@ -45,7 +45,7 @@ internal sealed class VehicleComparisonFactsConfiguration : IEntityTypeConfigura
         builder.ToTable("vehicle_comparison_facts", t =>
         {
             t.HasCheckConstraint("ck_vehicle_comparison_facts_payload", "jsonb_typeof(input) = 'object'");
-            t.HasCheckConstraint("ck_vehicle_comparison_facts_version", "schema_version >= 1 AND (reviewed_listing_version IS NULL OR reviewed_listing_version >= 1)");
+            t.HasCheckConstraint("ck_vehicle_comparison_facts_version", "schema_version IN (1, 2) AND (reviewed_listing_version IS NULL OR reviewed_listing_version >= 1)");
         });
         builder.HasKey(x => x.VehicleId);
         builder.Property(x => x.VehicleId).HasColumnName("vehicle_id").ValueGeneratedNever();

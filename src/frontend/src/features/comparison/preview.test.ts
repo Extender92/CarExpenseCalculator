@@ -29,6 +29,7 @@ describe("complete comparison response publication", () => {
     "revision",
     "generation",
     "membership",
+    "household schema",
   ])("rejects inconsistent %s", (defect) => {
     const request = manualRequest(2);
     const reply = response(request);
@@ -46,6 +47,7 @@ describe("complete comparison response publication", () => {
       reply.views.cautious.candidates[0].sourceRevisions.vehicle = n(999);
     if (defect === "generation") reply.generationId = "";
     if (defect === "membership") reply.views.baseline.candidates.reverse();
+    if (defect === "household schema") reply.views.baseline.householdResultSchemaVersion = n(2);
     expect(() => validResponse(request, reply, 2)).toThrow();
   });
   it("preserves authoritative ordering where visible amounts are equal", () => {

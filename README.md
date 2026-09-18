@@ -68,7 +68,7 @@ Issue #67, [tracker #12](https://github.com/Extender92/CarExpenseCalculator/issu
 and [milestone 3B](https://github.com/Extender92/CarExpenseCalculator/milestone/3)
 are closed after the final delivery audit.
 
-No later implementation issue is ready. AI review (#14/#69), registry access
+Issue #95 is the user-assigned first priority: the [review workflow](docs/review-and-calculation-workflow.md) adds registration-free drafts, contextual editors, explicit fact confirmation, listing reuse and per-car electric shares. See its [verification status](docs/issue-95-verification-report.md). AI review (#14/#69), registry access
 (#68), and mileage-based service planning (#70) still need refinement;
 automatic discovery (#13) and image review (#15) remain on hold. See the
 [current planning checkpoint](docs/roadmap.md#current-planning-checkpoint).

@@ -147,7 +147,18 @@ export function buildSavedListingRequest(
 
   if (Object.keys(errors).length > 0) return { errors };
 
-  const listing: ReviewedListingInput = {
+  const listing = buildReviewedListingInput(submittedUrl, normalizedUrl, context, draft);
+
+  return {
+    registrationNumber,
+    request: { registrationNumber, listing },
+    errors: {},
+  };
+}
+
+export function buildReviewedListingInput(submittedUrl: string, normalizedUrl: string,
+  context: ListingReviewContext, draft: ListingReviewDraft): ReviewedListingInput {
+  return {
     submittedUrl,
     analyzedAtUtc: context.analyzedAtUtc,
     requestedModel: context.requestedModel,
@@ -157,11 +168,6 @@ export function buildSavedListingRequest(
     draft: draftToInput(draft, normalizedUrl),
   };
 
-  return {
-    registrationNumber,
-    request: { registrationNumber, listing },
-    errors: {},
-  };
 }
 
 export function normalizeRegistrationNumber(value: string) {

@@ -2,7 +2,7 @@ import {
   normalizeRegistrationNumber,
   validateRegistrationNumber,
 } from "@/features/manual-calculator/saved-scenarios";
-import { vehicleDeleted } from "@/lib/vehicle-events";
+import { vehicleDeleted, acknowledgeRevision } from "@/lib/vehicle-events";
 import {
   householdApi,
   HouseholdApiError,
@@ -136,6 +136,7 @@ export class HouseholdWorkspace {
     vehicle?: VehicleResponse,
     previousRevision?: Numeric | null,
   ) {
+    if (vehicle) acknowledgeRevision({ vehicleId: vehicle.vehicleId, previous: previousRevision ?? null, current: vehicle.revision });
     for (const listener of this.writeListeners)
       listener(vehicle, previousRevision);
   }
@@ -153,6 +154,7 @@ export class HouseholdWorkspace {
   private openAbort: AbortController | null = null;
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
   private tombstones = new Set<string>();
+  private activeBases = new Map<number, ActiveVehicle>();
   private started = false;
   private reportActive = false;
   state: WorkspaceState = {
@@ -305,8 +307,10 @@ export class HouseholdWorkspace {
           : v,
       ),
     });
+    acknowledgeRevision({ vehicleId: id, previous: expected, current: revision });
   }
   editActive(patch: Partial<ActiveVehicle>) {
+    if (!this.state.active.dirty) this.activeBases.set(this.state.active.token, cloneExact(this.state.active));
     const transition = this.state.transition;
     const id = this.state.active.vehicleId;
     this.set({
@@ -330,6 +334,35 @@ export class HouseholdWorkspace {
       errors: {},
       notice: null,
     });
+    this.schedule();
+  }
+  acknowledgeListingWrite(listing: ListingResponse, previous: Numeric) {
+    const active = this.state.active;
+    const stored = this.state.vehicles[listing.vehicleId];
+    if (active.vehicleId === listing.vehicleId && sameNumber(active.baseRevision, previous))
+      this.set({ active: { ...active, baseRevision: listing.revision, listingSource: listing } });
+    if (stored && sameNumber(stored.revision, previous)) {
+      const updated = { ...stored, revision: listing.revision, currentListingVersion: listing.listingVersion, needsListingReview: true };
+      this.putVehicle(updated);
+      this.publishedWrite(updated, previous);
+    } else acknowledgeRevision({ vehicleId: listing.vehicleId, previous, current: listing.revision });
+    this.schedule();
+  }
+  discardProfile() {
+    this.set({ profile: cloneExact(this.state.savedProfile.input ?? initialProfile()),
+      profileDirty: false, profileEdit: this.state.profileEdit + 1, errors: {}, notice: null });
+    this.schedule();
+  }
+  discardActive() {
+    const current = this.state.active;
+    const baseline = this.activeBases.get(current.token);
+    if (!baseline) return;
+    const transition = this.state.transition;
+    this.set({ active: { ...cloneExact(baseline), baseRevision: current.baseRevision, draftRevision: current.draftRevision,
+      listingSource: current.listingSource, edit: current.edit + 1, dirty: false },
+      ...(transition && current.vehicleId && transition.costs[current.vehicleId] ? {
+        transition: { ...transition, costs: { ...transition.costs, [current.vehicleId]: cloneExact(baseline.cost) }, edit: transition.edit + 1 },
+      } : {}), errors: {}, notice: null });
     this.schedule();
   }
   newVehicle() {
@@ -843,6 +876,9 @@ export class HouseholdWorkspace {
           });
       }
       this.putVehicle(saved);
+      this.activeBases.set(active.token, { ...cloneExact(active), cost: recoveredCost(saved), vehicleId: saved.vehicleId,
+        baseRevision: saved.revision, registrationNumber: saved.registrationNumber, state: saved.state,
+        reviews: saved.unresolvedLegacyItems, dirty: false });
       this.publishedWrite(saved, active.baseRevision);
     } catch (error) {
       this.failure(error, "cost.input");
@@ -925,6 +961,7 @@ export class HouseholdWorkspace {
         replaceExisting,
       );
       this.set({ draft: saved });
+      this.activeBases.set(active.token, { ...cloneExact(active), fromDraft: true, draftRevision: saved.revision, dirty: false });
       if (this.state.active.token === active.token)
         this.set({
           active: {

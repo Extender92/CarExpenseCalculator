@@ -7,10 +7,10 @@ namespace CarExpenseCalculator.Api.Contracts.Comparisons;
 public enum ComparisonPreviewMode { Stored, Manual }
 
 [JsonConverter(typeof(StrictStringEnumConverter<FactEditKind>))]
-public enum FactEditKind { Preserve, Unknown, NotApplicable, Manual, Listing, Conflict, Resolve }
+public enum FactEditKind { Preserve, Unknown, NotApplicable, Manual, Listing, Conflict, Resolve, EditManual, ConfirmCurrent, ResolveUnverified }
 
 [JsonConverter(typeof(StrictStringEnumConverter<FactSelectionKind>))]
-public enum FactSelectionKind { Current, Listing, Manual }
+public enum FactSelectionKind { Current, Listing, Manual, EditManual }
 
 [JsonConverter(typeof(StrictStringEnumConverter<CostConfirmationAction>))]
 public enum CostConfirmationAction { Preserve, Confirm, Clear }

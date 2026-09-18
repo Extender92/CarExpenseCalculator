@@ -41,7 +41,7 @@ export function detailsDisplay(form: DetailsForm | undefined): string {
   const rows = detailFields.map(f => `${f.label}: ${form.fields[f.key].input || "Okänt"}`);
   for (const key of ["specifications", "sellerAnswers"] as const) {
     const c = form[key];
-    rows.push(`${key === "specifications" ? "Övriga specifikationer" : "Säljarfrågor"}: ${c.mode === "unknown" ? "Okänt" : c.mode === "empty" ? "Bekräftat tomt" : ""}`);
+    rows.push(`${key === "specifications" ? "Övriga specifikationer" : "Säljarfrågor"}: ${c.mode === "unknown" ? "Okänt" : c.mode === "empty" ? "Uttryckligen tomt" : ""}`);
     if (c.mode === "values") rows.push(...c.entries.map(x => `${x.first}: ${x.second}`));
   }
   return rows.join("\n");

@@ -1,5 +1,17 @@
 # Household workspace
 
+## Review workflow extension (#95)
+
+The overview now shows summaries and opens shared inputs or a selected car in
+native dialogs. Car editing uses Annons/Kalkyl/Jämförelsefakta tabs, a persistent
+action area and a shared dirty-close guard. Available listing facts can be
+previewed together and explicitly reused without immediate saving or
+confirmation. Each car may inherit the household electric share or override it,
+including an explicitly unknown value. The dedicated atomic legacy transition
+retains its combined form. See the
+[workflow contract](review-and-calculation-workflow.md) for current versions,
+save/discard behavior and storage compatibility.
+
 ## Implemented scope
 
 Issue #60 implements the Swedish stage 3A frontend over the existing

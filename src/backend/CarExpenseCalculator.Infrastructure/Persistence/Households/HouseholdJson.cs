@@ -10,6 +10,8 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Households;
 internal static partial class HouseholdJson
 {
     public const int SchemaVersion = 1;
+    public const int CostSchemaVersion = 2;
+    public const int DraftSchemaVersion = 2;
     private const int MaximumPayloadBytes = 2 * 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
@@ -29,7 +31,7 @@ internal static partial class HouseholdJson
 
     public static T Deserialize<T>(string json, int version = SchemaVersion)
     {
-        if (version != SchemaVersion)
+        if (version != SchemaVersion && (version != CostSchemaVersion || typeof(T) == typeof(ProfilePayload)))
             throw new HouseholdStoreException("unsupportedHouseholdInputVersion", "Stored input version is unsupported.");
         return JsonSerializer.Deserialize<T>(json, Options) ?? throw new JsonException("Stored input is missing.");
     }
@@ -103,15 +105,18 @@ internal static partial class HouseholdJson
     internal sealed record CostPayload(string CandidateKey, AcquisitionType AcquisitionType, decimal? PriceSek,
         ResidualPayload? Residual, LeasePayload? Lease, EnergySourcePayload[]? EnergySources,
         CategoryPayload? Tax, CategoryPayload? Insurance, CategoryPayload? Service, CategoryPayload? Repairs,
-        SensitivityValue? AdditionalRepairAllowancePerMonthSek, CategoryPayload? CustomCosts)
+        SensitivityValue? AdditionalRepairAllowancePerMonthSek, CategoryPayload? CustomCosts,
+        VehicleElectricShare? ElectricDrivingShare = null, Core.Listings.ListingValueSource? PriceSource = null)
     {
         public static CostPayload FromCore(VehicleCostInput x) => new(x.CandidateKey.Trim(), x.AcquisitionType, x.PriceSek,
             ResidualPayload.FromCore(x.Residual), LeasePayload.FromCore(x.Lease), x.EnergySources?.Select(EnergySourcePayload.FromCore).ToArray(),
             CategoryPayload.FromCore(x.Tax), CategoryPayload.FromCore(x.Insurance), CategoryPayload.FromCore(x.Service),
-            CategoryPayload.FromCore(x.Repairs), x.AdditionalRepairAllowancePerMonthSek, CategoryPayload.FromCore(x.CustomCosts));
+            CategoryPayload.FromCore(x.Repairs), x.AdditionalRepairAllowancePerMonthSek, CategoryPayload.FromCore(x.CustomCosts), x.ElectricDrivingShare, x.PriceSource);
         public VehicleCostInput ToCore() => new(CandidateKey, PriceSek, EnergySources?.Select(x => x.ToCore()))
         {
             AcquisitionType = AcquisitionType, Residual = Residual?.ToCore(), Lease = Lease?.ToCore(),
+            ElectricDrivingShare = ElectricDrivingShare ?? VehicleElectricShare.Inherit,
+            PriceSource = PriceSource,
             Tax = Tax?.ToCore(), Insurance = Insurance?.ToCore(), Service = Service?.ToCore(), Repairs = Repairs?.ToCore(),
             AdditionalRepairAllowancePerMonthSek = AdditionalRepairAllowancePerMonthSek, CustomCosts = CustomCosts?.ToCore(),
         };

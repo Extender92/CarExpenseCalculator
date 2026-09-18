@@ -74,7 +74,7 @@ public sealed class HouseholdCostStoreTests(PostgreSqlFixture fixture) : Househo
         Assert.Null(Assert.Single(read.Input.Repairs!.Items).AmountSek);
         Assert.Equal(0, read.Input.AdditionalRepairAllowancePerMonthSek!.Single);
         Assert.Null((await new HouseholdProfileStore(second).GetAsync()).Input);
-        Assert.Equal(1, await ScalarAsync<int>("SELECT schema_version FROM vehicle_cost_inputs"));
+        Assert.Equal(2, await ScalarAsync<int>("SELECT schema_version FROM vehicle_cost_inputs"));
         Assert.Equal(0, await CountAsync("saved_cost_scenarios"));
     }
 

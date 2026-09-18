@@ -1,5 +1,16 @@
 # Household HTTP contracts
 
+## Review workflow extension (#95)
+
+Current household calculation/result versions are **3**. Vehicle cost and shared
+calculation-draft storage are **2**, with version-1 reads retained; household
+profile storage is unchanged. Cost input adds typed listing source records and
+`electricDrivingShare: { mode: inherit|override, value?: ... }`. Override-null
+means unknown without fallback. Results include the effective share and origin.
+The independent listing-review-draft CRUD/adoption endpoints and read-only
+listing-reuse preview are specified in the
+[workflow contract](review-and-calculation-workflow.md).
+
 ## Implemented boundary
 
 Issue #59 exposes the [household calculation](household-calculations.md#partial-preview-and-http-contract)

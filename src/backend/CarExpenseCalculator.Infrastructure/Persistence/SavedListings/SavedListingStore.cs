@@ -13,7 +13,7 @@ public sealed class SavedListingStore(
     ListingDraftProcessor processor,
     TimeProvider timeProvider) : ISavedListingStore
 {
-    internal const int CurrentListingSchemaVersion = 2;
+    internal const int CurrentListingSchemaVersion = 3;
 
     public async Task<SavedListing> CreateAsync(
         RegistrationNumber registrationNumber,
@@ -198,6 +198,13 @@ public sealed class SavedListingStore(
             prepared.ExtractionSchemaVersion, prepared.Result.Sources.Select(source => source.Url), prepared.Result.Listing);
     }
 
+    public SavedListingInput NormalizeReviewDraft(SavedListingInput input)
+    {
+        var prepared = Prepare(null, input);
+        return new(prepared.SubmittedUrl, prepared.AnalyzedAtUtc, prepared.RequestedModel, prepared.PromptVersion,
+            prepared.ExtractionSchemaVersion, prepared.Result.Sources.Select(source => source.Url), prepared.Result.Listing);
+    }
+
     // The caller owns the encompassing transaction and increments the vehicle revision once.
     internal async Task ApplyDraftAsync(VehicleEntity vehicle, SavedListingInput input, CancellationToken cancellationToken)
     {
@@ -220,23 +227,23 @@ public sealed class SavedListingStore(
         vehicle.VehicleLabel = prepared.Result.Listing.VehicleLabel?.Value;
     }
 
-    private PreparedListing Prepare(RegistrationNumber registrationNumber, SavedListingInput input)
+    private PreparedListing Prepare(RegistrationNumber? registrationNumber, SavedListingInput input)
     {
         var submittedUrl = ListingUrl.Parse(input.SubmittedUrl);
         var errors = new List<ListingValidationError>();
         var requestedModel = NormalizeMetadata(input, errors);
         var listing = input.Listing;
 
-        if (listing.RegistrationNumber is null)
+        if (registrationNumber is not null && listing.RegistrationNumber is null)
         {
             listing = listing with
             {
                 RegistrationNumber = new SourcedValue<RegistrationNumber>(
                     registrationNumber,
-                    ManualProvenance(submittedUrl)),
+                    new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified, submittedUrl)),
             };
         }
-        else if (listing.RegistrationNumber.Value != registrationNumber)
+        else if (registrationNumber is not null && listing.RegistrationNumber?.Value != registrationNumber)
         {
             errors.Add(new ListingValidationError(
                 "registrationNumber.value",
@@ -606,7 +613,7 @@ public sealed class SavedListingStore(
                 && listing.ExtractionSchemaVersion is null
             || listing.RequestedModel is not null
                 && ListingExtractionContractVersions.CanRead(listing.PromptVersion, listing.ExtractionSchemaVersion);
-        if (listing.ListingSchemaVersion is not (1 or 2)
+        if (listing.ListingSchemaVersion is not (1 or 2 or 3)
             || !extractionMetadataIsSupported)
         {
             throw new UnsupportedSavedListingVersionException(

@@ -6,8 +6,8 @@ using CarExpenseCalculator.Infrastructure.Persistence.Households;
 
 namespace CarExpenseCalculator.Infrastructure.Persistence.Comparisons;
 
-public enum FactEditKind { Preserve, Unknown, NotApplicable, Manual, Listing, Conflict, Resolve }
-public enum FactSelectionKind { Current, Listing, Manual }
+public enum FactEditKind { Preserve, Unknown, NotApplicable, Manual, Listing, Conflict, Resolve, EditManual, ConfirmCurrent, ResolveUnverified }
+public enum FactSelectionKind { Current, Listing, Manual, EditManual }
 public enum CostConfirmationAction { Preserve, Confirm, Clear }
 public sealed record ManualFactValue<T>(T Value, DateTimeOffset? ObservedAt = null) where T : notnull;
 public sealed record FactSelection<T>(FactSelectionKind Kind, int? ObservationIndex = null, ManualFactValue<T>? Manual = null) where T : notnull;

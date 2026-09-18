@@ -1,3 +1,4 @@
+import { closeEditor, editingScope } from "./editor-helpers";
 import {
   expect,
   test,
@@ -98,9 +99,9 @@ async function create(
   return { ...car, revision: (await facts.json()).revision };
 }
 const main = (page: Page) =>
-  page.getByRole("table", { name: "Huvudjämförelse", exact: true });
+  page.getByRole("table", { name: "Huvudjämförelse", exact: true, includeHidden: true });
 const row = (page: Page, registration: string) =>
-  main(page).getByRole("row").filter({ hasText: registration });
+  main(page).getByRole("row", { includeHidden: true }).filter({ hasText: registration });
 async function settled(page: Page) {
   await expect(
     page.getByText("Resultaten är inaktuella.", { exact: false }),
@@ -159,7 +160,8 @@ test("B1-B4: edits common priorities and facts with exact intervals, coverage an
   await expect(row(page, "CAA100")).toContainText("[45,00, 85,00]");
   await expect(row(page, "CAA100")).toContainText("60,00 %");
   expect(writes).toEqual([]);
-  await page.getByText("Köpkrav och prioriteringar", { exact: true }).click();
+  await closeEditor(page);
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const gearRule = page.locator('[data-criterion="transmission"]');
   await gearRule.locator("summary").click();
   await gearRule.getByLabel("Vikt (0–5)").fill("0");
@@ -171,13 +173,17 @@ test("B1-B4: edits common priorities and facts with exact intervals, coverage an
   await priceRule.getByLabel("Vikt (0–5)").fill("1");
   await gearRule.getByLabel("Vikt (0–5)").fill("4");
   await expect(row(page, "CAA100")).toContainText("[15,00, 95,00]");
+  await closeEditor(page);
+  await row(page, "CAA100").getByRole("button", { name: "CAA100", exact: true }).click();
+  await gear.locator("summary").click();
   // A confirmed unwanted gearbox has a known zero contribution (B4).
   await gear.getByLabel("Åtgärd för Växellåda").selectOption("manual");
   await gear.getByLabel("Värde", { exact: true }).selectOption("manual");
   await expect(row(page, "CAA100")).toContainText("[15,00, 15,00]");
-  expect(writes).toEqual([]);
+  expect(writes.filter(url => url.includes("vehicle-facts"))).toHaveLength(1);
+  expect(writes.filter(url => url.endsWith("rule-profile"))).toHaveLength(1);
   await page
-    .getByRole("button", { name: "Spara biluppgifter", exact: true })
+    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
     .click();
   await expect
     .poll(
@@ -186,15 +192,10 @@ test("B1-B4: edits common priorities and facts with exact intervals, coverage an
           await (
             await request.get(`/api/vehicle-facts/${car.vehicleId}`)
           ).json()
-        ).input.facts.transmission.observations[0].value,
+        ).input.facts.transmission.observations[0]?.value,
     )
     .toBe("manual");
-  await page
-    .getByRole("button", {
-      name: "Spara köpkrav och prioriteringar",
-      exact: true,
-    })
-    .click();
+  await closeEditor(page);
   await expect
     .poll(
       async () =>
@@ -228,7 +229,7 @@ test("A2: ownership cost, financing and calendar remain separate, with focused e
   await expect(row(page, "CAA100")).toContainText(/20\s750,00/);
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   await expect(
-    page.getByRole("table", { name: "Betalningar och budgetar", exact: true }),
+    page.getByRole("table", { name: "Betalningar och budgetar", exact: true , includeHidden: true}),
   ).toContainText(/80\s750,00/);
   await row(page, "CAA100")
     .getByRole("link", { name: "Ekonomiskt underlag" })
@@ -238,7 +239,7 @@ test("A2: ownership cost, financing and calendar remain separate, with focused e
     page.getByLabel("Inköpspris (kr)", { exact: true }),
   ).toBeFocused();
   await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("75000");
-  await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
+  await closeEditor(page);
   await expect(row(page, "CAA100")).toContainText(/15\s750,00/);
   expect(
     (
@@ -246,7 +247,7 @@ test("A2: ownership cost, financing and calendar remain separate, with focused e
         await request.get(`/api/vehicle-cost-inputs/${car.vehicleId}`)
       ).json()
     ).input.priceSek,
-  ).toBe(80000);
+  ).toBe(75000);
 });
 
 test("101 cars share pagination and global scores; details never narrow the calculation", async ({
@@ -260,20 +261,20 @@ test("101 cars share pagination and global scores; details never narrow the calc
     if (r.url().endsWith("/preview-all")) bodies.push(r.postDataJSON());
   });
   await page.goto("/search");
-  await expect(main(page).getByRole("row")).toHaveCount(51);
+  await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(51);
   expect(bodies[0].overrides).toEqual([]);
   expect(bodies[0].candidates).toBeUndefined();
   await page.getByRole("button", { name: "Nästa sida" }).click();
-  await expect(main(page).getByRole("row")).toHaveCount(51);
+  await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(51);
   await expect(main(page)).toContainText("CAA150");
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   await expect(
     page
-      .getByRole("table", { name: "Känslighetsanalys", exact: true })
-      .getByRole("row"),
+      .getByRole("table", { name: "Känslighetsanalys", exact: true , includeHidden: true})
+      .getByRole("row", { includeHidden: true }),
   ).toHaveCount(51);
   await page.getByRole("button", { name: "Nästa sida" }).click();
-  await expect(main(page).getByRole("row")).toHaveCount(2);
+  await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(2);
   await expect(main(page)).toContainText("CAA200");
   await expect(row(page, "CAA200")).toContainText("[85,00, 85,00]");
   expect(bodies).toHaveLength(1);
@@ -288,7 +289,7 @@ test("two browsers preserve local priorities until a changed baseline is explici
   await create(request);
   await page.goto("/search");
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
-  await page.getByText("Köpkrav och prioriteringar", { exact: true }).click();
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const price = page.locator('[data-criterion="purchasePriceSek"]');
   await price.locator("summary").click();
   await price.getByLabel("Vikt (0–5)").fill("1");
@@ -298,7 +299,7 @@ test("two browsers preserve local priorities until a changed baseline is explici
       ...profile(),
       purchaseCashSek: 99999,
     });
-    await page
+    await (await editingScope(page))
       .getByRole("button", { name: "Läs aktuellt serverunderlag" })
       .click();
     await expect(
@@ -339,21 +340,24 @@ test("explicit manual mode works without storage and retains economic edits thro
   await page.getByRole("button", { name: "Lägg till manuell bil" }).click();
   await page.getByLabel("Registreringsnummer", { exact: true }).fill("CAA100");
   await page
-    .getByRole("link", { name: "Redigera ekonomiskt underlag", exact: true })
+    .getByRole("button", { name: "Kalkyl", exact: true })
     .click();
+  if (await page.getByRole("button", { name: "Lägg till kalkylunderlag", exact: true }).isVisible()) await page.getByRole("button", { name: "Lägg till kalkylunderlag", exact: true }).click();
   await page
     .getByLabel("Inköpspris (kr)", { exact: true })
     .fill("123,1234567890123456789");
-  await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
+  await closeEditor(page);
   await expect(row(page, "CAA100")).toBeVisible();
+  await row(page, "CAA100").getByRole("button", { name: "CAA100", exact: true }).click();
   await settled(page);
   await page
-    .getByRole("link", { name: "Redigera ekonomiskt underlag", exact: true })
+    .getByRole("button", { name: "Kalkyl", exact: true })
     .click();
+  if (await page.getByRole("button", { name: "Lägg till kalkylunderlag", exact: true }).isVisible()) await page.getByRole("button", { name: "Lägg till kalkylunderlag", exact: true }).click();
   await expect(page.getByLabel("Inköpspris (kr)", { exact: true })).toHaveValue(
     "123,1234567890123456789",
   );
-  await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
+  await closeEditor(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   expect(
@@ -413,7 +417,7 @@ test("B5-B8: overlap, hard requirements, partial totals and fixed goals use the 
   await expect(row(page, "CAA100")).toContainText("[45,00, 85,00]");
   await expect(row(page, "CAA101")).toContainText("[60,00, 80,00]");
   await page.getByLabel("Sortering", { exact: true }).selectOption("score");
-  await expect(main(page).getByRole("row").nth(1)).toContainText("CAA101");
+  await expect(main(page).getByRole("row", { includeHidden: true }).nth(1)).toContainText("CAA101");
   await expect(page.getByText(/Poängintervallen överlappar/)).toBeVisible();
   await expect(
     page.getByText("Säker preferensvinnare", { exact: true }),
@@ -422,7 +426,7 @@ test("B5-B8: overlap, hard requirements, partial totals and fixed goals use the 
   await create(request, 2, cost(1000, 0), {
     transmission: manual("automatic"),
   });
-  await page
+  await (await editingScope(page))
     .getByRole("button", { name: "Läs aktuellt serverunderlag" })
     .click();
   await expect(row(page, "CAA100")).toContainText("[45,00, 85,00]");
@@ -468,7 +472,7 @@ test("B5-B8: overlap, hard requirements, partial totals and fixed goals use the 
       },
     ],
   });
-  await page
+  await (await editingScope(page))
     .getByRole("button", { name: "Läs aktuellt serverunderlag" })
     .click();
   await expect(row(page, "CAA101")).toContainText("Bortvald");
@@ -476,9 +480,9 @@ test("B5-B8: overlap, hard requirements, partial totals and fixed goals use the 
   const details = page
     .getByRole("table", {
       name: "Krav, prioriteringar och källor",
-      exact: true,
+      exact: true, includeHidden: true
     })
-    .getByRole("row")
+    .getByRole("row", { includeHidden: true })
     .filter({ hasText: "CAA101" });
   await expect(details).toContainText("Ägarantal");
   await expect(details).toContainText("Behöver verifieras");
@@ -518,7 +522,7 @@ test("B6 cost order keeps incomplete and rejected alternatives while marking onl
   );
   await create(request, 3, cost(40000, 20000), tow(false));
   await page.goto("/search");
-  await expect(main(page).getByRole("row")).toHaveCount(5);
+  await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(5);
   for (const [index, registration] of [
     "CAA101",
     "CAA100",
@@ -527,7 +531,7 @@ test("B6 cost order keeps incomplete and rejected alternatives while marking onl
   ].entries())
     await expect(
       main(page)
-        .getByRole("row")
+        .getByRole("row", { includeHidden: true })
         .nth(index + 1),
     ).toContainText(registration);
   await expect(row(page, "CAA101")).toContainText(
@@ -545,7 +549,7 @@ test("250 cars include an off-page preference winner and share every detail page
   for (let i = 0; i < 250; i++)
     await create(request, i, i === 249 ? cost(20000, 0) : cost(40000, 30000));
   await page.goto("/search");
-  await expect(main(page).getByRole("row")).toHaveCount(51);
+  await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(51);
   await expect(main(page)).not.toContainText("CAA349");
   const recommendations = page.getByRole("region", {
     name: "Rekommendationer för hela beståndet",
@@ -558,11 +562,12 @@ test("250 cars include an off-page preference winner and share every detail page
     page.getByText("Sida 5 av 5 · 50 bilar per sida", { exact: true }),
   ).toBeVisible();
   await expect(row(page, "CAA349")).toContainText("[100,00, 100,00]");
+  await closeEditor(page);
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   await expect(
     page
-      .getByRole("table", { name: "Känslighetsanalys", exact: true })
-      .getByRole("row"),
+      .getByRole("table", { name: "Känslighetsanalys", exact: true , includeHidden: true})
+      .getByRole("row", { includeHidden: true }),
   ).toHaveCount(51);
 });
 
@@ -658,33 +663,33 @@ test("A5-A8 and A11 retain independent energy, maintenance, accrual and strict b
   await expect(row(page, "CAA102")).toContainText(/7\s200,00/);
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   const sensitivity = page
-    .getByRole("table", { name: "Känslighetsanalys", exact: true })
-    .getByRole("row")
+    .getByRole("table", { name: "Känslighetsanalys", exact: true , includeHidden: true})
+    .getByRole("row", { includeHidden: true })
     .filter({ hasText: "CAA102" });
   await expect(sensitivity).toContainText(/4\s800,00/);
   await expect(sensitivity).toContainText(/9\s600,00/);
   const payments = page.getByRole("table", {
     name: "Betalningar och budgetar",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(
     payments
-      .getByRole("row")
+      .getByRole("row", { includeHidden: true })
       .filter({ hasText: "CAA102" })
       .getByRole("cell")
       .first(),
   ).toContainText(/3\s600,00/);
   await page
-    .getByText("Hushållsprofil – visa och redigera", { exact: true })
+    .getByRole("button", { name: "Redigera hushållsprofil", exact: true })
     .click();
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("6");
   await expect(row(page, "CAA103")).toContainText("600,00");
   await expect(
-    payments.getByRole("row").filter({ hasText: "CAA103" }),
+    payments.getByRole("row", { includeHidden: true }).filter({ hasText: "CAA103" }),
   ).toContainText("Inom budget");
   await page.getByLabel("Löpande månadsbudget (kr)").fill("199");
   await expect(
-    payments.getByRole("row").filter({ hasText: "CAA103" }),
+    payments.getByRole("row", { includeHidden: true }).filter({ hasText: "CAA103" }),
   ).toContainText("Budgeten överskrids");
   await expect(row(page, "CAA100")).toContainText("känd del"); // Fixed residual retains its original horizon.
 });
@@ -728,13 +733,13 @@ test("A9-A10 display leasing coverage and distinguish outflows, refunds and budg
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   const payments = page.getByRole("table", {
     name: "Betalningar och budgetar",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(payments).toContainText(/63\s000,00/);
   await expect(payments).toContainText(/3\s000,00/);
   await expect(payments).toContainText(/2\s250,00/);
   await page
-    .getByText("Hushållsprofil – visa och redigera", { exact: true })
+    .getByRole("button", { name: "Redigera hushållsprofil", exact: true })
     .click();
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("12");
   await expect(payments).toContainText(/33\s000,00/);
@@ -751,10 +756,6 @@ test("economic saving advances the shared revision and clears old confirmation w
   const car = await create(request);
   await page.goto("/search");
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
-  await row(page, "CAA100").getByRole("button", { name: "CAA100" }).click();
-  const gear = page.locator('[data-fact="transmission"]');
-  await gear.locator("summary").click();
-  await gear.getByLabel("Åtgärd för Växellåda").selectOption("unknown");
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -767,12 +768,12 @@ test("economic saving advances the shared revision and clears old confirmation w
     },
   );
   try {
-    await page
-      .getByRole("link", { name: "Redigera ekonomiskt underlag", exact: true })
-      .click();
-    await expect(
-      page.getByRole("heading", { name: "Öppnar bilens ekonomiska underlag" }),
-    ).toBeVisible();
+    await row(page, "CAA100").getByRole("button", { name: "CAA100" }).click();
+    const gear = page.locator('[data-fact="transmission"]');
+    await gear.locator("summary").click();
+    await gear.getByLabel("Åtgärd för Växellåda").selectOption("unknown");
+    await page.getByRole("tab", { name: "Kalkyl", exact: true }).click();
+    await expect(page.getByText("Öppnar bilens kalkyl…", { exact: true })).toBeVisible();
     await expect(
       page.getByLabel("Inköpspris (kr)", { exact: true }),
     ).toHaveCount(0);
@@ -796,7 +797,8 @@ test("economic saving advances the shared revision and clears old confirmation w
         ).input.priceSek,
     )
     .toBe(35000);
-  await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
+  await page.getByRole("tab", { name: "Jämförelsefakta", exact: true }).click();
+  const gear = page.locator('[data-fact="transmission"]');
   await expect(row(page, "CAA100")).toContainText("[0,00, 100,00]");
   await settled(page);
   await expect(gear.getByLabel("Åtgärd för Växellåda")).toHaveValue("unknown");
@@ -880,7 +882,7 @@ test("listing adoption preserves source versions and requires explicit conflict 
   await gear.getByLabel("Åtgärd för Växellåda").selectOption("listing");
   await expect(row(page, "CAA100")).toContainText("[45,00, 85,00]");
   await page
-    .getByRole("button", { name: "Spara biluppgifter", exact: true })
+    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
     .click();
   await expect
     .poll(
@@ -899,7 +901,7 @@ test("listing adoption preserves source versions and requires explicit conflict 
     data: { expectedRevision: saved.revision, listing: listing("automatic") },
   });
   expect(replaced.status(), await replaced.text()).toBe(200);
-  await page
+  await (await editingScope(page))
     .getByRole("button", { name: "Läs aktuellt serverunderlag" })
     .click();
   await expect(gear).toContainText("Annonsförslag: Automat");
@@ -909,7 +911,7 @@ test("listing adoption preserves source versions and requires explicit conflict 
   await gear.getByLabel("Källa för observation 1").selectOption("current-0");
   await gear.getByLabel("Källa för observation 2").selectOption("listing");
   await page
-    .getByRole("button", { name: "Spara biluppgifter", exact: true })
+    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
     .click();
   await expect
     .poll(
@@ -940,7 +942,7 @@ test("keyboard errors and incomplete responses never publish a false recommendat
     delete body.views.cautious;
     await route.fulfill({ response, json: body });
   });
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).focus();
+  await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(
     page.getByText(/Ett komplett jämförelsesvar kunde inte läsas/),
@@ -950,14 +952,14 @@ test("keyboard errors and incomplete responses never publish a false recommendat
   ).toHaveCount(0);
   await expect(row(page, "CAA100")).not.toContainText("Säker preferensvinnare");
   await page.unroute("**/api/comparisons/preview-all");
-  await page.getByText("Köpkrav och prioriteringar", { exact: true }).focus();
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).focus();
   await page.keyboard.press("Enter");
   const price = page.locator('[data-criterion="purchasePriceSek"]');
   await price.locator("summary").focus();
   await page.keyboard.press("Enter");
   await price.getByLabel("Vikt (0–5)").fill("fel");
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
-  await expect(page.getByRole("alert")).toBeFocused();
-  await page.getByRole("alert").getByRole("button").first().click();
+  await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
+  await expect((await editingScope(page)).getByRole("alert")).toBeFocused();
+  await (await editingScope(page)).getByRole("alert").getByRole("button").first().click();
   await expect(price.getByLabel("Vikt (0–5)")).toBeFocused();
 });

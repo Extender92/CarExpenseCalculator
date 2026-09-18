@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IHouseholdProfileStore, HouseholdProfileStore>();
         services.AddScoped<IVehicleCostInputStore, VehicleCostInputStore>();
         services.AddScoped<ISharedVehicleDraftStore, SharedVehicleDraftStore>();
+        services.AddScoped<Persistence.ListingReviewDrafts.IListingReviewDraftStore, Persistence.ListingReviewDrafts.ListingReviewDraftStore>();
         services.AddScoped<IHouseholdTransitionStore, HouseholdTransitionStore>();
         services.AddScoped<Persistence.Comparisons.IRuleProfileStore, Persistence.Comparisons.RuleProfileStore>();
         services.AddScoped<Persistence.Comparisons.IVehicleFactsStore, Persistence.Comparisons.VehicleFactsStore>();

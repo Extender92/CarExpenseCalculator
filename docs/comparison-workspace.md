@@ -1,5 +1,16 @@
 # Swedish comparison workspace (#65)
 
+## Review workflow extension (#95)
+
+The main overview retains sorting, paging and open result sections while car,
+household and rule editing occurs in native dialogs. Missing-field actions open
+the relevant car/tab/control. A car's current listing version remains distinct
+from previously reviewed fact versions. Save, edit, reuse and adopt never imply
+confirmation; confirmation is an explicit choice. Per-car electric-share values
+and their origins are displayed with the comparison and frozen report. The
+[workflow contract](review-and-calculation-workflow.md) supersedes the original
+inline-editor and storage-version descriptions below.
+
 ## Delivery status
 
 Delivered through approved [PR #87](https://github.com/Extender92/CarExpenseCalculator/pull/87)

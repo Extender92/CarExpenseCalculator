@@ -77,7 +77,7 @@ export function factErrors(input: FactWrite, prefix: string): FormErrors {
       if (!edit) continue;
       const path = `${prefix}.edits.${field}${Array.isArray(value) ? `[${index}]` : ""}`;
       if (
-        (edit.kind === "manual" || edit.kind === "resolve") &&
+        ["manual", "resolve", "editManual", "resolveUnverified"].includes(edit.kind) &&
         edit.manual?.value == null
       )
         errors[`${path}.manual.value`] = [
@@ -89,7 +89,7 @@ export function factErrors(input: FactWrite, prefix: string): FormErrors {
             "Ange minst två olika observationer.",
           ];
         edit.observations?.forEach((o, i) => {
-          if (o.kind === "manual" && o.manual?.value == null)
+          if ((o.kind === "manual" || o.kind === "editManual") && o.manual?.value == null)
             errors[`${path}.observations[${i}].manual.value`] = [
               "Ange observationsvärdet.",
             ];
@@ -115,7 +115,7 @@ export function validResponse(
       !/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(
         response.generationId,
       ) ||
-      response.transportVersion.text !== "2" ||
+      response.transportVersion.text !== "3" ||
       response.candidateCount.text !== String(expectedCount) ||
       response.activeSensitivityMode !==
         request.profile.activeSensitivityMode ||
@@ -165,8 +165,8 @@ export function validResponse(
         view.asOfDate !== request.asOfDate ||
         view.ruleVersion.text !== "1" ||
         view.resultSchemaVersion.text !== "1" ||
-        view.calculationVersion.text !== "2" ||
-        view.householdResultSchemaVersion.text !== "2" ||
+        view.calculationVersion.text !== "3" ||
+        view.householdResultSchemaVersion.text !== "3" ||
         view.candidates.length !== expectedCount ||
         !sameIds(view.costOrder) ||
         !sameIds(view.scoreOrder)

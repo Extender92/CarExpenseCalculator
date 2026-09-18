@@ -38,7 +38,10 @@ public sealed record HouseholdDepreciationResult(
 public sealed record HouseholdEnergyResult(
     CostSectionResult Cost,
     IReadOnlyList<HouseholdEnergySourceResult> Sources,
-    bool IsIncluded);
+    bool IsIncluded,
+    EffectiveElectricShare? ElectricDrivingShare);
+
+public sealed record EffectiveElectricShare(ElectricShareOrigin Origin, decimal? Percent);
 
 public sealed record HouseholdEnergySourceResult(
     string Key,

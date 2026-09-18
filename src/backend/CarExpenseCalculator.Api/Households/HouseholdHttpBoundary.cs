@@ -17,7 +17,7 @@ internal sealed class HouseholdHttpBoundary(RequestDelegate next)
 {
     public const int MaximumBodyBytes = 2 * 1024 * 1024;
     private static readonly string[] Prefixes = ["/api/household-calculations", "/api/household-profile",
-        "/api/vehicle-cost-inputs", "/api/household-transition", "/api/vehicle-draft"];
+        "/api/vehicle-cost-inputs", "/api/household-transition", "/api/vehicle-draft", "/api/listing-review-drafts", "/api/listing-reuse"];
     public static bool IsHousehold(PathString path) => Prefixes.Any(prefix => path.StartsWithSegments(prefix));
 
     public async Task InvokeAsync(HttpContext context)
@@ -78,10 +78,11 @@ internal sealed class HouseholdHttpBoundary(RequestDelegate next)
         {
             var status = e.Code switch
             {
-                "profileNotFound" or "vehicleNotFound" or "draftEmpty" => 404,
+                "profileNotFound" or "vehicleNotFound" or "draftEmpty" or "reviewDraftNotFound" => 404,
                 "payloadTooLarge" => 413,
                 "invalidVehicleWrite" or "invalidLegacyDecisions" or "invalidLegacyTarget" or "unresolvedLegacyItemIncluded"
-                    or "legacyDecisionsRequired" or "invalidTransitionSet" or "invalidDraft" => 400,
+                    or "legacyDecisionsRequired" or "invalidTransitionSet" or "invalidDraft" or "registrationRequiredForAdoption"
+                    or "reviewDraftIdentityMismatch" or "invalidListingSource" => 400,
                 _ => 409,
             };
             if (status == 400)
@@ -95,9 +96,28 @@ internal sealed class HouseholdHttpBoundary(RequestDelegate next)
             {
                 Type = "about:blank", Status = status, Title = e.Message, Instance = context.Request.Path,
                 Code = e.Code, VehicleId = e.VehicleId, ExpectedRevision = e.ExpectedRevision, ActualRevision = e.ActualRevision,
+                ReviewDraftId = e.ReviewDraftId,
                 RecoveryRoute = e.Code == "householdTransitionRequired"
                     ? context.Request.Path.StartsWithSegments("/api/saved-cost-scenarios") && e.VehicleId is { } id
                         ? $"/api/vehicle-cost-inputs/{id}" : "/api/household-transition" : null,
+            });
+        }
+        catch (CarExpenseCalculator.Core.Comparisons.ComparisonInputValidationException e) when (household)
+        {
+            await Write(context, Validation(context, e.Errors.Select(x =>
+                new Contracts.Households.HouseholdInputError(x.Path, x.Code, x.Message)).ToArray()));
+        }
+        catch (CarExpenseCalculator.Core.Comparisons.VehicleFactsValidationException e) when (household)
+        {
+            await Write(context, Validation(context, e.Errors.Select(x =>
+                new Contracts.Households.HouseholdInputError(x.Path, x.Code, x.Message)).ToArray()));
+        }
+        catch (Infrastructure.Persistence.Comparisons.ComparisonStoreException e) when (household)
+        {
+            await Write(context, new HouseholdProblemDetails
+            {
+                Status = e.Code == "vehicleNotFound" ? 404 : 409, Code = e.Code, Title = e.Message,
+                VehicleId = e.VehicleId, ExpectedRevision = e.ExpectedRevision, ActualRevision = e.ActualRevision,
             });
         }
         catch (Exception e) when (household && e is DbException or DbUpdateException or JsonException

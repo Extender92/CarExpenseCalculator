@@ -2,6 +2,7 @@ using System.Data;
 using CarExpenseCalculator.Core.Households;
 using CarExpenseCalculator.Core.Vehicles;
 using CarExpenseCalculator.Infrastructure.Persistence.SavedCostScenarios;
+using CarExpenseCalculator.Infrastructure.Persistence.SavedListings;
 using CarExpenseCalculator.Infrastructure.Persistence.Vehicles;
 using Microsoft.EntityFrameworkCore;
 
@@ -100,6 +101,11 @@ internal static class HouseholdStoreData
     {
         ValidateListingLabel(vehicle, write);
         var current = vehicle.HouseholdCostInput;
+        var priorCost = current is null ? null : HouseholdJson.Deserialize<HouseholdJson.StoredCostPayload>(current.InputJson, current.SchemaVersion).Input.ToCore();
+        var sourceListing = vehicle.Listing is null ? null : SavedListingStore.ToSavedListing(vehicle);
+        var sourceErrors = Core.Listings.ListingCostSources.ValidateClaims(write.Input, priorCost,
+            sourceListing?.ProcessingResult.Listing, sourceListing?.NormalizedUrl, sourceListing?.ListingVersion);
+        if (sourceErrors.Count > 0) throw new HouseholdInputValidationException(sourceErrors);
         if (vehicle.ComparisonFacts?.CostConfirmedAt is { } confirmedAt)
         {
             var previous = current is null ? null : HouseholdJson.Deserialize<HouseholdJson.StoredCostPayload>(current.InputJson, current.SchemaVersion).Input.ToCore();
@@ -117,12 +123,13 @@ internal static class HouseholdStoreData
         { CandidateKey = vehicle.RegistrationNumber }, remaining.Select(HouseholdJson.LegacyReviewPayload.FromItem).ToArray());
         var json = HouseholdJson.Serialize(payload);
         if (current is null)
-            vehicle.HouseholdCostInput = new() { VehicleId = vehicle.Id, Vehicle = vehicle, InputJson = json, SourceListingVersion = source };
+            vehicle.HouseholdCostInput = new() { VehicleId = vehicle.Id, Vehicle = vehicle, InputJson = json, SourceListingVersion = source,
+                SchemaVersion = HouseholdJson.CostSchemaVersion };
         else
         {
             current.InputJson = json;
             current.SourceListingVersion = source;
-            current.SchemaVersion = HouseholdJson.SchemaVersion;
+            current.SchemaVersion = HouseholdJson.CostSchemaVersion;
         }
         // Listing readers use the aggregate label together with listing-owned provenance.
         // A cost-only write must not change that reviewed listing fact or its version.
