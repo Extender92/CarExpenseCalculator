@@ -66,6 +66,9 @@ test("reuse populates selected unsaved costs and facts once, then saves resource
     await dialog.getByRole("button", { name: "Använd tillgängliga annonsuppgifter", exact: true }).click();
     const preview = page.getByRole("dialog", { name: "Välj annonsuppgifter att återanvända" });
     await expect(preview).toBeVisible();
+    await expect(preview.getByRole("checkbox", { name: /Mätarställning \(mil\)/ })).toBeVisible();
+    await expect(preview.getByText("16710", { exact: true })).toBeVisible();
+    await expect(preview.getByText("Bensin", { exact: true })).toBeVisible();
     await preview.getByRole("checkbox", { name: /Inköpspris:/ }).check();
     await preview.getByRole("checkbox", { name: /Årlig fordonsskatt:/ }).check();
     await preview.getByRole("checkbox", { name: /Bensin:.*NEDC/ }).check();

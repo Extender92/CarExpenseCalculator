@@ -23,7 +23,7 @@ Disposable Compose project: `car-expense-e2e`, port **8091**, separate network
 | Backend tests | **1,169 passed, 0 failed, 0 skipped** |
 | Frontend npm ci | Passed; existing audit findings below |
 | Frontend lint / build | Passed; zero lint or build warnings/errors |
-| Frontend tests | **301 passed, 0 failed, 0 skipped**, 29 files |
+| Frontend tests | **305 passed, 0 failed, 0 skipped**, 30 files |
 | Full Chromium suite, one worker | **77 passed, 0 failed, 0 skipped** |
 | OpenAPI | Regenerated from running API; repeat generation produced the same hash |
 | Compose boundaries | Passed |
@@ -124,6 +124,13 @@ timeout on hidden **Energi**; scoping expansion to the **Annons** panel passed
 three consecutive focused runs. The correction changes the test helper, without
 relaxing assertions or increasing timeouts. Full local and published checks were
 rerun after the correction.
+
+Final presentation review found raw kilometre values under the reuse preview's
+Swedish mil label and untranslated typed choice values. The preview now uses
+exact decimal conversion and the existing Swedish choice catalogue. Four unit
+regressions cover conversion precision, choice labels, missing/zero/false/empty
+values and unchanged free text; the browser reuse test checks the visible unit
+and translated fuel value. This increased the frontend total from 301 to 305.
 
 Early native-print helpers timed out because Chrome's internal print target is
 not a normal Playwright page. One interrupted helper left two fictional fixtures;

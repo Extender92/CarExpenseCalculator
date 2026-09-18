@@ -10,6 +10,7 @@ import { request } from "./api";
 import { formatMoney, cloneExact, stringifyExact, type Exact } from "./numbers";
 import { fuels, units } from "./form-model";
 import { useWorkspace } from "./use-workspace";
+import { listingReuseValue } from "./reuse-value";
 
 type Preview = Exact<components["schemas"]["ListingReusePreviewResponse"]>;
 interface Loaded { preview: Preview; token: number; edit: number; factFingerprint: string; }
@@ -121,7 +122,7 @@ export function ListingReusePanel() {
         {proposal.factTargets.filter(t => t.field !== "purchasePriceSek").map(target => <div key={target.field}>
           {choice(`fact:${target.field}`, `Jämförelsefakta: ${labelFor(target.field)}`, target.requiresReplacement, target.alreadyApplied, !canApplyFacts)}
           {proposal.facts.facts[target.field as keyof typeof proposal.facts.facts]?.observations.map((o, index) => <div key={index} className="px-3">
-            <p className="break-words text-sm">{displayValue(o.value)}</p><Evidence evidence={o.evidence} version={o.sourceListingVersion} />
+            <p className="break-words text-sm">{listingReuseValue(o.value, target.field)}</p><Evidence evidence={o.evidence} version={o.sourceListingVersion} />
           </div>)}
         </div>)}
         {proposal.facts.conditionNotes && choice("notes", "Skickuppgifter från annonsen", factEditing?.base.input?.conditionNotes != null || factEditing?.input.edits?.conditionNotes != null, false, !canApplyFacts)}
@@ -132,12 +133,4 @@ export function ListingReusePanel() {
       </div>
     </EditorDialog>}
   </div>;
-}
-function displayValue(value: unknown): string {
-  if (value === false) return "Nej";
-  if (value === true) return "Ja";
-  if (value == null) return "Saknas";
-  if (Array.isArray(value)) return value.length ? value.map(displayValue).join(", ") : "Uttryckligen tom samling";
-  if (typeof value === "object" && "text" in value) return String(value.text);
-  return String(value);
 }
