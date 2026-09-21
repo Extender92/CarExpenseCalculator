@@ -125,11 +125,14 @@ Apply `20260918105352_AddListingReviewWorkflow` through the explicit API
 `migrate` command. Earlier migrations are unchanged. Existing rows are read
 without mass rewriting; new saves use the new storage versions.
 
-Before migrating an installation with data, stop writers and take a PostgreSQL
+Before migrating an installation with data that must be recoverable, stop writers and take a PostgreSQL
 custom-format backup (`pg_dump -Fc`) outside disposable test directories. Verify
 it by restoring into a separate PostgreSQL 18 database with the compatible
-application version. Preserve the old images and credentials volumes without
-copying their contents into the repository.
+application version. Preserve credentials volumes without copying their
+contents into the repository. The [prebuilt updater](deployment-images.md)
+deliberately removes old unused app images after success; historical digests
+remain in releases for a separately planned recovery. Backups are not a
+mandatory updater step for an installation with disposable data.
 
 Downgrading to `20260910214541_AllowHtmlListingExtraction` is refused when review
 drafts or new listing/cost/fact/shared-draft payloads would be lost. Use a

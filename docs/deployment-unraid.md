@@ -1,171 +1,164 @@
 # Unraid deployment
 
-## Target
+## Install once, then update with one command
 
-- Unraid host: `extower.local`
-- Web URL: `http://extower.local:8088` by default
-- Database: existing `postgresql18` container
-- Network: a shared user-defined Docker network named `car-expense-network`
-- Public ports: frontend only
+- Use Linux x86_64, Docker Compose, Bash, curl, jq, GNU tar/coreutils and flock.
+  The updater checks required commands. Git, Node and .NET are not needed.
+- Keep the existing `postgresql18` container on `car-expense-network`.
+  Use a dedicated database/role. Never use `immich-postgres`.
+- Keep the project name `car-expense-calculator`. Only the frontend port is
+  published. Choose an available `WEB_PORT`, for example `6425`.
+- Preserve the existing `CODEX_HOME_PATH`. The updater refuses a changed bind
+  mount when existing Codex containers are present.
+- Use the completed public release bundle, once the first publication is
+  verified. The repository is not needed for server operation.
 
-`immich-postgres` is owned by Immich and must never be reused by this application.
+### Existing source-build installation: one-time transition
 
-## Complete-comparison transport (#85)
+Run from the parent of the existing `repository` directory. The paths below
+are generic examples; substitute the existing appdata location. This prepares
+a sibling `deploy` directory and copies only configuration, not login files.
 
-Issue #85 adds baseline/preview-all HTTP support on its feature branch pending
-merge. It requires **no new migration**. Set `COMPARISON_MAX_REQUEST_BYTES` in
-the deployment environment to a positive integer byte count, default `33554432`
-(32 MiB). Both `api` and `web` receive the same Compose/Unraid value. A direct
-API start and a standalone web image use that default too. Recreate both
-services after changing it; do not configure different proxy/API limits.
+```bash
+cd /mnt/user/appdata/car-expense-calculator
+mkdir deploy
+cp repository/.env deploy/.env
+chmod 600 deploy/.env
+cd deploy
+```
 
-The web image renders `/etc/nginx/templates/default.conf.template` through the
-official Nginx entrypoint. On `/api/comparisons/preview-all` it disables request
-and response buffering, uses HTTP/1.1 upstream, and sets 150-second read/send
-timeouts. Existing routes retain their 2-MiB body limits. The API raises the
-per-request Kestrel limit before reading and checks actual bytes in bounded
-memory, including chunked transfer; no body files are written.
+Keep your current port (including `6425`), credentials and absolute
+`CODEX_HOME_PATH` in that copied file. Then download one complete version:
 
-The API allows two complete previews per process with no queue and a 120-second
-total deadline. Handle `comparisonBusy`, `comparisonTimedOut`, and byte-limit
-errors explicitly. The body limit applies to uploaded changes/manual input,
-not saved inventory or output size. Memory grows with complete input and all
-three result views; no fixed car-count limit means no promise of unlimited
-capacity. There is no stored preview cache/session to clear. See the
-[HTTP contract](comparison-api.md#complete-set-comparison-85).
+```bash
+(
+set -e
+release_tag=$(curl --fail --silent --show-error --retry 3 \
+  https://api.github.com/repos/Extender92/CarExpenseCalculator/releases/latest \
+  | jq -er '.tag_name | select(test("^build-[1-9][0-9]*-[1-9][0-9]*$"))')
+release_url="https://github.com/Extender92/CarExpenseCalculator/releases/download/$release_tag"
+curl --fail --location --retry 3 --output unraid-bundle.tar.gz "$release_url/unraid-bundle.tar.gz"
+curl --fail --location --retry 3 --output unraid-bundle.tar.gz.sha256 "$release_url/unraid-bundle.tar.gz.sha256"
+sha256sum --check unraid-bundle.tar.gz.sha256
+tar --extract --gzip --file unraid-bundle.tar.gz --no-same-owner \
+  compose.unraid.yaml update.sh deploy.sh deploy-lib.sh .env.example manifest.json
+chmod 700 update.sh deploy.sh deploy-lib.sh
+./update.sh
+)
+```
 
-## PostgreSQL preparation
+The release is selected once, so both assets belong to the same version.
+Extraction never contains or overwrites `.env`. The updater validates the
+bundle again before touching running services. Keep the original repository
+until readiness, preserved data, login status and the web page are checked.
+Deleting it is a separate action: inspect its exact path and local/untracked
+files first. The updater never deletes source directories or private notes.
 
-Create a dedicated database and role:
+### New installation
 
-- Database: `car_expense_calculator`
-- Application role: `car_expense_app`
-- Password: supplied outside Git
-
-Attach `postgresql18`, the API, and the frontend proxy to `car-expense-network`. The API connection host is `postgresql18` and the container port is `5432`; never depend on a dynamic `172.x.x.x` address.
-
-One possible one-time network setup from the Unraid terminal is:
+Prepare the external network and attach `postgresql18` if not already done:
 
 ```bash
 docker network create car-expense-network
 docker network connect car-expense-network postgresql18
 ```
 
-If the network or attachment already exists, do not recreate it. Create the role and database from an administrative PostgreSQL session, using a strong password that matches `.env`:
+Create a dedicated `car_expense_calculator` database owned by
+`car_expense_app` using an administrative PostgreSQL session. Set its password
+interactively; keep it out of terminal history and Git. Enable PostgreSQL
+autostart independently of the application.
 
-```sql
-CREATE ROLE car_expense_app WITH LOGIN PASSWORD 'replace-this-password';
-CREATE DATABASE car_expense_calculator OWNER car_expense_app;
-```
+Create an empty installation directory and download/extract the same bundle
+above, **before** its final `./update.sh` line. Copy `.env.example` to `.env`,
+set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `WEB_PORT` and
+`CODEX_HOME_PATH`, then `chmod 600 .env`. Prepare that dedicated Codex directory
+with owner `1654:1654` and mode `700`, and run `./update.sh`. The database is
+migrated explicitly; a login is not required for the manual calculator.
 
-Do not grant the application role access to Immich or other application databases.
+### Every subsequent update
 
-## HTTP routing
-
-Nginx publishes `${WEB_PORT:-8088}` and serves the React application. Requests under `/api` are proxied to `api:8080`. API and database ports remain internal.
-
-## Configuration
-
-Copy `.env.example` to `.env` and provide local values. The `.env` file is ignored by Git. Do not place credentials in Compose YAML, React variables, source files, container images, or GitHub Actions logs.
-
-Validate the repository-owned port, network, and connection boundaries before deployment. The script overrides Compose variables with fixed verification values, so real deployment credentials are not required or printed:
+From `deploy`:
 
 ```bash
-node scripts/verify-compose-boundaries.mjs
+./update.sh
 ```
 
-## Codex extraction service
+The updater downloads while the app runs, then stops only its three services,
+runs the new API's `migrate` command and starts them together. It verifies
+running image identities and API/database health through Nginx. No Git pull,
+local build or manual image cleanup is needed. An already current healthy
+installation is not restarted or migrated again.
 
-Compose includes a private `codex-extractor` sidecar on
-`car-expense-network`. It has no published port, PostgreSQL settings, repository
-mount, or application-source mount. Only the API calls its internal port 8080.
-Its liveness check does not require authentication, so a missing or expired
-Codex login cannot block the manual calculator.
+After success, only the current unused-or-running image version for each app
+component is deliberately retained; older unused app images are removed without
+force. Images used by any other running/stopped container, unexpected tags and
+unidentifiable remnants are reported and preserved. Other applications,
+PostgreSQL, volumes, networks, shared build cache and login files are untouched.
 
-The sidecar runs as container user `1654`. Prepare the dedicated appdata path
-before the first login:
+If an update fails, read the reported step and private diagnostic location.
+A failure before maintenance leaves the running app unchanged; a later failure
+can leave it stopped. There is no automatic reset, downgrade, restoration or
+retry of migration. Cleanup runs only after successful health checks. Exit 2
+means **updated, but cleanup incomplete**; a later explicit `./update.sh` may
+retry that cleanup without restarting an already current app.
+
+A backup is not a mandatory updater step for an installation with disposable
+data. Back up and verify data you want to recover before schema changes.
+The updater keeps neither a backup nor a previous local image version for you.
+The explicit rollback notes below describe separate administrative recovery.
+
+## Codex login and health
+
+Existing authentication stays in the same bind mount. To log in on a new
+installation, use the running container:
 
 ```bash
-codex_state_path=/mnt/user/appdata/car-expense-calculator/codex
-mkdir -p "$codex_state_path"
-chown 1654:1654 "$codex_state_path"
-chmod 700 "$codex_state_path"
+docker exec -it car-expense-calculator-codex-extractor-1 codex login --device-auth -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
+docker exec car-expense-calculator-codex-extractor-1 codex login status -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
 ```
 
-Set `CODEX_HOME_PATH` to that path in `.env`, build the pinned image, perform
-device-code login once, and verify the saved ChatGPT session without starting a
-search:
+These commands do not start an AI turn. Device-code login must be enabled in
+the account. Never copy authentication files into the repository, bundle or
+ordinary backups. There is no Platform API-key fallback. CLI 0.153.0,
+`gpt-5.6-luna` and `medium` are unchanged.
+
+For a configured port of `6425`, open `http://<server>:6425` and optionally check:
 
 ```bash
-docker compose -f compose.unraid.yaml build codex-extractor
-docker compose -f compose.unraid.yaml run --rm --no-deps --entrypoint codex codex-extractor login --device-auth -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
-docker compose -f compose.unraid.yaml run --rm --no-deps --entrypoint codex codex-extractor login status -c 'forced_login_method="chatgpt"' -c 'cli_auth_credentials_store="file"'
+curl --fail http://localhost:6425/api/health/ready
+curl --fail http://localhost:6425/api/system/status
 ```
 
-Device-code login must be enabled in the ChatGPT account's security settings.
-The mounted Codex home preserves refreshed credentials across container
-replacement. Treat the directory as a secret: exclude it from Git, logs, shares
-exposed to untrusted users, and mounts into API, web, or PostgreSQL containers.
-Do not copy its contents into `.env` or an ordinary unencrypted backup.
+This release assumes a trusted LAN, with no app authentication or HTTPS.
+It is not intended for public internet exposure.
 
-Back up this directory only to secret-capable encrypted storage if retaining the
-session is operationally necessary. Restoring it gives access equivalent to the
-saved Codex session. Re-authentication is safer than retaining an unprotected
-copy. The application has no Platform API-key fallback. CI never authenticates,
-starts a live turn, or consumes ChatGPT usage. See
-[Codex listing extraction](codex-extraction.md). Automated acceptance uses a
-separate Compose project and a private fake extractor, so it never starts this
-service or mounts this authentication directory.
+## Manual Compose administration
 
-## Initial deployment
-
-The existing `postgresql18` container must be running and attached to `car-expense-network`. Complete the one-time Codex login above, build the application images, apply the database migration, and only then start the services:
+Normal operation needs only `./update.sh`. For the explicit administrative
+Compose commands below, run from `deploy` and first load the installed digests:
 
 ```bash
-docker compose -f compose.unraid.yaml build
-docker compose -f compose.unraid.yaml run --rm api migrate
-docker compose -f compose.unraid.yaml up --detach codex-extractor api web
+export CEC_API_IMAGE=$(jq -er '.images.api' .deploy-state/current.json)
+export CEC_WEB_IMAGE=$(jq -er '.images.web' .deploy-state/current.json)
+export CEC_EXTRACTOR_IMAGE=$(jq -er '.images["codex-extractor"]' .deploy-state/current.json)
 ```
 
-The migration command uses the API service's configured `ConnectionStrings__Postgres` value and exits after all pending migrations have been applied. This includes `AddCurrentVehicleListings` and `LinkSavedScenariosToListings`, which add current listing storage and nullable calculation-to-listing version metadata. A failure returns a nonzero exit code. Do not start the application until the failure has been investigated and resolved.
+The manifest contains no secrets. `compose.unraid.yaml` points at the complete
+active runtime and reads the installation's unchanged `.env`. Do not add
+`build` entries or change the project name. Never use a general Docker prune
+to implement application cleanup.
 
-Verify liveness, database readiness, and feature status through the single published origin:
+## Transport configuration
 
-```bash
-curl --fail http://extower.local:8088/api/health/live
-curl --fail http://extower.local:8088/api/health/ready
-curl --fail http://extower.local:8088/api/system/status
-docker compose -f compose.unraid.yaml ps
-```
-
-Use the configured `WEB_PORT` instead of `8088` when it has been changed. The Compose output must show a published port only for `web`; `api` must not have a host-port mapping. The existing `postgresql18` container must not publish PostgreSQL to the LAN for this application.
-
-Complete the browser and saved-data checks in
-[URL analysis verification](url-analysis-verification.md) and
-[Manual calculator verification](manual-calculator-verification.md).
-
-## Upgrades
-
-Create and verify a PostgreSQL backup before an upgrade. This is mandatory before applying `20260904100409_AddCurrentVehicleListings` or `20260904132333_LinkSavedScenariosToListings`. Build the new images while the current application is still running, then use a short maintenance window for migration and replacement:
-
-```bash
-docker compose -f compose.unraid.yaml build
-docker compose -f compose.unraid.yaml stop web api codex-extractor
-docker compose -f compose.unraid.yaml run --rm api migrate
-docker compose -f compose.unraid.yaml up --detach codex-extractor api web
-curl --fail http://extower.local:8088/api/health/ready
-```
-
-Image replacement preserves the bound `CODEX_HOME_PATH`. After a Codex CLI
-upgrade, verify `codex --version` and `codex login status` with the commands
-above before testing extraction. Never solve an authentication failure by
-mounting the Codex home into another service.
-
-If migration fails, leave the updated services stopped, preserve the command output, and investigate before restarting. Do not attempt an arbitrary rollback against persistent data.
-
-## Boundaries
-
-This release assumes a trusted LAN. It has no HTTPS or authentication and must not be port-forwarded or otherwise exposed to the public internet. Add TLS and authentication before any remote-access deployment.
+`COMPARISON_MAX_REQUEST_BYTES` defaults to `33554432` (32 MiB). API and Nginx
+receive the same value. Complete previews retain their bounded memory,
+two-operation/120-second limits and explicit errors; other routes retain their
+existing limits. Listing retrieval keeps its existing 240/245/270-second total
+sidecar/client/Nginx timeouts. Deployment introduces no new domain contracts.
+See [comparison transport](comparison-api.md#complete-set-comparison-85),
+[listing extraction](complete-listing-extraction.md),
+[publication design](deployment-images.md) and
+[verification](prebuilt-deployment-verification.md).
 
 ## Database migrations
 
@@ -283,9 +276,10 @@ Migration `20260910132449_AddListingDetails` adds nullable typed JSONB and versi
 constraints. Follow-up `20260910214541_AllowHtmlListingExtraction` admits metadata
 pairs 2/2, 3/3 and 4/3 without relabeling rows. Upgrade API, sidecar and frontend
 together: new extraction is 4/3 and
-the complete comparison transport is 2. CLI 0.153.0 and the existing authentication
+the complete comparison transport was 2 at that migration (the review workflow
+now uses transport 3). CLI 0.153.0 and the existing authentication
 volume remain unchanged. Use the explicit `api migrate` command; do not migrate
-at startup. Take and verify a PostgreSQL backup first.
+at startup. Back up and verify data that must be recoverable before upgrading.
 
 The previous schema target is:
 
@@ -313,3 +307,11 @@ HTML provenance in current listings, shared drafts or comparison facts. Restore
 a compatible backup if those values must survive; do not relabel them as AI or
 older extraction. The earlier details rollback guard still applies to lower
 targets. Apply migrations explicitly with writes controlled, never at API startup.
+
+### Review workflow migration
+
+`20260918105352_AddListingReviewWorkflow` adds review drafts and the current
+storage-version guards. The updater applies this existing migration explicitly;
+prebuilt deployment itself adds no migration. Existing data is not relabeled or
+mass-rewritten. Its guarded downgrade refuses new formats or drafts that would
+be lost. See [review workflow recovery](review-and-calculation-workflow.md#versions-migration-and-recovery).

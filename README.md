@@ -244,6 +244,7 @@ GitHub Actions runs the `Build, test and verify` workflow. Pull requests to `mai
 - `Backend - build and test`
 - `Frontend - lint, test and build`
 - `OpenAPI - verify contract`
+- `Deployment - update and publication safeguards`
 - `Docker - build and end-to-end test`
 
 ```bash
@@ -255,18 +256,24 @@ npm --prefix src/frontend run lint
 npm --prefix src/frontend run test
 npm --prefix src/frontend run build
 node scripts/verify-compose-boundaries.mjs
+export WEB_PORT=8091 E2E_BASE_URL=http://localhost:8091
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml build
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml run --rm --no-deps --entrypoint codex codex-extractor --version
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml up --detach postgres
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml run --rm api migrate
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml up --detach api web
-curl --fail http://localhost:8088/api/health/ready
-npm --prefix src/frontend run e2e -- --project=chromium
+curl --fail http://localhost:8091/api/health/ready
+npm --prefix src/frontend run e2e -- --project=chromium --workers=1
 node scripts/verify-url-analysis-acceptance.mjs
 docker compose --project-name car-expense-e2e -f compose.yaml -f compose.e2e.yaml down --volumes
 ```
 
-The Playwright suite expects the Docker stack at `http://localhost:8088`. The E2E override routes extraction to a private deterministic fake, does not start the real sidecar, and never authenticates to ChatGPT or consumes Codex allowance. The distinct project name keeps its disposable database and empty Codex volume separate from ordinary local data. See [URL analysis verification](docs/url-analysis-verification.md) and [Manual calculator verification](docs/manual-calculator-verification.md) for the complete acceptance procedures.
+The commands above and CI use the disposable stack on port `8091`; Playwright's fallback remains `8088` when `E2E_BASE_URL` is absent. The E2E override routes extraction to a private deterministic fake, does not start the real sidecar, and never authenticates to ChatGPT or consumes Codex allowance. The distinct project name keeps its disposable database and empty Codex volume separate from ordinary local data. See [URL analysis verification](docs/url-analysis-verification.md) and [Manual calculator verification](docs/manual-calculator-verification.md) for the complete acceptance procedures.
+
+On a successful `main` push, CI publishes the exact verified images for Linux
+amd64 and a checksummed GitHub Release installation bundle. PRs never publish.
+See [publication and update design](docs/deployment-images.md) and the
+[deployment verification report](docs/prebuilt-deployment-verification.md).
 
 ## Repository layout
 
@@ -277,12 +284,26 @@ tests/backend/     Architecture and PostgreSQL integration tests
 docs/              Product, architecture, integration, AI, and operations notes
 scripts/           Repository-level verification utilities
 compose.yaml       Self-contained local stack
-compose.unraid.yaml  API/web stack using the existing postgresql18 container
+compose.unraid.yaml  Prebuilt app images using the existing postgresql18 container
+deployment/        Source-free Unraid updater
+tests/deployment/   Fake-command regressions and isolated registry/PostgreSQL upgrade
 ```
 
 ## Unraid
 
-The target URL is `http://extower.local:${WEB_PORT}` (`8088` by default). The Unraid Compose file joins the API and frontend to `car-expense-network` and connects to the existing `postgresql18:5432` service. It never uses `immich-postgres`. See [Unraid deployment](docs/deployment-unraid.md) for preparation and commands.
+Install the small release bundle once; no Git clone, Node, .NET or local image
+build is required on the server. Thereafter, from the installation directory:
+
+```bash
+./update.sh
+```
+
+The updater preserves `.env`, its chosen web port (for example `6425`), the
+existing `postgresql18` database, `car-expense-network` and the Codex login bind
+mount. Only the frontend port is published. After a healthy update it removes
+older unused images belonging to these three app services; it retains no
+previous image version locally. It never resets or automatically rolls back
+the database. See [one-time installation and transition](docs/deployment-unraid.md).
 
 ## Documentation
 

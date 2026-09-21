@@ -1,5 +1,6 @@
-FROM node:22-alpine AS build
+FROM node:22.22.2-bookworm-slim@sha256:9f6d5975c7dca860947d3915877f85607946403fc55349f39b4bc3688448bb6e AS build
 WORKDIR /app
+RUN node --version | grep --fixed-strings "v22.22.2"
 
 COPY src/frontend/package.json src/frontend/package-lock.json ./
 RUN npm ci

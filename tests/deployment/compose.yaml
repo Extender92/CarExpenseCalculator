@@ -1,0 +1,34 @@
+name: car-expense-deployment-tests
+services:
+  daemon:
+    image: docker:29.8.0-dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - daemon-data:/var/lib/docker
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  runner:
+    build:
+      context: ../..
+      dockerfile: tests/deployment/Dockerfile
+    network_mode: service:daemon
+    environment:
+      DOCKER_HOST: tcp://127.0.0.1:2375
+      CEC_TESTED_IMAGES: /tested-images
+      CEC_TEST_TEMP: /results
+      LANG: C.UTF-8
+    volumes:
+      - ../..:/work:ro
+      - ${CEC_TESTED_IMAGES_PATH:?Set tested image artifact directory}:/tested-images:ro
+      - ${CEC_DEPLOYMENT_RESULTS_PATH:?Set test output directory}:/results
+    depends_on:
+      daemon:
+        condition: service_healthy
+    command: ["node", "--test", "tests/deployment/integration.test.mjs"]
+volumes:
+  daemon-data:
