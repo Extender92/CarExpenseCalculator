@@ -155,6 +155,18 @@ describe("Swedish URL analysis workspace", () => {
     expect(screen.getByLabelText("Ort eller stad")).toHaveValue("Tenhult");
     expect(screen.getByLabelText("Län")).toHaveValue("Jönköpings län");
 
+  });
+
+  it("marks scalar edits unconfirmed and preserves independent fields", async () => {
+    vi.mocked(analyzeListing).mockResolvedValue(completeListingAnalysisResponse);
+    const user = userEvent.setup();
+    render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
+    await pasteUrls(user, completeListingAnalysisResponse.submittedUrl);
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
+    await screen.findByText("Volvo V70 2.4");
+    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
+    await user.click(screen.getByText("Annons", { selector: "summary" }));
+
     const make = screen.getByLabelText("Märke");
     await user.clear(make);
     await user.paste("Saab");

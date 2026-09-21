@@ -17,7 +17,7 @@ credentials and user data were excluded.
 | Backend | 1,169 passed; zero failed/skipped |
 | Node 22.22.2 / npm ci | Passed; no dependency changes |
 | Frontend lint / production build | Passed |
-| Frontend component/unit tests | 323 passed; zero failed/skipped or unhandled errors |
+| Frontend component/unit tests | 324 passed; zero failed/skipped or unhandled errors |
 | OpenAPI regeneration | Passed; no content diff |
 | Complete Chromium, one worker | 85 passed; zero failed/skipped |
 | URL acceptance and log-content scanner | Passed: outcomes, FIFO, explicit retries, isolation and safe logs |
@@ -107,11 +107,19 @@ with 323 passing tests and no unhandled errors.
 The first PR frontend CI run hit the five-second deadline in two UI tests,
 while the parallel push run passed. URL fixtures now use actual paste operations
 instead of typing every character; retry editing uses the accessible inline
-registration field. Assertions and timeouts are unchanged.
+registration field. The remaining broad rendering/editing test was split into
+two focused cases after another CI deadline failure. All assertions and the
+five-second deadlines remain; the final local run passes 324 tests.
 
 ## Delivery and cleanup
 
 Helpers, logs, PDFs and temporary builds use the ignored
 `temp/frontend-simplification/` directory. The screenshots above are intentionally
-tracked. Final stack cleanup and PR verification are recorded with delivery.
-Unrelated temporary folders and private installation notes are preserved.
+tracked. The four disposable containers, two networks, PostgreSQL test volume
+and three test images were removed. Automatic execution review rejected local
+build/helper directory removal with "blocked by policy"; a private path list
+records remaining artifacts. Shared Docker cache and unrelated temporary folders
+are preserved. No private installation notes were changed or published.
+
+[PR #98](https://github.com/Extender92/CarExpenseCalculator/pull/98) records the
+final CI checks and delivery status. No merge or installation update is included.
