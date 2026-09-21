@@ -21,6 +21,7 @@ import {
   savedListingSummary,
 } from "@/test/listing-analysis";
 import { UrlAnalysisPage } from "./UrlAnalysisPage";
+import * as batchWorkflow from "@/features/url-analysis/batch-workflow";
 
 const { navigateMock } = vi.hoisted(() => ({ navigateMock: vi.fn() }));
 
@@ -66,13 +67,29 @@ beforeEach(() => {
 });
 
 describe("Swedish URL analysis workspace", () => {
+  it("prepares committed analysis results without waiting for a browser paint", async () => {
+    vi.mocked(analyzeListing).mockResolvedValue(completeListingAnalysisResponse);
+    const paint = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    const prepare = vi.spyOn(batchWorkflow, "prepareCar").mockImplementation(async item => ({
+      ...batchWorkflow.newCarWorkflow(), preparedListing: JSON.stringify(item.draft),
+    }));
+    try {
+      const user = userEvent.setup();
+      render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
+      await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
+      await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
+      await waitFor(() => expect(prepare).toHaveBeenCalledOnce());
+      await waitFor(() => expect(screen.getByRole("button", { name: /^Spara och jämför/ })).toBeEnabled());
+    } finally { prepare.mockRestore(); paint.mockRestore(); }
+  });
+
   it("pauses all later URLs on source blocking and resumes only by explicit action", async () => {
     vi.mocked(analyzeListing).mockRejectedValueOnce(new ListingAnalysisApiError("Blocket nekade åtkomst.", 503, "listingSourceBlocked"))
       .mockResolvedValue(completeListingAnalysisResponse);
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
     await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByRole("button", { name: "Fortsätt kön" });
     expect(analyzeListing).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole("button", { name: "Fortsätt kön" }));
@@ -84,7 +101,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
     await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await user.click(await screen.findByRole("button", { name: "Fortsätt kön" }));
     expect(await screen.findByText(/innan kön återupptas/)).toBeInTheDocument();
     expect(analyzeListing).toHaveBeenCalledTimes(1);
@@ -94,7 +111,7 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     expect(screen.getByText("Inga annonsunderlag är öppna ännu.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Ange minst en");
     expect(screen.getByRole("alert")).toHaveFocus();
 
@@ -103,7 +120,7 @@ describe("Swedish URL analysis workspace", () => {
       "https://cars.example/item/1?ci=2",
       "http://cars.example/item/1/",
     ].join("\n"));
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Lokala adresser");
     expect(screen.getByRole("alert")).toHaveTextContent("samma annonssida");
     expect(analyzeListing).not.toHaveBeenCalled();
@@ -115,7 +132,7 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
 
     expect(await screen.findByText("Volvo V70 2.4")).toBeInTheDocument();
     expect(screen.getByText("20 000 kr")).toBeInTheDocument();
@@ -154,7 +171,7 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), "https://cars.example/item/manual");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Analysera URL:er" })).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Hämta annonser" })).toBeDisabled());
     expect(screen.getByText(/inte konfigurerad/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Skapa manuella utkast" }));
 
@@ -180,7 +197,7 @@ describe("Swedish URL analysis workspace", () => {
       "https://cars.example/item/2",
       "https://cars.example/item/3",
     ].join("\n"));
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(1));
 
     deferred[0].resolve(completeListingAnalysisResponse);
@@ -211,8 +228,8 @@ describe("Swedish URL analysis workspace", () => {
 
     const urls = Array.from({ length: 10 }, (_, index) => `https://cars.example/item/${index + 1}`);
     await user.type(screen.getByLabelText("URL:er"), urls.join("\n"));
-    expect(screen.getByRole("button", { name: "Analysera URL:er" })).toBeEnabled();
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    expect(screen.getByRole("button", { name: "Hämta annonser" })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
 
     await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(10));
     expect(await screen.findAllByText("Grunduppgifter kompletta")).toHaveLength(9);
@@ -225,7 +242,7 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Volvo V70 2.4");
     await user.click(screen.getByRole("button", { name: "Redigera bil" }));
     await user.clear(screen.getByLabelText("Märke"));
@@ -329,9 +346,9 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Lägg till bil" }));
+    await user.click(await screen.findByRole("button", { name: "Lägg till bil" }));
 
     await waitFor(() => expect(createSavedListing).toHaveBeenCalledTimes(1));
     expect(vi.mocked(createSavedListing).mock.calls[0][0]).toMatchObject({
@@ -350,7 +367,7 @@ describe("Swedish URL analysis workspace", () => {
 
     await waitFor(() => expect(replaceSavedListing).toHaveBeenCalledWith(
       savedListingResponse.vehicleId,
-      expect.objectContaining({ expectedRevision: 3 }),
+      expect.objectContaining({ expectedRevision: n(3) }),
     ));
     expect(await screen.findByText("Ändringarna har sparats.")).toBeInTheDocument();
   });
@@ -383,9 +400,9 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), candidate.submittedUrl);
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Saab V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Lägg till bil" }));
+    await user.click(await screen.findByRole("button", { name: "Lägg till bil" }));
 
     const dialog = await screen.findByRole("alertdialog", { name: /ABC123 finns redan/ });
     const replaceButton = screen.getByRole("button", { name: "Ersätt sparad bil" });
@@ -431,9 +448,9 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
-    await user.click(screen.getByRole("button", { name: "Analysera URL:er" }));
+    await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Lägg till bil" }));
+    await user.click(await screen.findByRole("button", { name: "Lägg till bil" }));
 
     expect(await screen.findByRole("alertdialog", { name: /har redan en sparad kalkyl/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Koppla annons till befintlig bil" }));

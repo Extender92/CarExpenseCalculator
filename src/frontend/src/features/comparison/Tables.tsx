@@ -224,7 +224,8 @@ export function ComparisonTables({
       label: "Underlag och krav",
       render: (r) => (
         <>
-          <p>{eligibilityLabels[r.eligibility]}</p>
+          <p>{r.hardRules.length ? eligibilityLabels[r.eligibility] : "Inga köpkrav valda"}</p>
+          {!r.hardRules.length && r.eligibility !== "eligible" && <p>{eligibilityLabels[r.eligibility]}</p>}
           <p className="text-xs text-slate-400">
             {r.storedInputState === "legacyPending"
               ? "Äldre underlag behöver övergång"
@@ -245,7 +246,7 @@ export function ComparisonTables({
       label: "Ägandekostnad för perioden",
       render: (r) => (
         <>
-          {cost(r, r.cost.totals.ownershipCost)}
+          <Amount value={r.cost.totals.ownershipCost} />
           {!stale && r.isCheapestEligibleComplete && (
             <p className="mt-1 text-emerald-300">
               Billigast bland godkända kompletta alternativ
@@ -256,11 +257,7 @@ export function ComparisonTables({
     },
     {
       label: "Kostnad per månad",
-      render: (r) => cost(r, r.cost.totals.monthlyCost),
-    },
-    {
-      label: "Kostnad per mil",
-      render: (r) => cost(r, r.cost.totals.costPerMil),
+      render: (r) => <Amount value={r.cost.totals.monthlyCost} />,
     },
     {
       label: "Poängintervall",
@@ -295,6 +292,18 @@ export function ComparisonTables({
       ),
     },
   ];
+  main.splice(0, 3, main[2], main[1], main[0]);
+  main.splice(3, 0, { label: "Kompletteringsbehov", render: r => {
+    const gaps = [...new Map([r.cost.totals.ownershipCost, r.cost.totals.monthlyCost, r.cost.totals.costPerMil]
+      .flatMap(value => [...value.missingComponents.map(path => ({ path, code: path })), ...value.errors])
+      .filter(({ path }) => !errorTarget(r, path).startsWith("profile."))
+      .map(gap => [gap.path, gap])).values()];
+    return gaps.length ? <details><summary className="cursor-pointer text-cyan-300">Komplettera {gaps.length} uppgifter</summary>
+      <ul className="mt-2 space-y-2">{gaps.map(({ path, code }) => <li key={path}><Link className={linkClass}
+        to={economicLink(r.vehicleId, manual, errorTarget(r, path))}>{reasonText[code] ?? fieldLabel(path)}</Link></li>)}</ul></details> : "Inga kostnadsluckor";
+  } });
+  const hasPriorities = !!response && (response.views[response.activeSensitivityMode].rules.preferences ?? []).some(p => Number(p.weight.text) > 0);
+  const visibleMain = hasPriorities ? main : main.filter(column => !["Poängintervall", "Datatäckning"].includes(column.label));
   const panels: Column[][] = [
     [
       {
@@ -399,6 +408,7 @@ export function ComparisonTables({
       },
     ],
     [
+      { label: "Kostnad per mil", render: r => cost(r, r.cost.totals.costPerMil) },
       {
         label: "Finansiering",
         render: (r) => (
@@ -683,7 +693,7 @@ export function ComparisonTables({
       <Table
         caption="Huvudjämförelse"
         rows={rows}
-        columns={main}
+        columns={visibleMain}
         select={select}
       />
       <div className="flex flex-wrap gap-3">

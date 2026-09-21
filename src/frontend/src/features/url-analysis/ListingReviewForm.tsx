@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ExternalLink, Plus, Trash2 } from "lucide-react";
+import { EditorDialog } from "@/components/editing/EditorDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { canonicalNumber, formatNumeric, n, shiftDecimal } from "@/features/household/numbers";
@@ -16,6 +17,9 @@ export function ListingReviewForm({ item, onChange }: {
   item: ListingWorkspaceItem;
   onChange: (draft: ListingReviewDraft, errors?: Record<string, string>) => void;
 }) {
+  const [reviewed, setReviewed] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -69,6 +73,27 @@ export function ListingReviewForm({ item, onChange }: {
 
   return (
           <div ref={formRef} className="space-y-6">
+            <Button variant="secondary" disabled={busy} onClick={() => { setSelectedConfirmations([]); setReviewed(JSON.stringify(item.draft)); setConfirming(true); }}>Bekräfta uppgifter</Button>
+            {confirming && <EditorDialog open title="Bekräfta uppgifter" onClose={() => setConfirming(false)} actions={
+              <Button disabled={!selectedConfirmations.length || reviewed !== JSON.stringify(item.draft)} onClick={() => {
+                let draft = item.draft;
+                for (const key of selectedConfirmations) {
+                  if (key in draft.fields) draft = confirmScalar(draft, key as ScalarFieldName, item.normalizedUrl);
+                  else if (key === "fuelTypes") draft = { ...draft, fuelTypes: confirmedCollection(draft.fuelTypes, item.normalizedUrl) };
+                  else if (key === "equipment") draft = { ...draft, equipment: confirmedCollection(draft.equipment, item.normalizedUrl) };
+                  else if (key === "conditionNotes") draft = { ...draft, conditionNotes: confirmedCollection(draft.conditionNotes, item.normalizedUrl) };
+                }
+                updateDraft(draft); setConfirming(false);
+              }}>Bekräfta valda värden</Button>}>
+              <p className="mb-4">Välj bara värden som du själv har kontrollerat. Inget är förvalt. Bekräftelsen sparas med bilen och ger ingen registerverifiering.</p>
+              {reviewed !== JSON.stringify(item.draft) && <p role="alert">Underlaget har ändrats. Öppna bekräftelsen igen och granska aktuella värden.</p>}
+              {[...allFields.filter(f => item.draft.fields[f.name].input).map(f => ({ key: f.name, label: f.suffix ? `${f.label} (${f.suffix})` : f.label, value: f.options?.find(option => option.value === item.draft.fields[f.name].input)?.label ?? (f.kind === "boolean" ? item.draft.fields[f.name].input === "true" ? "Ja" : "Nej" : item.draft.fields[f.name].input) })),
+                ...(["fuelTypes", "equipment", "conditionNotes"] as const).filter(key => item.draft[key].mode !== "unknown").map(key => ({ key,
+                  label: key === "fuelTypes" ? "Drivmedel" : key === "equipment" ? "Utrustning" : "Skickuppgifter", value: item.draft[key].mode === "empty" ? "Inga" :
+                    item.draft[key].values.map(v => typeof v === "string" ? fuelOptions.find(option => option.value === v)?.label ?? v : v.value).join(", ") }))].map(option => <label key={option.key} className="my-3 flex items-start gap-2">
+                  <input type="checkbox" checked={selectedConfirmations.includes(option.key)} onChange={event => setSelectedConfirmations(current => event.target.checked ? [...current, option.key] : current.filter(key => key !== option.key))} />
+                  <span>{option.label}: {option.value}</span></label>)}
+            </EditorDialog>}
             <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm leading-6 text-slate-300">
               Ändrade uppgifter är manuella och obekräftade. Bekräfta ett värde först när du har kontrollerat det.
               Sparning innebär ingen bekräftelse eller registerkontroll.
@@ -159,7 +184,7 @@ export function ListingReviewForm({ item, onChange }: {
   );
 }
 
-function ScalarFields({ definitions, item, disabled, onInput, onBlur, onConfirm }: {
+function ScalarFields({ definitions, item, disabled, onInput, onBlur }: {
   definitions: ScalarFieldDefinition[];
   item: ListingWorkspaceItem;
   disabled: boolean;
@@ -205,11 +230,9 @@ function ScalarFields({ definitions, item, disabled, onInput, onBlur, onConfirm 
               {definition.name === "registrationNumber" ? "Saknas för att lägga till i jämförelsen" : "Saknas – kan kompletteras senare"}</span>}
             {error
               ? <span id={`${id}-error`} className="mt-1 block text-xs text-rose-300">{error}</span>
-              : <span id={`${id}-source`} className="mt-1 block break-all text-xs font-normal text-slate-500">
-                  {provenanceLabel(field.provenance)}{field.provenance ? ` · ${field.provenance.sourceUrl}` : ""}
-                </span>}
-            {field.input && field.provenance?.verification !== "userConfirmed" && <button type="button" disabled={disabled}
-              className="mt-1 text-xs text-cyan-300 underline" onClick={() => onConfirm(definition.name)}>Bekräfta {definition.label.toLocaleLowerCase("sv-SE")}</button>}
+              : <details className="mt-1 text-xs text-slate-400"><summary>Källa och verifiering</summary><span id={`${id}-source`} className="break-all">
+                  {provenanceLabel(field.provenance)}{field.provenance ? ` · ${field.provenance.sourceUrl}` : ""}</span></details>}
+
           </div>
         );
       })}

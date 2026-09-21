@@ -1,15 +1,34 @@
 # Roadmap
 
-## Immediate priority: issue #95
+## Immediate priority: simplify the car workflow
 
-The user assigned [#95](https://github.com/Extender92/CarExpenseCalculator/issues/95)
-as first priority before registry lookup and advisory AI. The
-[review workflow](review-and-calculation-workflow.md) improves drafts, dialogs,
-confirmation, reuse and individual electric shares. Its
-[verification report](issue-95-verification-report.md) records delivery status.
-This does not activate a new integration milestone or authorize deployment.
+The user assigned the [frontend simplification](frontend-simplification.md)
+ahead of registry access and advisory AI. It builds on the delivered #95
+workflow without new backend contracts, migrations or storage versions.
+
+1. Simplify first start, listing reuse, saving and comparison.
+2. Prepare registry lookup [#68](https://github.com/Extender92/CarExpenseCalculator/issues/68).
+3. Prepare advisory AI [#14](https://github.com/Extender92/CarExpenseCalculator/issues/14)
+   and maintenance/repair advice [#69](https://github.com/Extender92/CarExpenseCalculator/issues/69).
+
+Discovery (#13) and image review (#15) remain paused. Merge and server update
+require separate approval. Preparation does not select an integration provider.
 
 ## Current planning checkpoint
+
+Updated on 2026-09-21 from `main` at `67ddfa22cbc296cf5ca83feb420b02db544c64b0`.
+Subsequent to the stage-3B audit below, these deliveries are merged:
+
+- PR #93: individual Blocket retrieval and complete original listing content.
+- PR #94: mobile listing/report width and Swedish seller types.
+- Issue #95 / PR #96: drafts, dialogs, reuse, confirmation and per-car electric shares.
+- PR #97: verified public Docker images and one-command updates.
+
+This frontend task is explicitly assigned without a new issue. Registry and AI
+integration issues still require refinement. Historical verification reports
+retain their original results and failures.
+
+### Historical stage-3B checkpoint
 
 Audited on 2026-09-09 after approved [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91),
 merge `d096aecec539d44d231fecf1412a6fc4560e005b`, and
@@ -58,10 +77,10 @@ linked-calculation versioning without consuming ChatGPT usage.
 - Define URL normalization, source matching, bounded listing facts, provenance, and missing-data contracts.
 - Add dependency-free listing concepts and deterministic validation in Core.
 - Add a bounded internal Codex extraction sidecar using ChatGPT authentication.
-  The subsequent [Blocket extension](complete-listing-extraction.md), currently
-  in PR #93, replaces hosted retrieval with direct HTML capture and text-only
+  The subsequent [Blocket extension](complete-listing-extraction.md), merged
+  through PR #93, replaces hosted retrieval with direct HTML capture and text-only
   interpretation; [acceptance evidence](listing-extraction-verification-report.md)
-  records the branch status. Automatic discovery remains separate.
+  preserves the historical verification. Automatic discovery remains separate.
 - Expose independent unsaved previews and current saved-listing APIs.
 - Persist one current listing per vehicle with optimistic concurrency and no analysis history.
 - Build Swedish analysis, manual-review, saved-listing, and calculator-prefill workflows.

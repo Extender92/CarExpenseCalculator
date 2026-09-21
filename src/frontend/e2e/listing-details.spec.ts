@@ -11,12 +11,12 @@ test("complete reference listings survive review, draft adoption, comparison and
   try {
     await page.goto("/analyze-urls");
     await page.getByLabel("URL:er").fill(refs.map(x=>`https://cars.example/item/${x.name}`).join("\n"));
-    await page.getByRole("button",{name:"Analysera URL:er"}).click();
+    await page.getByRole("button",{name:"Hämta annonser"}).click();
     const cards = page.locator('[data-testid^="listing-card-"]');
     await expect(cards).toHaveCount(2);
     for (const [i,reference] of refs.entries()) {
       const card = cards.nth(i);
-      await expect(card.getByText("Delvis extraktion")).toBeVisible();
+      await expect(card.getByText("Delvis extraktion", { exact: true })).toBeVisible();
       await openListingEditor(card);
       await expect(card.getByLabel("Hela beskrivningen")).toHaveValue(reference.draft.details.description);
       await expect(card.getByLabel("Sittplatser",{exact:true})).toHaveValue(String(reference.draft.details.seats));
@@ -59,6 +59,7 @@ test("complete reference listings survive review, draft adoption, comparison and
     expect(result.transportVersion).toBe(3); expect(result.listings).toHaveLength(2);
     for (const mode of ["favorable","baseline","cautious"]) expect(result.views[mode].candidates).toHaveLength(2);
     await expect(page.getByRole("button",{name:"Öppna rapport",exact:true})).toBeEnabled();
+    await page.getByLabel("Rapportinnehåll").selectOption("full");
     await page.getByRole("button",{name:"Öppna rapport",exact:true}).click();
     await expect(page.getByRole("button",{name:"Skriv ut / Spara som PDF",exact:true})).toBeEnabled();
     const report=page.getByRole("article");

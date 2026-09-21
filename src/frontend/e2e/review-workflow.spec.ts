@@ -45,7 +45,7 @@ test("registration-free drafts survive reload, stay outside comparison and adopt
     expect((await (await request.get("/api/vehicle-cost-inputs")).json()).length).toBe(before.length);
     await dialog.getByLabel("Registreringsnummer", { exact: true }).fill("TWF101");
     const adopted = page.waitForResponse(response => response.url().endsWith(`/listing-review-drafts/${drafts[0]}/adopt`) && response.request().method() === "POST");
-    await dialog.getByRole("button", { name: "Lägg till bil", exact: true }).click();
+    await dialog.getByRole("button", { name: "Spara bil", exact: true }).click();
     const response = await adopted; expect(response.ok(), await response.text()).toBe(true);
     const saved = await response.json(); vehicles.push(saved.vehicleId);
     expect(saved.listing.registrationNumber.provenance.verification).toBe("unverified");
@@ -76,7 +76,7 @@ test("reuse populates selected unsaved costs and facts once, then saves resource
     await preview.getByRole("button", { name: "Tillämpa valda förslag" }).click();
     const unchanged = await (await request.get(`/api/vehicle-cost-inputs/${saved.vehicleId}`)).json();
     expect(unchanged.revision).toBe(1); expect(unchanged.input).toBeNull();
-    await dialog.getByRole("tab", { name: "Annons", exact: true }).click();
+    await dialog.getByRole("tab", { name: "Biluppgifter", exact: true }).click();
     await dialog.getByLabel("Märke", { exact: true }).fill("Granskad testbil");
     await dialog.getByRole("button", { name: "Stäng", exact: true }).first().click();
     await dialog.getByRole("button", { name: "Spara och stäng" }).click();
@@ -107,9 +107,9 @@ test("mobile editor preserves dirty work across Escape, navigation cancellation 
     const saved = await created.json(); owned.push(saved.vehicleId);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/search");
-    await page.getByRole("button", { name: "TWF103", exact: true }).click();
+    await page.getByRole("table", { name: "Huvudjämförelse", exact: true }).getByRole("button", { name: "TWF103", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: /Redigera bil/ });
-    await dialog.getByRole("tab", { name: "Annons", exact: true }).click();
+    await dialog.getByRole("tab", { name: "Biluppgifter", exact: true }).click();
     await dialog.getByLabel("Märke", { exact: true }).fill("Mobil ändring");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     const dimensions = await dialog.boundingBox(); expect(dimensions!.width).toBeLessThanOrEqual(390);
@@ -117,7 +117,7 @@ test("mobile editor preserves dirty work across Escape, navigation cancellation 
       await page.keyboard.press(key);
       expect(await dialog.evaluate(element => element.contains(document.activeElement))).toBe(true);
     }
-    const saveBounds = await dialog.getByRole("button", { name: "Spara annons", exact: true }).boundingBox();
+    const saveBounds = await dialog.getByRole("button", { name: "Spara bil", exact: true }).boundingBox();
     expect(saveBounds!.y + saveBounds!.height).toBeLessThanOrEqual(844);
     await page.keyboard.press("Escape");
     await dialog.getByRole("button", { name: "Fortsätt redigera" }).click();
@@ -131,7 +131,7 @@ test("mobile editor preserves dirty work across Escape, navigation cancellation 
     await page.goForward();
     await expect(page).toHaveURL(new RegExp(`vehicleId=${saved.vehicleId}`));
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("tab", { name: "Annons", exact: true }).click();
+    await dialog.getByRole("tab", { name: "Biluppgifter", exact: true }).click();
     await expect(dialog.getByLabel("Märke", { exact: true })).toHaveValue("Volvo");
   } finally { await removePresentationListings(request, owned); }
 });
@@ -149,20 +149,20 @@ test("saved car listing conflicts require reviewing current values before replac
     remote.draft.ownerCount.value = 3;
     const replaced = await request.put(`/api/saved-listings/${car.vehicleId}`, { data: { expectedRevision: car.revision, listing: remote } });
     expect(replaced.status()).toBe(200);
-    await dialog.getByRole("button", { name: "Spara annons", exact: true }).click();
+    await dialog.getByRole("button", { name: "Spara bil", exact: true }).click();
     await dialog.getByRole("button", { name: "Jämför med senaste annons", exact: true }).click();
     await expect(dialog.getByText("Sparat: 3", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Ditt underlag: 2", { exact: true })).toBeVisible();
     expect((await (await request.get(`/api/saved-listings/${car.vehicleId}`)).json()).listing.ownerCount.value).toBe(3);
     await dialog.getByRole("button", { name: "Behåll mina annonsändringar efter granskning", exact: true }).click();
-    await dialog.getByRole("button", { name: "Spara annons", exact: true }).click();
+    await dialog.getByRole("button", { name: "Spara bil", exact: true }).click();
     await expect.poll(async () => (await (await request.get(`/api/saved-listings/${car.vehicleId}`)).json()).listing.ownerCount.value).toBe(2);
     const saved = await (await request.get(`/api/saved-listings/${car.vehicleId}`)).json();
     expect(saved.listing.ownerCount.provenance.verification).toBe("unverified");
     await dialog.getByLabel("Antal ägare", { exact: true }).fill("4");
     const removed = await request.delete(`/api/vehicle-cost-inputs/${car.vehicleId}?expectedRevision=${saved.revision}`);
     expect(removed.status()).toBe(204);
-    await dialog.getByRole("button", { name: "Spara annons", exact: true }).click();
+    await dialog.getByRole("button", { name: "Spara bil", exact: true }).click();
     await expect(dialog.getByText("Den sparade annonsen finns inte längre.", { exact: true })).toBeVisible();
     await expect(dialog.getByLabel("Antal ägare", { exact: true })).toHaveValue("4");
     expect((await request.get(`/api/saved-listings/${car.vehicleId}`)).status()).toBe(404);
@@ -208,7 +208,7 @@ test("two hybrids retain individual electric shares in saved costs and a frozen 
       await dialog.getByLabel("Elandel för denna bil", { exact: true }).selectOption("override");
       await dialog.getByLabel("Typ av värde för Bilens elandel av körsträckan (%)", { exact: true }).selectOption("single");
       await dialog.getByLabel("Bilens elandel av körsträckan (%)", { exact: true }).fill(String(share));
-      await dialog.getByRole("button", { name: "Spara bilunderlag", exact: true }).click();
+      await dialog.getByRole("button", { name: "Spara bil", exact: true }).click();
       await expect.poll(async () => (await (await request.get(`/api/vehicle-cost-inputs/${car.vehicleId}`)).json()).input.electricDrivingShare)
         .toEqual({ mode: "override", value: { single: share, favorable: null, baseline: null, cautious: null } });
       await closeEditor(page);
@@ -218,7 +218,9 @@ test("two hybrids retain individual electric shares in saved costs and a frozen 
     await expect(table.getByRole("row").filter({ hasText: "TWF104" })).toContainText(/8\s400,00/);
     await expect(table.getByRole("row").filter({ hasText: "TWF105" })).toContainText(/3\s600,00/);
     const report = page.getByRole("button", { name: "Öppna rapport", exact: true });
-    await expect(report).toBeEnabled(); await report.click();
+    await expect(report).toBeEnabled();
+    await page.getByLabel("Rapportinnehåll").selectOption("full");
+    await report.click();
     await expect(page).toHaveURL(/\/search\/report$/);
     const article = page.getByRole("article");
     await expect(article).toContainText("Elandel: 20 % · Bilens eget val");

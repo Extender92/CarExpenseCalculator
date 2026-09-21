@@ -7,14 +7,14 @@ import { deferred } from "@/features/household/test-fixtures";
 import { EditorDialog } from "./EditorDialog";
 import { NavigationGuardProvider } from "./NavigationGuard";
 
-function Harness({ save = async () => true, failSecond = false }: { save?: (value: string) => Promise<boolean>; failSecond?: boolean }) {
+function Harness({ save = async () => true, failSecond = false, saveAll = false }: { save?: (value: string) => Promise<boolean>; failSecond?: boolean; saveAll?: boolean }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("Sparat");
   const [base, setBase] = useState("Sparat");
   const [facts, setFacts] = useState(false);
   const [revision, setRevision] = useState(1);
   return <><button onClick={() => setOpen(true)}>Redigera</button><span>Revision {revision}</span>
-    {open && <EditorDialog open title="Bilens underlag" onClose={() => setOpen(false)} activeResource="listing" resources={[
+    {open && <EditorDialog open title="Bilens underlag" onClose={() => setOpen(false)} activeResource="listing" saveAllLabel={saveAll ? "Spara bil" : undefined} resources={[
       { key: "listing", label: "Annons", dirty: value !== base, discard: () => setValue(base), save: async () => {
         const snapshot = value;
         if (!await save(snapshot)) return false;
@@ -149,4 +149,27 @@ describe("shared native editing dialog", () => {
     await user.click(await screen.findByRole("button", { name: "Kasta ändringar" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/previous"));
   });
+});
+
+it("Spara bil saves all changed car resources in order and leaves the editor open", async () => {
+  render(<MemoryRouter><Harness saveAll /></MemoryRouter>);
+  const user = await edit();
+  await user.click(screen.getByRole("button", { name: "Ändra fakta" }));
+  await user.click(screen.getByRole("button", { name: "Spara bil" }));
+  await screen.findByText("Bilens ändringar har sparats.");
+  expect(screen.getByText("Revision 3")).toBeInTheDocument();
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Spara bil" })).toBeDisabled();
+});
+
+it("Spara bil reports a partial failure without retrying a successful resource", async () => {
+  const save = vi.fn(async () => true);
+  render(<MemoryRouter><Harness saveAll save={save} failSecond /></MemoryRouter>);
+  const user = await edit();
+  await user.click(screen.getByRole("button", { name: "Ändra fakta" }));
+  await user.click(screen.getByRole("button", { name: "Spara bil" }));
+  await screen.findByText(/Sparat: Annons/);
+  await user.click(screen.getByRole("button", { name: "Spara bil" }));
+  expect(save).toHaveBeenCalledOnce();
+  expect(screen.getByRole("dialog")).toBeVisible();
 });

@@ -5,11 +5,12 @@ import { EditorDialog } from "@/components/editing/EditorDialog";
 import { useOptionalComparison } from "@/features/comparison/use-comparison";
 import { labelFor } from "@/features/comparison/catalogue";
 import { Evidence } from "@/features/comparison/FactsEditor";
-import type { FactEdits, FactWrite } from "@/features/comparison/api";
+import type { FactWrite } from "@/features/comparison/api";
 import { request } from "./api";
-import { formatMoney, cloneExact, stringifyExact, type Exact } from "./numbers";
+import { formatMoney, stringifyExact, type Exact } from "./numbers";
 import { fuels, units } from "./form-model";
 import { useWorkspace } from "./use-workspace";
+import { applyListingReuse } from "./apply-listing-reuse";
 import { listingReuseValue } from "./reuse-value";
 
 type Preview = Exact<components["schemas"]["ListingReusePreviewResponse"]>;
@@ -34,19 +35,34 @@ export function ListingReusePanel() {
   const stale = !!loaded && (loaded.token !== active.token || loaded.edit !== active.edit || loaded.factFingerprint !== factFingerprint);
   if (!source && !active.listing) return null;
 
-  async function preview() {
+  async function preview(fillMissing = false) {
     setBusy(true); setMessage(null);
     const token = active.token, edit = active.edit;
     try {
       if (active.vehicleId && comparison) await comparison.workspace.select(active.vehicleId);
       if (workspace.state.active.token !== token || workspace.state.active.edit !== edit) return;
       const facts = active.vehicleId ? comparison?.workspace.state.facts[active.vehicleId] : undefined;
+      const reviewedFacts = stringifyExact(facts?.input ?? {});
       const result = await request<components["schemas"]["ListingReusePreviewResponse"]>("/api/listing-reuse/preview", "POST", {
         ...(source ? { vehicleId: source.vehicleId, expectedVehicleRevision: workspace.state.active.baseRevision,
           expectedListingVersion: source.listingVersion } : { unsavedListing: active.listing }),
         target: active.cost.input, factEdits: facts?.input.edits,
       });
       if (workspace.state.active.token !== token || workspace.state.active.edit !== edit) return;
+      if (active.vehicleId && reviewedFacts !== stringifyExact(comparison?.workspace.state.facts[active.vehicleId]?.input ?? {})) {
+        setMessage("Jämförelsefakta ändrades under hämtningen. Dina ändringar har behållits; hämta förslagen igen.");
+        return;
+      }
+      if (fillMissing) {
+        const applied = applyListingReuse(active.cost.input, facts?.input ?? {}, result, {
+          facts: !!(source && facts && comparison), notesOccupied: facts?.base.input?.conditionNotes != null,
+        });
+        workspace.editActive({ cost: { ...active.cost, input: applied.cost } });
+        if (source && facts && comparison && active.vehicleId) comparison.workspace.editFacts(active.vehicleId,
+          { ...applied.facts, expectedListingVersion: source.listingVersion });
+        setMessage("Saknade uppgifter har fyllts från annonsen. Befintliga värden har behållits; inget har bekräftats.");
+        return;
+      }
       setLoaded({ preview: result, token, edit, factFingerprint: stringifyExact(facts?.input ?? {}) });
       setSelected([]); setReplace([]);
     } catch (error) { setMessage((error as Error).message); }
@@ -77,28 +93,10 @@ export function ListingReusePanel() {
   function apply() {
     if (!loaded || stale || unapprovedReplacement) return;
     const p = loaded.preview;
-    const accepted = (key: string, requiresReplacement: boolean) => selected.includes(key) && (!requiresReplacement || replace.includes(key));
-    let input = cloneExact(active.cost.input);
-    const facts: FactWrite = cloneExact(factEditing?.input ?? {});
-    const edits: FactEdits = { ...facts.edits };
-    const priceFact = p.factTargets.find(f => f.field === "purchasePriceSek");
-    if (p.purchasePrice && accepted("price", p.purchasePrice.requiresReplacement || !!priceFact?.requiresReplacement)) {
-      input = { ...input, priceSek: p.purchasePrice.value, priceSource: p.purchasePrice.source };
-      if (canApplyFacts) edits.purchasePriceSek = { kind: "listing" };
-    }
-    if (p.annualTax && accepted("tax", p.annualTax.requiresReplacement))
-      input = { ...input, tax: { isIncluded: false, items: [p.annualTax.value] } };
-    for (const suggestion of p.energySources) {
-      if (!accepted(`energy:${suggestion.key}`, suggestion.requiresReplacement)) continue;
-      const existing = input.energySources ?? [];
-      input = { ...input, energySources: [...existing.filter(item => item.key !== suggestion.key), suggestion.value] };
-    }
-    if (canApplyFacts) for (const target of p.factTargets) {
-      if (accepted(`fact:${target.field}`, target.requiresReplacement))
-        Object.assign(edits, { [target.field]: { kind: "listing" } });
-    }
-    if (canApplyFacts && p.facts.conditionNotes && accepted("notes", factEditing?.base.input?.conditionNotes != null || facts.edits?.conditionNotes != null))
-      edits.conditionNotes = p.facts.conditionNotes.map(() => ({ kind: "listing" }));
+    const facts: FactWrite = factEditing?.input ?? {};
+    const { cost: input, facts: { edits } } = applyListingReuse(active.cost.input, facts, p, {
+      selected, replace, facts: canApplyFacts, notesOccupied: factEditing?.base.input?.conditionNotes != null,
+    });
     if (stringifyExact(input) !== stringifyExact(active.cost.input)) workspace.editActive({ cost: { ...active.cost, input } });
     if (canApplyFacts && stringifyExact(edits) !== stringifyExact(facts.edits ?? {})) comparison!.workspace.editFacts(active.vehicleId!, {
       ...facts, edits, expectedListingVersion: source!.listingVersion,
@@ -106,7 +104,8 @@ export function ListingReusePanel() {
     setLoaded(null); setMessage("Valda annonsuppgifter har lagts till i det osparade underlaget. Inget värde har bekräftats.");
   }
   return <div className="space-y-3 rounded-xl border border-cyan-900 p-4">
-    <Button type="button" variant="secondary" disabled={busy} onClick={() => void preview()}>Använd tillgängliga annonsuppgifter</Button>
+    <Button type="button" variant="secondary" disabled={busy} onClick={() => void preview(true)}>Fyll saknade uppgifter från annonsen</Button>
+    <Button type="button" variant="ghost" disabled={busy} onClick={() => void preview()}>Använd tillgängliga annonsuppgifter</Button>
     {message && <p role="status">{message}</p>}
     {proposal && <EditorDialog open title="Välj annonsuppgifter att återanvända" onClose={() => setLoaded(null)} actions={
       <Button type="button" disabled={stale || !selected.length || unapprovedReplacement} onClick={apply}>Tillämpa valda förslag</Button>}>

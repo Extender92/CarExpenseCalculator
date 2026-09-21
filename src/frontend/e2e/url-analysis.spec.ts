@@ -11,7 +11,7 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   });
 
   await page.goto("/analyze-urls");
-  await expect(page.getByRole("heading", { name: "Analysera URL:er" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lägg till bil" })).toBeVisible();
   await page.getByLabel("URL:er").fill([
     "https://cars.example/item/complete",
     "https://cars.example/item/partial",
@@ -19,11 +19,11 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
     "https://cars.example/item/unmatched-source",
     "https://cars.example/item/provider-unavailable",
   ].join("\n"));
-  await page.getByRole("button", { name: "Analysera URL:er" }).click();
+  await page.getByRole("button", { name: "Hämta annonser" }).click();
 
-  await expect(page.getByText("Grunduppgifter kompletta")).toHaveCount(2);
+  await expect(page.getByText("Grunduppgifter kompletta", { exact: true })).toHaveCount(2);
   // Even an empty model result retains the application's original listing title.
-  await expect(page.getByText("Delvis extraktion")).toHaveCount(2);
+  await expect(page.getByText("Delvis extraktion", { exact: true })).toHaveCount(2);
   await expect(page.getByText("Analysen misslyckades")).toBeVisible();
   await expect.poll(() => listingRequests.length).toBe(5);
   for (const request of listingRequests) {
@@ -40,14 +40,14 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await expect(completeCard.getByLabel("Säljartyp", { exact: true })).toHaveValue("private");
   await expect(completeCard.getByLabel("Säljartyp", { exact: true }).locator("..")).toContainText("Annons · Direkt hämtat · Inte verifierad");
   await expect(completeCard.getByLabel("Ort eller stad")).toHaveValue("Tenhult");
-  await expect(completeCard.getByLabel("Län")).toHaveValue("Jönköpings län");
-  await completeCard.getByLabel("Län").fill("Östergötlands län");
+  await expect(completeCard.getByLabel("Län", { exact: true })).toHaveValue("Jönköpings län");
+  await completeCard.getByLabel("Län", { exact: true }).fill("Östergötlands län");
   await expect(completeCard.getByLabel("Ort eller stad")).toHaveValue("Tenhult");
   await expect(completeCard.getByText("Matchar annonsen")).toBeVisible();
   await expect(completeCard.getByLabel("Utrustning")).toHaveValue("empty");
   await completeCard.getByLabel("Märke").fill("Saab");
   await completeCard.getByLabel("Annonspris").fill("0");
-  await expect(completeCard.getByText("0 kr")).toBeVisible();
+  await expect(completeCard.getByText("0 kr", { exact: true })).toBeVisible();
   await expect(completeCard.getByText(/Användare · Manuell · Obekräftad/).first()).toBeVisible();
 
   await closeEditor(page, "discard");
@@ -55,7 +55,7 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   const unavailableCard = resultCards.nth(2);
   await openListingEditor(unavailableCard);
   await expect(unavailableCard.getByLabel("Säljartyp", { exact: true })).toHaveValue("");
-  await unavailableCard.getByLabel("Registreringsnummer").fill("ABC123");
+  await unavailableCard.getByLabel("Registreringsnummer", { exact: true }).fill("ABC123");
   await expect(unavailableCard.getByText(/Användare · Manuell · Obekräftad/)).toBeVisible();
 
   await closeEditor(page, "discard");
@@ -93,9 +93,9 @@ test("serializes a ten-URL FIFO batch through browser and extractor", async ({ p
 
   await page.goto("/analyze-urls");
   await page.getByLabel("URL:er").fill(urls.join("\n"));
-  await page.getByRole("button", { name: "Analysera URL:er" }).click();
+  await page.getByRole("button", { name: "Hämta annonser" }).click();
 
-  await expect(page.getByText("Grunduppgifter kompletta")).toHaveCount(10);
+  await expect(page.getByText("Grunduppgifter kompletta", { exact: true })).toHaveCount(10);
   expect(started).toEqual(urls);
   expect(maximumActive).toBe(1);
   expect(active).toBe(0);
@@ -127,7 +127,7 @@ test("maps every extraction failure and retries only after an explicit action", 
   await page.goto("/analyze-urls");
   const urls = cases.map(({ name }) => `https://cars.example/item/${name}`);
   await page.getByLabel("URL:er").fill(urls.join("\n"));
-  await page.getByRole("button", { name: "Analysera URL:er" }).click();
+  await page.getByRole("button", { name: "Hämta annonser" }).click();
 
   await expect(page.getByText("Analysen misslyckades")).toHaveCount(cases.length);
   for (const [index, testCase] of cases.entries()) {
@@ -142,7 +142,7 @@ test("maps every extraction failure and retries only after an explicit action", 
 
   const retryCard = page.locator('[data-testid^="listing-card-"]').filter({ hasText: cases.at(-1)!.name });
   await retryCard.getByRole("button", { name: "Analysera igen" }).click();
-  await expect(retryCard.getByText("Grunduppgifter kompletta")).toBeVisible();
+  await expect(retryCard.getByText("Grunduppgifter kompletta", { exact: true })).toBeVisible();
   expect(requests.get(urls.at(-1)!)).toBe(2);
   expect(statuses.get(urls.at(-1)!)).toEqual([503, 200]);
   for (const url of urls.slice(0, -1)) expect(requests.get(url)).toBe(1);
@@ -153,7 +153,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   try {
   await page.goto("/analyze-urls");
   await page.getByLabel("URL:er").fill("https://cars.example/item/complete");
-  await page.getByRole("button", { name: "Analysera URL:er" }).click();
+  await page.getByRole("button", { name: "Hämta annonser" }).click();
   const draft = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "complete" });
   await expect(draft.getByText("Volvo V70 2.4")).toBeVisible();
 
@@ -165,9 +165,11 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   expect(created.status()).toBe(201);
   expectSameOrigin(page, created);
   await expect(draft.getByText("Sparad", { exact: true })).toBeVisible();
+  await page.locator("summary").filter({ hasText: /^Sparade bilar$/ }).click();
   await expect(page.getByRole("heading", { name: "Sparade bilar" })).toBeVisible();
 
   await page.reload();
+  await page.locator("summary").filter({ hasText: /^Sparade bilar$/ }).click();
   const savedSummary = page.getByText("ABC123", { exact: true }).first().locator("xpath=ancestor::li");
   await expect(savedSummary).toContainText("Volvo V70 2008");
   await savedSummary.getByRole("button", { name: "Öppna", exact: true }).click();
@@ -185,7 +187,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await opened.getByRole("button", { name: "Stäng kort" }).click();
 
   await page.getByLabel("URL:er").fill("https://cars.example/item/complete?new=1");
-  await page.getByRole("button", { name: "Analysera URL:er" }).click();
+  await page.getByRole("button", { name: "Hämta annonser" }).click();
   const candidate = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "complete" });
   await openListingEditor(candidate);
   await candidate.getByLabel("Märke").fill("Saab");
@@ -207,6 +209,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await expect(candidate.getByText("Sparad", { exact: true })).toBeVisible();
 
   await page.reload();
+  await page.locator("summary").filter({ hasText: /^Sparade bilar$/ }).click();
   const updatedSummary = page.getByText("ABC123", { exact: true }).first().locator("xpath=ancestor::li");
   await expect(updatedSummary).toContainText("Saab V70 2008");
   await updatedSummary.getByRole("button", { name: "Öppna", exact: true }).click();
@@ -256,7 +259,7 @@ test("attaches a manual listing to a scenario-only vehicle and warns before dele
   await page.getByRole("button", { name: "Skapa manuella utkast" }).click();
   const draft = page.locator('[data-testid^="listing-card-"]');
   await openListingEditor(draft);
-  await draft.getByLabel("Registreringsnummer").fill(registrationNumber);
+  await draft.getByLabel("Registreringsnummer", { exact: true }).fill(registrationNumber);
   await draft.getByLabel("Märke").fill("Volvo");
   await saveListingCard(draft);
 

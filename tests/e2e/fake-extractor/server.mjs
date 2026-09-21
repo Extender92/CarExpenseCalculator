@@ -149,6 +149,8 @@ const server = createServer(async (request, response) => {
       : partial
         ? { ...nullDraft, make: "Volvo", locality: "Tenhult" }
         : { ...completeDraft };
+    const workflowRegistration = /workflow-([a-z]{3}[0-9]{3})/i.exec(new URL(payload.normalizedUrl).pathname);
+    if (workflowRegistration) draft.registrationNumber = workflowRegistration[1].toUpperCase();
     // HTTP retrieval supplies the actual page independently of simulated model web events.
     const sources = [payload.normalizedUrl];
     const retrievedContent = {

@@ -185,16 +185,6 @@ export function VehicleCostEditor() {
         />
         <div className="flex flex-wrap gap-3">
           <Button
-            disabled={
-              !!state.busy ||
-              active.fromDraft ||
-              active.state === "legacyPending"
-            }
-            onClick={() => void workspace.saveVehicle()}
-          >
-            Spara bilunderlag
-          </Button>
-          <Button
             variant="secondary"
             disabled={!!state.busy}
             onClick={() => void workspace.saveDraft()}

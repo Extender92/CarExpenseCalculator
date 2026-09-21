@@ -1,5 +1,17 @@
 # Listing review and calculation workflow (#95)
 
+## Subsequent frontend simplification
+
+Issue #95 was delivered through PR #96. The
+[simplified entry and comparison flow](frontend-simplification.md) now supersedes
+its presentation and ordinary save-button behavior: new cars receive missing-only
+prefills, selected cars can be saved together, and **Spara bil** saves a car's
+changed resources sequentially. Existing-car saves retain cost/facts/listing
+ordering; new cars first persist the listing, then bind and save cost sources and
+facts. Per-step checkpoints preserve partial success without automatic retries.
+The #95 API, evidence rules, revisions, storage formats and migrations remain
+unchanged. Full advertisement content is retained.
+
 This document describes the implementation for [issue #95](https://github.com/Extender92/CarExpenseCalculator/issues/95).
 Delivery evidence and outstanding checks are recorded in the
 [verification report](issue-95-verification-report.md). Registry lookup, advisory

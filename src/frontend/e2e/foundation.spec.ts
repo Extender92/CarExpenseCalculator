@@ -15,9 +15,11 @@ test("serves the dashboard and API through one origin", async ({ page }) => {
   const response = await responsePromise;
 
   await expect(
-    page.getByRole("heading", { name: /ett bättre beslutsunderlag/i }),
+    page.getByRole("heading", { name: /jämför kostnaden för nästa bil/i }),
   ).toBeVisible();
-  await expect(page.getByText("Systemet är friskt")).toBeVisible();
+  await page.locator("summary").filter({ hasText: /^Systemstatus$/ }).click();
+  await expect(page.getByText("Anslutet", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tillgänglig", { exact: true })).toBeVisible();
 
   expect(response.status()).toBe(200);
   expect(new URL(response.url()).origin).toBe(new URL(page.url()).origin);
@@ -48,7 +50,7 @@ test("navigates to all three foundation routes", async ({ page }) => {
 
   await page.goto("/analyze-urls");
   await expect(
-    page.getByRole("heading", { name: "Analysera URL:er" }),
+    page.getByRole("heading", { name: "Lägg till bil" }),
   ).toBeVisible();
 
   await page.goto("/manual");

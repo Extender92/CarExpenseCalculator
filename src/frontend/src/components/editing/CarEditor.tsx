@@ -5,6 +5,8 @@ import { getSavedListing, replaceSavedListing, SavedListingApiError, type SavedL
 import { vehicleChanged } from "@/lib/vehicle-events";
 import { useOptionalWorkspace } from "@/features/household/use-workspace";
 import { useOptionalComparison } from "@/features/comparison/use-comparison";
+import { validateVehicle } from "@/features/household/form-model";
+import { VehicleFields } from "@/features/household/Fields";
 import { VehicleCostEditor } from "@/features/household/VehicleCostEditor";
 import { ListingDraftAction } from "@/features/household/ListingDraftAction";
 import { fromOrdinary, n } from "@/features/household/numbers";
@@ -14,6 +16,8 @@ import { ListingReviewForm } from "@/features/url-analysis/ListingReviewForm";
 import { validateReviewDraft } from "@/features/url-analysis/validation";
 import type { ListingReviewDraft, ListingWorkspaceItem } from "@/features/url-analysis/review-model";
 import { listingNumberText } from "@/features/url-analysis/exact";
+import { factErrors } from "@/features/comparison/preview";
+import { ConfirmFacts } from "@/features/comparison/ConfirmFacts";
 import { FactsEditor } from "@/features/comparison/FactsEditor";
 import { CostConfirmation } from "@/features/comparison/CostConfirmation";
 import { ComparisonEditorActions } from "@/features/comparison/ComparisonEditorActions";
@@ -29,7 +33,7 @@ export interface ControlledListingEditor {
   adopt?: () => Promise<boolean>;
 }
 export type CarEditorTab = "listing" | "cost" | "facts";
-const tabs: [CarEditorTab, string][] = [["listing", "Annons"], ["cost", "Kalkyl"], ["facts", "Jämförelsefakta"]];
+const tabs: [CarEditorTab, string][] = [["listing", "Biluppgifter"], ["cost", "Kostnader"], ["facts", "Jämförelsefakta"]];
 const noopSubscribe = () => () => {};
 const noSnapshot = () => null;
 
@@ -51,7 +55,8 @@ export function CarEditor({ open, vehicleId, listingEditor, initialTab = "listin
   const focused = useRef<string | null>(null);
   const existing = items.find(item => item.saved?.vehicleId === vehicleId);
   const item = listingEditor?.item ?? existing;
-  const costReady = !!h && (vehicleId ? h.active.vehicleId === vehicleId : !listingEditor);
+  const localCost = listingEditor?.item.workflow && !listingEditor.item.workflow.existing && (!listingEditor.item.workflow.costsSaved || !listingEditor.item.workflow.factsSaved) ? listingEditor.item.workflow : undefined;
+  const costReady = !localCost && !!h && (vehicleId ? h.active.vehicleId === vehicleId : !listingEditor);
   const source = costReady ? h?.active.listingSource : null;
   const f = vehicleId ? comparison?.state.facts[vehicleId] : undefined;
 
@@ -127,21 +132,20 @@ export function CarEditor({ open, vehicleId, listingEditor, initialTab = "listin
     setListingConflict(false); setLatestListing(null);
     setNotice(keepEdits ? "Dina annonsändringar finns kvar. Spara för att ersätta det granskade underlaget. Kalkyl och fakta sparas separat." : "Den senaste sparade annonsen har öppnats.");
   }
-  const listingResource: EditingResource | null = item ? { key: "listing", label: "Annons", dirty: item.dirty,
-    busy: item.saving, save: saveListing, discard: () => {
+  const listingResource: EditingResource | null = item ? { key: "listing", label: "Annons", dirty: item.dirty || !!localCost && (!item.saved && !item.reviewDraft || !!item.saved && (!localCost.costsSaved || !localCost.factsSaved)),
+    busy: item.saving || item.workflow?.writing || item.workflow?.preparing, save: saveListing, discard: () => {
       if (listingEditor) listingEditor.discard();
       else setItems(current => current.map(x => x.id === item.id && x.baseline ? { ...x, draft: x.baseline, dirty: false, validationErrors: {} } : x));
     } } : null;
   // Listing changes come last: pending fact choices retain the exact listing version
   // the user reviewed, and every step uses acknowledged vehicle revisions.
   const resources = [costReady && household ? costResource(household) : null,
-    f && comparison && vehicleId ? factsResource(comparison.workspace, vehicleId) : null, listingResource]
+    !localCost && f && comparison && vehicleId ? factsResource(comparison.workspace, vehicleId) : null, listingResource]
     .filter((x): x is EditingResource => x !== null);
   return <EditorDialog open={open} title={`Redigera bil${item?.draft.fields.make.input ? ` – ${item.draft.fields.make.input} ${item.draft.fields.model.input}` : h?.active.registrationNumber && costReady ? ` – ${h.active.registrationNumber}` : ""}`}
-    onClose={onClose} resources={resources} activeResource={tab === "listing" && item && !item.saved ? undefined : tab} actions={tab === "listing" && item && !item.saved ? <>
-      <Button type="button" disabled={item.saving} onClick={() => void saveListing()}>{item.reviewDraft || !item.draft.fields.registrationNumber.input ? "Spara utkast" : "Lägg till bil"}</Button>
-      {item.reviewDraft && listingEditor?.adopt && <Button type="button" disabled={item.saving || !item.draft.fields.registrationNumber.input}
-        onClick={() => void listingEditor.adopt!()}>Lägg till bil</Button>}
+    onClose={onClose} resources={resources} saveAllLabel={item && !item.saved ? undefined : "Spara bil"} activeResource={tab === "listing" && item && !item.saved ? undefined : tab} actions={item && !item.saved ? <>
+      <Button type="button" disabled={item.saving || item.workflow?.writing || item.workflow?.preparing} onClick={() => void saveListing()}>{!item.draft.fields.registrationNumber.input ? "Spara utkast" : "Spara bil"}</Button>
+
     </> : undefined}>
     <div role="tablist" aria-label="Bilens underlag" className="mb-5 flex gap-1 border-b border-slate-700" onKeyDown={event => {
       const index = tabs.findIndex(([value]) => value === tab);
@@ -172,10 +176,16 @@ export function CarEditor({ open, vehicleId, listingEditor, initialTab = "listin
       </> : <p>Denna bil saknar ett öppet annonsunderlag.</p>}
     </div>
     <div role="tabpanel" id={`${id}-panel-cost`} aria-labelledby={`${id}-cost`} hidden={tab !== "cost"}>
-      {costReady ? <VehicleCostEditor /> : <p>{vehicleId ? "Öppnar bilens kalkyl…" : "Lägg till bilen med registreringsnummer innan ett separat kalkylunderlag sparas."}</p>}
+      {localCost && item && item.draft.fields.registrationNumber.input ? <fieldset disabled={localCost.preparing}><VehicleFields value={localCost.cost} errors={validateVehicle(localCost.cost)} onChange={cost => setItems(current => current.map(row => row.id === item.id && row.workflow
+        ? { ...row, workflow: { ...row.workflow, cost, costsSaved: false } } : row))} /></fieldset> : costReady ? <VehicleCostEditor /> : <p>{vehicleId ? "Öppnar bilens kalkyl…" : "Lägg till bilen med registreringsnummer innan ett separat kalkylunderlag sparas."}</p>}
     </div>
     <div role="tabpanel" id={`${id}-panel-facts`} aria-labelledby={`${id}-facts`} hidden={tab !== "facts"}>
-      {f && comparison && vehicleId ? <><p className="mb-3 text-sm">Aktuell annonsversion: {f.base.currentListingVersion?.text ?? "Saknas"}. Fakta granskade mot version {f.base.factsReviewedListingVersion?.text ?? "Saknas"}.</p>
+      {localCost && item ? <fieldset disabled={localCost.preparing}>
+        <p className="mb-3 text-sm">Förifyllda annonsvärden sparas obekräftade. Du kan ändra ett valt fält här.</p>
+        <FactsEditor input={localCost.facts} proposal={localCost.proposal} manualMode={false} prefix="facts"
+          errors={factErrors(localCost.facts, "facts")} onChange={facts => setItems(current => current.map(row => row.id === item.id && row.workflow
+            ? { ...row, workflow: { ...row.workflow, facts, factsSaved: false } } : row))} />
+      </fieldset> : f && comparison && vehicleId ? <><ConfirmFacts vehicleId={vehicleId} /><p className="mb-3 text-sm">Aktuell annonsversion: {f.base.currentListingVersion?.text ?? "Saknas"}. Fakta granskade mot version {f.base.factsReviewedListingVersion?.text ?? "Saknas"}.</p>
         {f.remote && <div role="alert"><p>Underlaget har ändrats. Granska de aktuella uppgifterna innan du sparar.</p>
           <FactsEditor readOnly input={{}} value={f.remote.input} proposal={f.remote.listingProposal} manualMode={false} prefix={`vehicle.${vehicleId}.remote`} errors={{}} onChange={() => {}} />
           <Button onClick={() => comparison.workspace.reviewFacts(vehicleId, false)}>Använd aktuella fakta</Button>

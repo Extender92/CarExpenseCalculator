@@ -1,5 +1,17 @@
 # Product requirements
 
+## Simplified entry and comparison flow
+
+The [frontend simplification](frontend-simplification.md) extends the delivered
+#95 workflow: a short home page, optional skippable household introduction,
+missing-only listing prefills for new cars, and **Spara och jämför** across selected
+cars. Registration-free advertisements remain separate drafts. One **Spara bil**
+action saves the car's changed resources sequentially; household settings and
+buying rules remain separate. Saving and prefilling never imply confirmation.
+Original advertisement text and extraction metadata remain stored in full behind
+optional detail sections. Summary and full reports freeze their presentation
+choice together with the comparison snapshot.
+
 ## Review workflow (#95)
 
 The [review and calculation workflow](review-and-calculation-workflow.md) adds
@@ -18,7 +30,7 @@ The application must remain useful without external AI. Deterministic normalizat
 ## Audience and environment
 
 - A small household using the application on a trusted home network.
-- Hosted on an Unraid server and reached through `http://extower.local:<port>`.
+- Hosted on a private server and reached through its configured LAN address and port.
 - Swedish user interface with English code and technical documentation.
 - No user accounts, authentication, public internet exposure, or HTTPS in the local-only release.
 

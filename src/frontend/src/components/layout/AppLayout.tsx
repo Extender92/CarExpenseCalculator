@@ -4,10 +4,10 @@ import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { to: "/", label: "Översikt", icon: CarFront, end: true },
+  { to: "/", label: "Start", icon: CarFront, end: true },
+  { to: "/analyze-urls", label: "Lägg till bil", icon: Link2 },
   { to: "/search", label: "Jämförelse", icon: Search },
-  { to: "/analyze-urls", label: "URL-analys", icon: Link2 },
-  { to: "/manual", label: "Manuell kalkyl", icon: Calculator },
+  { to: "/manual", label: "Gemensamma uppgifter", icon: Calculator },
 ];
 
 export function AppLayout() {
@@ -42,10 +42,6 @@ export function AppLayout() {
           Hitta, granska och jämför bilar på ett ställe.
         </p>
         <Navigation />
-        <div className="absolute inset-x-6 bottom-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Lokal version</p>
-          <p className="mt-2 text-sm text-slate-300">Jämförelse, manuell kalkyl och URL-analys är tillgängliga. Rådgivande AI-granskning är fortfarande planerad.</p>
-        </div>
       </aside>
 
       <main className="relative lg:pl-72">
@@ -65,7 +61,7 @@ function Brand() {
       </span>
       <span>
         <span className="block text-lg font-bold tracking-tight">Bilverktyget</span>
-        <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-400">Car intelligence</span>
+
       </span>
     </NavLink>
   );

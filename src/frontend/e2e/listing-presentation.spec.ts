@@ -12,6 +12,7 @@ for (const view of ["comparison", "report"] as const) {
       const open = page.getByRole("button", {name: "Öppna rapport", exact: true});
       await expect(open).toBeEnabled();
       if (view === "report") {
+        await page.getByLabel("Rapportinnehåll").selectOption("full");
         await open.click();
         await expect(page.getByRole("button", {name: "Skriv ut / Spara som PDF", exact: true})).toBeEnabled();
       } else await page.locator("summary").filter({hasText: /^Annonsunderlag$/}).click();

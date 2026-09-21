@@ -4,10 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { Numeric, n, stringifyExact } from "@/features/household/numbers";
 import { deferred } from "@/features/household/test-fixtures";
-import { captureReport, reportRows } from "./report-model";
+import { captureReport as capture, reportRows } from "./report-model";
 import { inputRows } from "./report-format";
 import { ReportDocument, ReportPreview } from "./Report";
 import { manualRequest, response } from "./test-fixtures";
+
+// Existing complete-content regressions exercise the explicit full report mode.
+const captureReport: typeof capture = (response, sort, now, zone) => capture(response, sort, now, zone, "full");
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -276,5 +279,33 @@ describe("report presentation", () => {
       else Reflect.deleteProperty(document, "fonts");
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("frozen report presentation mode", () => {
+  it("lists a missing cost only once in the summary despite repeated calculated totals", () => {
+    const source = response(manualRequest());
+    const totals = source.views.baseline.candidates[0].cost.totals;
+    for (const value of [totals.ownershipCost, totals.monthlyCost, totals.costPerMil])
+      value.missingComponents = ["vehicles[0].input.insurance"];
+    render(<ReportDocument report={capture(source, "cost")} />);
+    const gaps = screen.getByRole("table", { name: "TAA100 – Uppgifter att komplettera" });
+    expect(within(gaps).getAllByText("Saknas för en komplett beräkning")).toHaveLength(1);
+    expect(within(gaps).getByText("Bilunderlag – Försäkring")).toBeVisible();
+  });
+
+  it("defaults to summary while retaining every car, exact inputs and the frozen full source", () => {
+    const source = response(manualRequest(3));
+    source.views.baseline.candidates[0].cost.energy.electricDrivingShare = { percent: n("20.123456789"), origin: "vehicle" };
+    const report = capture(source, "cost");
+    expect(report.mode).toBe("summary");
+    source.views.baseline.candidates[0].cost.energy.electricDrivingShare.percent = n(90);
+    render(<ReportDocument report={report} />);
+    expect(screen.getByRole("heading", { name: "Jämförelserapport – Sammanfattning" })).toBeVisible();
+    expect(screen.getByRole("table", { name: "Huvudjämförelse" }).querySelectorAll("[data-report-vehicle]")).toHaveLength(3);
+    expect(screen.getByText("Elandel: 20,123456789 % · Bilens eget val")).toBeVisible();
+    expect(Object.isFrozen(report)).toBe(true);
+    expect(Object.isFrozen(report.response)).toBe(true);
+    expect(screen.queryByRole("table", { name: /Betalningskalender/ })).not.toBeInTheDocument();
   });
 });

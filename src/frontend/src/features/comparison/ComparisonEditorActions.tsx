@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useOptionalComparison } from "./use-comparison";
 import { BaselineReview } from "./BaselineReview";
 import { focusField } from "./navigation";
+import { SelectField } from "./controls";
 import { labelFor } from "./catalogue";
 
 /** Calculations and conflict review stay reachable while the rest of the page is inert. */
@@ -21,6 +22,9 @@ export function ComparisonEditorActions() {
   const { workspace, state } = context;
   return <section className="mt-5 space-y-3" aria-label="Aktuell jämförelse">
     <div className="flex flex-wrap gap-3">
+      <SelectField label="Rapportinnehåll" path="editorReportMode" value={state.reportMode}
+        options={[["summary", "Sammanfattning"], ["full", "Fullständigt underlag"]]}
+        onChange={value => workspace.setReportMode(value as "summary" | "full")} />
       <Button variant="secondary" disabled={state.calculating} onClick={() => { setFocusErrors(true); void workspace.calculate(); }}>Beräkna nu</Button>
       <Button variant="secondary" disabled={workspace.reportBlockReason() !== null} onClick={() => {
         if (workspace.openReport()) navigate("/search/report");

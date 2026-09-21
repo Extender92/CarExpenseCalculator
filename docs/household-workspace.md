@@ -1,5 +1,16 @@
 # Household workspace
 
+## Optional introduction
+
+The [simplified workflow](frontend-simplification.md) adds a three-step household
+guide on the short home page when no profile exists. It accepts valid incomplete
+inputs without guessing financial values. Skipping writes no profile and restores
+the inputs present when the guide opened. A browser-local presentation flag
+suppresses automatic reopening; the guide remains explicitly accessible.
+Existing profiles and exact uncertainty scenarios are preserved. Budgets,
+charging details and additional scenarios remain available in detail sections.
+Profile and buying-rule saves stay separate from **Spara bil** and batch saving.
+
 ## Review workflow extension (#95)
 
 The overview now shows summaries and opens shared inputs or a selected car in

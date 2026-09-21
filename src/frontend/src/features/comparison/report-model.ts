@@ -7,6 +7,7 @@ export type Immutable<T> = T extends Numeric ? Readonly<Numeric> : T extends obj
 
 /** One tab-local capture, never a persisted report or new calculation request. */
 export interface ComparisonReportInput {
+  readonly mode: "summary" | "full";
   readonly response: Immutable<ComparisonResponse>;
   readonly sort: "cost" | "score";
   readonly capturedAt: string;
@@ -26,8 +27,10 @@ export function captureReport(
   sort: ComparisonReportInput["sort"],
   now = new Date(),
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+  mode: ComparisonReportInput["mode"] = "summary",
 ): ComparisonReportInput {
   return freeze({
+    mode,
     response: cloneExact(response),
     sort,
     capturedAt: now.toISOString(),

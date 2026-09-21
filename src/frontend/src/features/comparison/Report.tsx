@@ -3,7 +3,7 @@ import { ElectricShareSource } from "@/features/household/ElectricShareSource";
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatNumeric } from "@/features/household/numbers";
-import { labels } from "@/features/household/labels";
+import { labels, fieldLabel } from "@/features/household/labels";
 import { eligibilityLabels, reasonText } from "./catalogue";
 import {
   amountText,
@@ -171,6 +171,7 @@ export const ReportDocument = memo(function ReportDocument({
 }: {
   report: ComparisonReportInput;
 }) {
+  if (report.mode === "summary") return <SummaryReport report={report} />;
   const response = report.response;
   const view = response.views[response.activeSensitivityMode];
   const rows = reportRows(report);
@@ -482,6 +483,71 @@ export const ReportDocument = memo(function ReportDocument({
     </article>
   );
 });
+
+/** Summary omits absent optional inputs, while calculated gaps remain explicit below. */
+function SummaryDataTable({ title, value }: { title: string; value: unknown }) {
+  const rows = inputRows(value, true).filter(row => row.value !== "Okänt / ej angivet");
+  if (!rows.length) return null;
+  return <Table title={title} headings={["Uppgift", "Värde / underlag"]}>{rows.map(row =>
+    <tr key={row.path}><th scope="row">{row.label || "Underlag"}</th><td>{row.value}</td></tr>)}</Table>;
+}
+
+function SummaryMissing({ result }: { result: Immutable<Result> }) {
+  const totals = [result.cost.totals.ownershipCost, result.cost.totals.monthlyCost, result.cost.totals.costPerMil];
+  const missing = [...new Set(totals.flatMap(section => section.missingComponents))];
+  const errors = [...new Map(totals.flatMap(section => section.errors).map(error => [`${error.path}:${error.code}`, error])).values()];
+  if (!missing.length && !errors.length) return null;
+  return <Table title={`${result.registrationNumber} – Uppgifter att komplettera`} headings={["Uppgift", "Behov"]}>
+    {missing.map(path => <tr key={path}><th scope="row">{fieldLabel(path.replace(/^vehicles\[\d+\]\./, ""))}</th><td>Saknas för en komplett beräkning</td></tr>)}
+    {errors.map(error => <tr key={`${error.path}:${error.code}`}><th scope="row">{fieldLabel(error.path.replace(/^vehicles\[\d+\]\./, ""))}</th><td>{reasonText[error.code] ?? error.code}</td></tr>)}
+  </Table>;
+}
+
+function SummaryReport({ report }: { report: ComparisonReportInput }) {
+  const rows = reportRows(report);
+  const view = report.response.views[report.response.activeSensitivityMode];
+  const priorities = rows.some(r => r.contributions.length > 0);
+  return <article className="comparison-report" aria-label="Jämförelserapport">
+    <header><h1>Jämförelserapport – Sammanfattning</h1>
+      <p>Fångad {new Date(report.capturedAt).toLocaleString("sv-SE", { timeZone: report.timeZone })} ({report.timeZone}).
+        Utvärderingsdatum: {view.asOfDate}. {rows.length} bilar. {labels[report.response.activeSensitivityMode]}.</p>
+      <p>Underlaget är fryst. Känd del är ingen komplett summa. Sparade annonsuppgifter innebär ingen bekräftelse eller registerkontroll.</p>
+    </header>
+    <Table title="Huvudjämförelse" headings={["Bil", "Per månad", "Periodkostnad", "Kravutfall", ...(priorities ? ["Poängintervall", "Datatäckning"] : [])]}>
+      {rows.map(r => <tr key={r.vehicleId} data-report-vehicle={r.vehicleId}>
+        <th scope="row">{r.registrationNumber}{unsaved(r) && <p>Osparat: {unsaved(r)}</p>}</th>
+        <td>{amountText(r.cost.totals.monthlyCost)}</td><td>{amountText(r.cost.totals.ownershipCost)}{recommendation(r)}</td>
+        <td>{r.hardRules.length ? eligibilityLabels[r.eligibility] : "Inga köpkrav valda"}</td>
+        {priorities && <><td>{scoreText(r.score)}</td><td>{r.coveragePercent == null ? "Okänd" : `${formatNumeric(r.coveragePercent)} %`}</td></>}
+      </tr>)}
+    </Table>
+    {rows.some(r => Object.values(r.unsaved).some(Boolean)) && <p>Osparade antaganden ingår och är markerade per bil.</p>}
+    <h2>Gemensamma antaganden</h2>
+    <SummaryDataTable title="Hushåll och priser" value={view.profile} />
+    {((view.rules.hardRules?.length ?? 0) > 0 || priorities) && <SummaryDataTable title="Köpkrav och prioriteringar" value={view.rules} />}
+    {view.profileErrors.length > 0 && <SummaryDataTable title="Gemensamma uppgifter att komplettera" value={view.profileErrors} />}
+    {rows.map(r => <section key={r.vehicleId} data-report-details={r.vehicleId}>
+      <h2>{r.registrationNumber} – Antaganden, källor och luckor</h2>
+      {r.needsListingReview && <p>Annonsuppgifterna behöver granskas mot kalkylen och jämförelsefakta.</p>}
+      <ElectricShareSource value={r.cost.energy.electricDrivingShare} />
+      <SummaryDataTable title={`${r.registrationNumber} – Kostnadsantaganden och källor`} value={r.effectiveCostInput} />
+      <SummaryDataTable title={`${r.registrationNumber} – Fordonsfakta och konflikter`} value={r.effectiveFacts && { ...r.effectiveFacts,
+        facts: Object.fromEntries(Object.entries(r.effectiveFacts.facts ?? {}).filter(([, fact]) => fact && fact.state !== "unknown")) }} />
+      <SummaryMissing result={r} />
+      <SummaryDataTable title={`${r.registrationNumber} – Krav, konflikter och källversioner`} value={{
+        ...(r.hardRules.length ? { hardRules: r.hardRules } : {}),
+        ...(r.contributions.length ? { contributions: r.contributions } : {}),
+        ...(r.signals.length ? { signals: r.signals } : {}),
+        ...(r.errors.length ? { errors: r.errors } : {}),
+        ...(r.cost.inputErrors.length ? { inputErrors: r.cost.inputErrors } : {}),
+        ...(r.unresolvedLegacyItems.length ? { unresolvedLegacyItems: r.unresolvedLegacyItems } : {}),
+        sourceRevisions: r.sourceRevisions, costConfirmedAt: r.costConfirmedAt,
+      }} />
+      {report.response.listings?.filter(l => l.vehicleId === r.vehicleId).map(l =>
+        <p key={l.vehicleId}>Annonsreferens: {l.normalizedUrl}</p>)}
+    </section>)}
+  </article>;
+}
 
 /** Native print may be cancelled. No afterprint handler claims a saved file. */
 export function ReportPreview({ report }: { report: ComparisonReportInput }) {

@@ -29,6 +29,13 @@ function StoredHouseholdPage() {
   const [params, setParams] = useSearchParams();
   const opened = useRef<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(!!(params.get("vehicleId") ?? params.get("listingVehicleId")));
+  const newCarOpened = useRef(false);
+  useEffect(() => {
+    if (params.has("newCar") && !newCarOpened.current) {
+      newCarOpened.current = true;
+      if (workspace.newVehicle()) queueMicrotask(() => setEditorOpen(true));
+    }
+  }, [params, workspace]);
   const requested = params.get("vehicleId") ?? params.get("listingVehicleId");
   useEffect(() => {
     workspace.start();
