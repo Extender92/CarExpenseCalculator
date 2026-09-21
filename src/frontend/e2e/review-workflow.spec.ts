@@ -48,6 +48,7 @@ test("registration-free drafts survive reload, stay outside comparison and adopt
     await dialog.getByRole("button", { name: "Spara bil", exact: true }).click();
     const response = await adopted; expect(response.ok(), await response.text()).toBe(true);
     const saved = await response.json(); vehicles.push(saved.vehicleId);
+    await expect(dialog.getByText("Bilens ändringar har sparats.", { exact: true })).toBeVisible();
     expect(saved.listing.registrationNumber.provenance.verification).toBe("unverified");
     expect(saved.listing.details.description.value).toContain("Originalbeskrivning");
     expect((await request.get(`/api/listing-review-drafts/${drafts[0]}`)).status()).toBe(404);

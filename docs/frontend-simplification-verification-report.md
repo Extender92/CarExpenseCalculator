@@ -111,6 +111,11 @@ registration field. The remaining broad rendering/editing test was split into
 two focused cases after another CI deadline failure. All assertions and the
 five-second deadlines remain; the final local run passes 324 tests.
 
+The first Docker CI run passed 84 browser tests but exposed test teardown racing
+with post-adoption cost/fact writes. The adoption test now awaits the complete
+car-save acknowledgement before deleting its fixtures; revision checks remain
+strict, without retrying conflicting deletes.
+
 ## Delivery and cleanup
 
 Helpers, logs, PDFs and temporary builds use the ignored
