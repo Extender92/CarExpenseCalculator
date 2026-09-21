@@ -135,8 +135,9 @@ describe("comparison forms", () => {
   });
 });
 describe("comparison tables", () => {
-  it("shows intervals, coverage, and partial costs without recalculating them", () => {
+  it("shows intervals, coverage, and partial costs without recalculating them", async () => {
     const reply = response(manualRequest());
+    reply.views.baseline.rules.preferences = [{ criterionKey: "purchasePriceSek", weight: n(1), minimumEvidence: "advertised", zeroPoint: n(100000), fullPoint: n(0) }];
     const rows = reply.views.baseline.candidates;
     rows[0].score = { lower: n(45), upper: n(85) };
     rows[0].coveragePercent = n(60);
@@ -163,6 +164,7 @@ describe("comparison tables", () => {
     expect(screen.getByText("[45,00, 85,00]")).toBeVisible();
     expect(screen.getByText("60,00 %")).toBeVisible();
     expect(screen.getByText("känd del")).toBeVisible();
+    await userEvent.click(screen.getByText("Komplettera 1 uppgifter", { selector: "summary" }));
     expect(screen.getByRole("link", { name: /fordonsskatt/i })).toHaveAttribute(
       "href",
       expect.stringContaining("field=input.tax"),
@@ -170,6 +172,7 @@ describe("comparison tables", () => {
   });
   it("hides recommendation badges whenever the generation is stale", () => {
     const reply = response(manualRequest());
+    reply.views.baseline.rules.preferences = [{ criterionKey: "purchasePriceSek", weight: n(1), minimumEvidence: "advertised", zeroPoint: n(100000), fullPoint: n(0) }];
     const rows = reply.views.baseline.candidates;
     rows[0].isCheapestEligibleComplete = true;
     rows[0].isDefinitePreferenceWinner = true;
@@ -195,6 +198,7 @@ describe("comparison tables", () => {
   });
   it("keeps complete rejected cars visible and leaves their status separate from scores", () => {
     const reply = response(manualRequest());
+    reply.views.baseline.rules.preferences = [{ criterionKey: "purchasePriceSek", weight: n(1), minimumEvidence: "advertised", zeroPoint: n(100000), fullPoint: n(0) }];
     const rows = reply.views.baseline.candidates;
     rows[0].eligibility = "rejected";
     render(

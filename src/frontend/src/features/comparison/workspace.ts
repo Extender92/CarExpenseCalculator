@@ -102,6 +102,7 @@ export interface ComparisonState {
   editorPanels: string[];
   requestBytes: number;
   report: ComparisonReportInput | null;
+  reportMode: ComparisonReportInput["mode"];
   reportInvalidated: boolean;
 }
 const fingerprint = (value: unknown) => {
@@ -144,6 +145,7 @@ export class ComparisonWorkspace {
     editorPanels: [],
     requestBytes: 0,
     report: null,
+    reportMode: "summary",
     reportInvalidated: false,
   };
   private listeners = new Set<() => void>();
@@ -308,14 +310,15 @@ export class ComparisonWorkspace {
       return "Lägg till bilar innan du öppnar en rapport.";
     return null;
   }
-  openReport(): boolean {
+  setReportMode(reportMode: ComparisonReportInput["mode"]) { this.set({ reportMode }); }
+  openReport(mode: ComparisonReportInput["mode"] = this.state.reportMode): boolean {
     const reason = this.reportBlockReason();
     if (reason) {
       this.set({ notice: reason });
       return false;
     }
     this.set({
-      report: captureReport(this.state.response!, this.state.sort),
+      report: captureReport(this.state.response!, this.state.sort, undefined, undefined, mode),
       reportInvalidated: false,
     });
     return true;

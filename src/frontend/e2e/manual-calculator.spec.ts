@@ -25,7 +25,7 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
   await page.goto("/manual/legacy");
   await fillDocumentedScenario(page);
   await page.getByLabel("Bilens namn").fill(vehicleName);
-  await page.getByLabel("Registreringsnummer").fill(registrationNumber);
+  await page.getByLabel("Registreringsnummer", { exact: true }).fill(registrationNumber);
 
   const createResponsePromise = page.waitForResponse((response) =>
     response.url().endsWith("/api/saved-cost-scenarios") && response.request().method() === "POST",
@@ -56,7 +56,7 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
   const savedCard = savedHeading.locator("xpath=ancestor::li");
   await savedCard.getByRole("button", { name: "Öppna" }).click();
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("21000");
-  await expect(page.getByLabel("Registreringsnummer")).toHaveAttribute("readonly", "");
+  await expect(page.getByLabel("Registreringsnummer", { exact: true })).toHaveAttribute("readonly", "");
 
   await savedCard.getByRole("button", { name: new RegExp(`Ta bort ${vehicleName}`) }).click();
   const deleteResponsePromise = page.waitForResponse((response) =>
@@ -69,7 +69,7 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
 
   await expect(page.getByText(/Bilens formulär och resultat har rensats/)).toBeVisible();
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("");
-  await expect(page.getByLabel("Registreringsnummer")).toBeEnabled();
+  await expect(page.getByLabel("Registreringsnummer", { exact: true })).toBeEnabled();
   await expect(page.getByText(`${vehicleName} (${registrationNumber})`)).not.toBeVisible();
 });
 
@@ -77,26 +77,24 @@ test("links a saved listing, detects listing drift, and reviews the current vers
   const registrationNumber = "LNK123";
   await removeVehicleIfPresent(page, registrationNumber);
 
-  await page.goto("/analyze-urls");
-  await page.getByLabel("URL:er").fill("https://cars.example/item/complete");
-  await page.getByRole("button", { name: "Analysera URL:er" }).click();
-  const listingCard = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "complete" });
-  await expect(listingCard.getByText("Volvo V70 2.4")).toBeVisible();
-  await openListingEditor(listingCard);
-  await listingCard.getByLabel("Registreringsnummer").fill(registrationNumber);
-  const listingCreate = page.waitForResponse((response) =>
-    response.url().endsWith("/api/saved-listings") && response.request().method() === "POST",
-  );
-  await saveListingCard(listingCard);
-  expect((await listingCreate).status()).toBe(201);
-
-  await closeEditor(page);
-  await listingCard.getByRole("button", { name: "Öppna hushållskalkyl" }).click();
-  await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  try {
+  // A pre-existing listing-only record keeps the legacy-address compatibility
+  // regression independent of new-car automatic household prefills.
+  const analyzed = await page.request.post("/api/listing-analyses", { data: { url: "https://cars.example/item/complete" } });
+  expect(analyzed.status()).toBe(200);
+  const analysis = await analyzed.json();
+  analysis.listing.registrationNumber.value = registrationNumber;
+  const created = await page.request.post("/api/saved-listings", { data: { registrationNumber,
+    listing: { submittedUrl: analysis.submittedUrl, analyzedAtUtc: analysis.analyzedAtUtc,
+      requestedModel: analysis.requestedModel, promptVersion: analysis.promptVersion, schemaVersion: analysis.schemaVersion,
+      sources: analysis.sources.map((source: { url: string }) => source.url), draft: analysis.listing } } });
+  expect(created.status(), await created.text()).toBe(201);
+  const vehicleId = (await created.json()).vehicleId;
+  await page.goto(`/manual?listingVehicleId=${vehicleId}`);
   await closeEditor(page);
   await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Annonsuppgifter för kalkylen" })).toBeVisible();
-  await expect(page.getByLabel("Registreringsnummer")).toHaveValue(registrationNumber);
+  await expect(page.getByLabel("Registreringsnummer", { exact: true })).toHaveValue(registrationNumber);
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("20000");
   await fillLinkedScenarioAssumptions(page);
 
@@ -104,13 +102,14 @@ test("links a saved listing, detects listing drift, and reviews the current vers
     response.url().includes("/api/saved-cost-scenarios/")
       && response.request().method() === "PUT",
   );
-  await page.getByRole("button", { name: "Spara kalkyl" }).click();
+  await page.getByRole("button", { name: "Spara kalkyl", exact: true }).click();
   expect((await scenarioCreate).status()).toBe(200);
   await expect(page.getByText("Kopplad till aktuell annons")).toBeVisible();
   await expect(page.getByText(/64\s000,00\s*kr/).first()).toBeVisible();
   await expect(page.getByText(/49\s000,00\s*kr/).first()).toBeVisible();
 
   await page.goto("/analyze-urls");
+  await page.locator("summary").filter({ hasText: /^Sparade bilar$/ }).click();
   const summary = page.getByText(registrationNumber, { exact: true }).first().locator("xpath=ancestor::li");
   await expect(summary.getByText(/Äldre kalkyl – väntar på övergång/)).toBeVisible();
   await summary.getByRole("button", { name: "Öppna", exact: true }).click();
@@ -145,7 +144,7 @@ test("links a saved listing, detects listing drift, and reviews the current vers
   expect((await reviewSave).status()).toBe(200);
   await expect(page.getByText("Kopplad till aktuell annons")).toBeVisible();
 
-  await removeVehicleIfPresent(page, registrationNumber);
+  } finally { await removeVehicleIfPresent(page, registrationNumber); }
 });
 
 async function fillDocumentedScenario(page: Page) {
@@ -215,23 +214,11 @@ async function fillLinkedScenarioAssumptions(page: Page) {
 }
 
 async function removeVehicleIfPresent(page: Page, registrationNumber: string) {
-  const listing = await page.request.get(`/api/saved-listings/by-registration/${registrationNumber}`);
-  if (listing.ok()) {
-    const resource = await listing.json() as { vehicleId: string; revision: number };
-    await page.request.delete(
-      `/api/saved-listings/${resource.vehicleId}?expectedRevision=${resource.revision}`,
-    );
-    return;
-  }
-
-  const scenario = await page.request.get(
-    `/api/saved-cost-scenarios/by-registration/${registrationNumber}`,
-  );
-  if (!scenario.ok()) return;
-  const resource = await scenario.json() as { vehicleId: string; revision: number };
-  await page.request.delete(
-    `/api/saved-cost-scenarios/${resource.vehicleId}?expectedRevision=${resource.revision}`,
-  );
+  const inventory = await (await page.request.get("/api/vehicle-cost-inputs")).json();
+  const row = inventory.find((item: { registrationNumber: string }) => item.registrationNumber === registrationNumber);
+  if (!row) return;
+  const current = await (await page.request.get(`/api/vehicle-cost-inputs/${row.vehicleId}`)).json();
+  expect((await page.request.delete(`/api/vehicle-cost-inputs/${row.vehicleId}?expectedRevision=${current.revision}`)).status()).toBe(204);
 }
 
 function randomRegistrationNumber() {

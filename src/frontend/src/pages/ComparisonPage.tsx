@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { panelClass } from "@/features/household/Fields";
+import { fieldLabel } from "@/features/household/labels";
 import { formatNumeric } from "@/features/household/numbers";
 import { useWorkspace } from "@/features/household/use-workspace";
 import { useComparison } from "@/features/comparison/use-comparison";
@@ -12,7 +13,7 @@ import { RulesEditor, RulesSummary } from "@/features/comparison/RulesEditor";
 import { ComparisonTables } from "@/features/comparison/Tables";
 import { SelectField, TextField } from "@/features/comparison/controls";
 import { labelFor, reasonText } from "@/features/comparison/catalogue";
-import { economicLink, focusField } from "@/features/comparison/navigation";
+import { economicLink, focusField, errorTarget } from "@/features/comparison/navigation";
 import {
   type FormErrors,
 } from "@/features/household/form-model";
@@ -92,10 +93,23 @@ export function ComparisonPage() {
           egna köpkrav. Redigering beräknas utan automatisk sparning.
         </p>
       </header>
-      <section
-        className={`${panelClass} space-y-4`}
-        aria-label="Jämförelsens förutsättningar"
-      >
+      <div className="flex flex-wrap items-end gap-3"><Link to="/analyze-urls" className={linkClass}>Lägg till bil</Link>
+        <SelectField label="Rapportinnehåll" path="reportMode" value={state.reportMode}
+          options={[["summary", "Sammanfattning"], ["full", "Fullständigt underlag"]]}
+          onChange={value => workspace.setReportMode(value as "summary" | "full")} />
+          <Button
+            variant="secondary"
+            disabled={workspace.reportBlockReason() !== null}
+            aria-describedby="report-help"
+            onClick={() => {
+              if (workspace.openReport()) navigate("/search/report");
+            }}
+          >
+            Öppna rapport
+          </Button>
+      </div>
+      {workspace.reportBlockReason() && <p id="report-help" className="text-sm text-slate-400">{workspace.reportBlockReason()}</p>}
+      <details className={`${panelClass} space-y-4`}><summary className="cursor-pointer font-semibold">Gemensamma uppgifter och köpkrav</summary><section aria-label="Jämförelsens förutsättningar">
         <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
             label="Jämförelseläge"
@@ -126,16 +140,6 @@ export function ComparisonPage() {
           <Button onClick={() => run(() => void workspace.calculate())}>
             Beräkna nu
           </Button>
-          <Button
-            variant="secondary"
-            disabled={workspace.reportBlockReason() !== null}
-            aria-describedby="report-help"
-            onClick={() => {
-              if (workspace.openReport()) navigate("/search/report");
-            }}
-          >
-            Öppna rapport
-          </Button>
           {!isManual && (
             <Button
               variant="secondary"
@@ -146,10 +150,6 @@ export function ComparisonPage() {
             </Button>
           )}
         </div>
-        <p id="report-help" className="text-sm text-slate-300">
-          {workspace.reportBlockReason() ??
-            "Rapporten innehåller alla bilar, alla detaljavsnitt och aktuella osparade antaganden."}
-        </p>
         <p className="text-sm text-slate-300">
           Aktivt läge:{" "}
           {h.profile.activeSensitivityMode === "favorable"
@@ -182,7 +182,7 @@ export function ComparisonPage() {
             {state.notice && <p role="status">{state.notice}</p>}
           </EditorDialog>}
         </section>
-      </section>
+      </section></details>
       {(state.loading || state.calculating || state.stale || state.notice) && (
         <div className={panelClass} role="status">
           {state.loading && <p>Läser serverunderlag…</p>}
@@ -261,7 +261,7 @@ export function ComparisonPage() {
             </Link>
           </p>
         )}
-        {!state.stale && view && (
+        {!state.stale && view && rows.some(row => row.contributions.length > 0) && (
           <p role="status">
             {reasonText[view.preferenceRecommendationReason] ??
               "Granska poängintervall och datatäckning för att bedöma prioriteringarna."}
@@ -314,6 +314,12 @@ export function ComparisonPage() {
             läs serveruppgifterna och beräkna.
           </p>
         )}
+        {view && (() => {
+          const shared = [...new Set(rows.flatMap(row => [row.cost.totals.ownershipCost, row.cost.totals.monthlyCost, row.cost.totals.costPerMil]
+            .flatMap(value => value.missingComponents).map(path => errorTarget(row, path)).filter(path => path.startsWith("profile."))))];
+          return shared.length ? <details className={panelClass}><summary>Komplettera {shared.length} gemensamma uppgifter</summary>
+            <ul>{shared.map(path => <li key={path}><button className={linkClass} onClick={() => setProfileField(path)}>{fieldLabel(path)}</button></li>)}</ul></details> : null;
+        })()}
         <ComparisonTables
           rows={pageRows}
           response={state.response}

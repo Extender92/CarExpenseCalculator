@@ -1,4 +1,4 @@
-import { closeEditor, editingScope } from "./editor-helpers";
+import { openComparisonSettings, closeEditor, editingScope } from "./editor-helpers";
 import {
   expect,
   test,
@@ -148,6 +148,7 @@ test("B1-B4: edits common priorities and facts with exact intervals, coverage an
       writes.push(r.url());
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
   await expect(row(page, "CAA100")).toContainText("100,00 %");
   await page
@@ -169,7 +170,8 @@ test("B1-B4: edits common priorities and facts with exact intervals, coverage an
   const priceRule = page.locator('[data-criterion="purchasePriceSek"]');
   await priceRule.locator("summary").click();
   await priceRule.getByLabel("Vikt (0–5)").fill("0");
-  await expect(row(page, "CAA100")).toContainText("Ingen poäng");
+  await expect(main(page).getByRole("columnheader", { name: "Poängintervall" })).toHaveCount(0);
+  await expect(main(page).getByRole("columnheader", { name: "Datatäckning" })).toHaveCount(0);
   await priceRule.getByLabel("Vikt (0–5)").fill("1");
   await gearRule.getByLabel("Vikt (0–5)").fill("4");
   await expect(row(page, "CAA100")).toContainText("[15,00, 95,00]");
@@ -183,7 +185,7 @@ test("B1-B4: edits common priorities and facts with exact intervals, coverage an
   expect(writes.filter(url => url.includes("vehicle-facts"))).toHaveLength(1);
   expect(writes.filter(url => url.endsWith("rule-profile"))).toHaveLength(1);
   await page
-    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   await expect
     .poll(
@@ -226,6 +228,7 @@ test("A2: ownership cost, financing and calendar remain separate, with focused e
   });
   const car = await create(request, 0, cost(80000, 60000));
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText(/20\s750,00/);
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   await expect(
@@ -261,6 +264,7 @@ test("101 cars share pagination and global scores; details never narrow the calc
     if (r.url().endsWith("/preview-all")) bodies.push(r.postDataJSON());
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(51);
   expect(bodies[0].overrides).toEqual([]);
   expect(bodies[0].candidates).toBeUndefined();
@@ -288,6 +292,7 @@ test("two browsers preserve local priorities until a changed baseline is explici
 }) => {
   await create(request);
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
   await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const price = page.locator('[data-criterion="purchasePriceSek"]');
@@ -332,6 +337,7 @@ test("explicit manual mode works without storage and retains economic edits thro
     }),
   );
   await page.goto("/search");
+  await openComparisonSettings(page);
   await page.getByLabel("Jämförelseläge").selectOption("manual");
   page.on("request", (r) => {
     if (r.url().includes("/api/") && !r.url().endsWith("/preview-all"))
@@ -377,6 +383,7 @@ test("whole-car deletion removes facts and preserves both shared profiles", asyn
   const car = await create(request);
   const before = await (await request.get("/api/comparisons/baseline")).json();
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toBeVisible();
   await page
     .getByRole("button", { name: "CAA100", exact: true })
@@ -414,6 +421,7 @@ test("B5-B8: overlap, hard requirements, partial totals and fixed goals use the 
     serviceDocumentation: manual("absent"),
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText("[45,00, 85,00]");
   await expect(row(page, "CAA101")).toContainText("[60,00, 80,00]");
   await page.getByLabel("Sortering", { exact: true }).selectOption("score");
@@ -522,6 +530,7 @@ test("B6 cost order keeps incomplete and rejected alternatives while marking onl
   );
   await create(request, 3, cost(40000, 20000), tow(false));
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(5);
   for (const [index, registration] of [
     "CAA101",
@@ -549,6 +558,7 @@ test("250 cars include an off-page preference winner and share every detail page
   for (let i = 0; i < 250; i++)
     await create(request, i, i === 249 ? cost(20000, 0) : cost(40000, 30000));
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(main(page).getByRole("row", { includeHidden: true })).toHaveCount(51);
   await expect(main(page)).not.toContainText("CAA349");
   const recommendations = page.getByRole("region", {
@@ -658,6 +668,7 @@ test("A5-A8 and A11 retain independent energy, maintenance, accrual and strict b
     tax: item("tax", 1200, "annual", undefined, 3),
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText(/9\s504,00/);
   await expect(row(page, "CAA101")).toContainText(/10\s320,00/);
   await expect(row(page, "CAA102")).toContainText(/7\s200,00/);
@@ -729,6 +740,7 @@ test("A9-A10 display leasing coverage and distinguish outflows, refunds and budg
     },
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText(/60\s000,00/);
   await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
   const payments = page.getByRole("table", {
@@ -749,12 +761,13 @@ test("A9-A10 display leasing coverage and distinguish outflows, refunds and budg
   await expect(payments).toContainText("Kan inte bedömas ännu");
 });
 
-test("economic saving advances the shared revision and clears old confirmation without losing fact edits", async ({
+test("unified car saving advances revisions, saves fact edits and clears old cost confirmation", async ({
   request,
   page,
 }) => {
   const car = await create(request);
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -772,7 +785,7 @@ test("economic saving advances the shared revision and clears old confirmation w
     const gear = page.locator('[data-fact="transmission"]');
     await gear.locator("summary").click();
     await gear.getByLabel("Åtgärd för Växellåda").selectOption("unknown");
-    await page.getByRole("tab", { name: "Kalkyl", exact: true }).click();
+    await page.getByRole("tab", { name: "Kostnader", exact: true }).click();
     await expect(page.getByText("Öppnar bilens kalkyl…", { exact: true })).toBeVisible();
     await expect(
       page.getByLabel("Inköpspris (kr)", { exact: true }),
@@ -785,7 +798,7 @@ test("economic saving advances the shared revision and clears old confirmation w
   );
   await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("35000");
   await page
-    .getByRole("button", { name: "Spara bilunderlag", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   await expect
     .poll(
@@ -801,7 +814,10 @@ test("economic saving advances the shared revision and clears old confirmation w
   const gear = page.locator('[data-fact="transmission"]');
   await expect(row(page, "CAA100")).toContainText("[0,00, 100,00]");
   await settled(page);
-  await expect(gear.getByLabel("Åtgärd för Växellåda")).toHaveValue("unknown");
+  await expect(gear.getByLabel("Åtgärd för Växellåda")).toHaveValue("preserve");
+  const savedBeforeConfirmation = await (await request.get(`/api/vehicle-facts/${car.vehicleId}`)).json();
+  expect(savedBeforeConfirmation.input.facts.transmission.state).toBe("unknown");
+  expect(savedBeforeConfirmation.costConfirmedAt).toBeNull();
   await page
     .getByRole("button", {
       name: "Bekräfta sparat kostnadsunderlag",
@@ -813,7 +829,7 @@ test("economic saving advances the shared revision and clears old confirmation w
   expect(
     (await (await request.get(`/api/vehicle-facts/${car.vehicleId}`)).json())
       .input.facts.transmission.state,
-  ).toBe("known");
+  ).toBe("unknown");
 });
 
 test("listing adoption preserves source versions and requires explicit conflict resolution", async ({
@@ -873,6 +889,7 @@ test("listing adoption preserves source versions and requires explicit conflict 
   );
   expect(initialFacts.status(), await initialFacts.text()).toBe(200);
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
   await row(page, "CAA100").getByRole("button").click();
   const gear = page.locator('[data-fact="transmission"]');
@@ -882,7 +899,7 @@ test("listing adoption preserves source versions and requires explicit conflict 
   await gear.getByLabel("Åtgärd för Växellåda").selectOption("listing");
   await expect(row(page, "CAA100")).toContainText("[45,00, 85,00]");
   await page
-    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   await expect
     .poll(
@@ -911,7 +928,7 @@ test("listing adoption preserves source versions and requires explicit conflict 
   await gear.getByLabel("Källa för observation 1").selectOption("current-0");
   await gear.getByLabel("Källa för observation 2").selectOption("listing");
   await page
-    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   await expect
     .poll(
@@ -935,6 +952,7 @@ test("keyboard errors and incomplete responses never publish a false recommendat
 }) => {
   await create(request);
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(row(page, "CAA100")).toContainText("[85,00, 85,00]");
   await page.route("**/api/comparisons/preview-all", async (route) => {
     const response = await route.fetch();

@@ -17,7 +17,7 @@ export function ReviewWorkspaceProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("vehicle-revision-acknowledged", acknowledged);
   }, []);
   useEffect(() => {
-    if (!items.some(item => item.dirty || (!item.saved && !item.reviewDraft))) return;
+    if (!items.some(item => item.dirty || (!item.saved && !item.reviewDraft) || !!item.saved && !!item.workflow && (!item.workflow.costsSaved || !item.workflow.factsSaved))) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);

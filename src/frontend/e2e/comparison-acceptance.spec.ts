@@ -1,4 +1,4 @@
-import { closeEditor, editingScope, openHouseholdProfile } from "./editor-helpers";
+import { openComparisonSettings, closeEditor, editingScope, openHouseholdProfile } from "./editor-helpers";
 import {
   expect,
   test,
@@ -122,12 +122,14 @@ async function openDetails(section: Locator) {
 }
 async function enter(page: Page) {
   await page.goto("/search");
+  await openComparisonSettings(page);
   await page.getByLabel("Utvärderingsdatum", { exact: true }).fill(date);
   await expect(
     (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true }),
   ).toBeEnabled();
 }
 async function calculate(page: Page): Promise<Complete> {
+  if (!await page.locator("dialog[open]").count()) await openComparisonSettings(page);
   const pending = page.waitForResponse(
     (r) =>
       r.url().endsWith("/api/comparisons/preview-all") &&
@@ -144,6 +146,7 @@ async function calculate(page: Page): Promise<Complete> {
   return result;
 }
 async function report(page: Page) {
+  await (await editingScope(page)).getByLabel("Rapportinnehåll").selectOption("full");
   const open = (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true });
   await expect(open).toBeEnabled({ timeout: 30000 });
   await open.click();
@@ -161,7 +164,7 @@ async function saveFacts(page: Page) {
       r.url().includes("/api/vehicle-facts/") && r.request().method() === "PUT",
   );
   await page
-    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   const response = await saved;
   expect(response.status(), await response.text()).toBe(200);
@@ -230,6 +233,7 @@ test("all twenty criteria use explicit editor goals, evidence and authoritative 
     serviceDocumentation: { kind: "manual", manual: { value: "documented" } },
   });
   await enter(page);
+  await openComparisonSettings(page);
   await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   // Fixed independent examples: ten numeric criteria score 50, eight choices 100.
   const numeric = [
@@ -428,6 +432,7 @@ test("inspection date boundaries and stronger evidence survive editing, persiste
   }
   await saveFacts(page);
   await closeEditor(page);
+  await openComparisonSettings(page);
   await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const rule = page.locator('[data-criterion="inspectionValidThrough"]');
   await openDetails(rule);
@@ -511,7 +516,7 @@ test("listing adoption, economic changes, explicit confirmation and frozen repor
     source.input.facts.transmission.observations[0].evidence.verification,
   ).toBe("unverified");
   for (const price of ["35000", ""]) {
-    await page.getByRole("tab", { name: "Kalkyl", exact: true }).click();
+    await page.getByRole("tab", { name: "Kostnader", exact: true }).click();
     await page.getByLabel("Inköpspris (kr)", { exact: true }).focus();
     const priceField = page.getByLabel("Inköpspris (kr)", { exact: true });
     await expect(priceField).toBeFocused();
@@ -522,7 +527,7 @@ test("listing adoption, economic changes, explicit confirmation and frozen repor
         r.request().method() === "PUT",
     );
     await page
-      .getByRole("button", { name: "Spara bilunderlag", exact: true })
+      .getByRole("button", { name: "Spara bil", exact: true })
       .click();
     const saved = await saving;
     expect(saved.status(), await saved.text()).toBe(200);
@@ -595,6 +600,7 @@ test("two browsers recover a saved-rule conflict and capture only reviewed curre
     transmission: { kind: "manual", manual: { value: "automatic" } },
   });
   await enter(page);
+  await openComparisonSettings(page);
   await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const rule = page.locator('[data-criterion="purchasePriceSek"]');
   await openDetails(rule);
@@ -662,7 +668,8 @@ test("two browsers recover a saved-rule conflict and capture only reviewed curre
     await page
       .getByRole("link", { name: "Tillbaka till jämförelsen", exact: true })
       .click();
-    await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
+    await openComparisonSettings(page);
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
     await expect(rule.getByLabel("Vikt (0–5)")).toHaveValue("1");
     // The explicit save-and-close choice before report navigation persisted this revision.
     expect((await (await request.get("/api/rule-profile")).json()).input.preferences[0].weight).toBe(1);
@@ -833,7 +840,7 @@ test("atomic legacy review retains all 50+50 sources through comparison, report 
       r.request().method() === "PUT",
   );
   await page
-    .getByRole("button", { name: "Spara bilunderlag", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   expect((await save).status()).toBe(200);
   await closeEditor(page);
@@ -889,7 +896,8 @@ test("URL deletion clears compared facts, costs and the matching draft without r
   await page
     .getByRole("link", { name: "Tillbaka till jämförelsen", exact: true })
     .click();
-  await page.getByRole("link", { name: "URL-analys", exact: true }).click();
+  await page.getByRole("main").getByRole("link", { name: "Lägg till bil", exact: true }).click();
+  await page.locator("summary").filter({ hasText: /^Sparade bilar$/ }).click();
   const summary = page
     .getByText("TAA106", { exact: true })
     .first()

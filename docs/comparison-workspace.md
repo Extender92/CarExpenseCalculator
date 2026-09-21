@@ -1,5 +1,21 @@
 # Swedish comparison workspace (#65)
 
+## Simplified presentation
+
+The [simplified workflow](frontend-simplification.md) supersedes the original
+presentation described below. The main comparison appears before optional
+settings and details. Each car has one deduplicated completion list; shared
+household gaps appear once. Scores and coverage are hidden without priorities,
+and an empty requirement set is labelled **Inga köpkrav valda**. Incomplete
+amounts still represent known parts, with unchanged deterministic results and
+ordering. Cost per distance, sensitivity, payment calendars and detailed sources
+remain available in expandable sections.
+
+**Spara bil** saves changed car resources in their revision-safe order. Explicit
+confirmation opens a selection with no preselected values. Report mode defaults
+to **Sammanfattning**, with **Fullständigt underlag** available before capture.
+Sorting, paging and report presentation belong to the in-memory workspace.
+
 ## Review workflow extension (#95)
 
 The main overview retains sorting, paging and open result sections while car,

@@ -104,6 +104,7 @@ export interface PersistenceNotice {
 }
 
 export interface ListingWorkspaceItem {
+  workflow?: import("./batch-workflow").CarWorkflow;
   id: string;
   submittedUrl: string;
   normalizedUrl: string;

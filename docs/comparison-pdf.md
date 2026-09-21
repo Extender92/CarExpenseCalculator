@@ -1,5 +1,22 @@
 # Comparison PDF report (#66)
 
+## Summary and full presentation
+
+The [simplified workflow](frontend-simplification.md) introduces **Sammanfattning**
+as the default and **Fullständigt underlag** as an explicit alternative. The
+frontend report snapshot freezes that choice with all captured comparison data.
+Summary includes every candidate, results, central assumptions, applicable
+sources, conflicts and gaps. Optional absent inputs and complete advertisement
+text are omitted from summary presentation; the full snapshot is retained.
+Full mode preserves the complete report described below, including original
+descriptions, equipment and specifications. Neither opening a captured report
+nor printing it initiates API, advertisement or AI requests.
+
+Both modes use the existing A4 landscape rules, repeated table headers,
+wrapping and unrestricted print overflow. See the
+[new verification report](frontend-simplification-verification-report.md);
+earlier verification evidence below remains historical.
+
 ## Review workflow extension (#95)
 
 The frozen report includes reused cost sources, original consumption labels and

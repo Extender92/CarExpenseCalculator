@@ -1,4 +1,4 @@
-import { closeEditor, editingScope } from "./editor-helpers";
+import { openComparisonSettings, closeEditor, editingScope } from "./editor-helpers";
 import {
   expect,
   test,
@@ -108,6 +108,7 @@ async function create(
 const main = (page: Page) =>
   page.getByRole("table", { name: "Huvudjämförelse", exact: true, includeHidden: true });
 async function openReport(page: Page) {
+  await (await editingScope(page)).getByLabel("Rapportinnehåll").selectOption("full");
   const button = (await editingScope(page)).getByRole("button", {
     name: "Öppna rapport",
     exact: true,
@@ -173,6 +174,7 @@ test("B1/B2: exports a frozen full/partial report, sources and dirty assumptions
     ).status(),
   ).toBe(200);
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(main(page)).toContainText("[85,00, 85,00]");
   await page
     .getByRole("button", { name: "Redigera hushållsprofil", exact: true })
@@ -219,6 +221,7 @@ test("B1/B2: exports a frozen full/partial report, sources and dirty assumptions
     await rm(directory, { recursive: true, force: true });
   }
   await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
+  await openComparisonSettings(page);
   await page.getByRole("button", { name: "Redigera hushållsprofil", exact: true }).click();
   await expect(
     page.locator('[data-field-path="profile.purchaseCashSek"]'),
@@ -226,7 +229,7 @@ test("B1/B2: exports a frozen full/partial report, sources and dirty assumptions
   // Save-and-close persisted the profile before leaving. With no local rule
   // edits, returning may accept the other client's current empty rule profile.
   await closeEditor(page);
-  await expect(page.getByRole("status").filter({ hasText: /^Inga aktiva prioriteringar\.$/ })).toBeVisible();
+  await expect(main(page).getByRole("columnheader", { name: "Poängintervall" })).toHaveCount(0);
 });
 
 test("all 250 cars and collapsed details are exported from page two using the server's full order", async ({
@@ -246,6 +249,7 @@ test("all 250 cars and collapsed details are exported from page two using the se
       false,
     );
   await page.goto("/search");
+  await openComparisonSettings(page);
   await expect(main(page).locator("tbody tr")).toHaveCount(50, {
     timeout: 30000,
   });
@@ -294,6 +298,7 @@ test("report works in explicit manual mode without storage and remains usable at
     }),
   );
   await page.goto("/search");
+  await openComparisonSettings(page);
   await page
     .getByLabel("Jämförelseläge", { exact: true })
     .selectOption("manual");
@@ -337,6 +342,7 @@ test("observed full deletion invalidates the report instead of changing its rank
 }) => {
   const car = await create(request);
   await page.goto("/search");
+  await openComparisonSettings(page);
   await openReport(page);
   const saved = await (
     await request.get(`/api/vehicle-cost-inputs/${car.vehicleId}`)
@@ -382,6 +388,7 @@ test("a malformed or stale next generation cannot be exported; direct report nav
     await route.fulfill({ response: upstream, json: value });
   });
   try {
+    await openComparisonSettings(page);
     await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
     // Busy state alone is insufficient: wait until the malformed response was
     // actually read and rejected before checking that export stays blocked.
@@ -454,6 +461,7 @@ test("A2/A8: report separates ownership cost, cash outflow and internal repair s
     additionalRepairAllowancePerMonthSek: { single: 300 },
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await openReport(page);
   await expect(main(page)).toContainText("20 750,00 kr");
   await expect(main(page)).toContainText("7 200,00 kr");
@@ -520,6 +528,7 @@ test("A5/A6: prints hybrid energy amounts without weighting or charging-loss rec
       ],
     });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await openReport(page);
   await expect(
     page
@@ -575,6 +584,7 @@ test("A9: prints the lease deposit, refund and authoritative startup/average bud
     additionalRepairAllowancePerMonthSek: { single: 0 },
   });
   await page.goto("/search");
+  await openComparisonSettings(page);
   await openReport(page);
   await expect(main(page)).toContainText("60 000,00 kr");
   const p = page.getByRole("table", {

@@ -87,7 +87,7 @@ test("edits exact numbers, guards navigation and explicitly saves separate resou
   await page.getByRole("button", { name: "Fortsätt redigera", exact: true }).click();
   await expect(page.getByText("Osparade biländringar", { exact: true })).toBeVisible();
   const carSaved = page.waitForResponse(r => r.url().endsWith("/api/vehicle-cost-inputs") && r.request().method() === "POST");
-  await page.getByRole("button", { name: "Spara bilunderlag", exact: true }).click();
+  await page.getByRole("button", { name: "Spara bil", exact: true }).click();
   const savedCar = await carSaved;
   expect(savedCar.status()).toBe(201);
   expect(await savedCar.text()).toContain("987.1234567890123456789");
@@ -126,7 +126,7 @@ test("renders complete purchase, fixed residual mismatch and keyboard-accessible
   ).toBeVisible();
   await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("fel");
   await page
-    .getByRole("button", { name: "Spara bilunderlag", exact: true })
+    .getByRole("button", { name: "Spara bil", exact: true })
     .click();
   await expect(
     page
@@ -258,11 +258,11 @@ test("conflicts between browser contexts preserve local edits and deletion clear
     await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("51000");
     await second.getByLabel("Inköpspris (kr)", { exact: true }).fill("52000");
     await page
-      .getByRole("button", { name: "Spara bilunderlag", exact: true })
+      .getByRole("button", { name: "Spara bil", exact: true })
       .click();
     await expect((await editingScope(page)).getByText("Bilunderlaget har sparats.")).toBeVisible();
     await second
-      .getByRole("button", { name: "Spara bilunderlag", exact: true })
+      .getByRole("button", { name: "Spara bil", exact: true })
       .click();
     await expect(
       (await editingScope(second)).getByText(/Bilen har ändrats sedan den öppnades/),
@@ -535,7 +535,7 @@ test("saves an explicit reviewed URL draft in the same slot and adopts only its 
   await page.getByRole("button", { name: "Skapa manuella utkast" }).click();
   const card = page.locator('[data-testid^="listing-card-"]');
   await openListingEditor(card);
-  await card.getByLabel("Registreringsnummer").fill("HHH106");
+  await card.getByLabel("Registreringsnummer", { exact: true }).fill("HHH106");
   await card.getByLabel("Annonspris").fill("123,1234567890123456789");
   const saved = page.waitForResponse(
     (response) =>

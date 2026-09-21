@@ -1,6 +1,6 @@
 import { AlertTriangle, Link2, ListPlus, LoaderCircle, Sparkles } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useEffectEvent, useId, useRef, useState, type ReactNode, type Ref } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   analyzeListing,
   createSavedListing,
@@ -13,7 +13,7 @@ import {
   type SavedListingResponse,
   type SavedListingSummary,
 } from "@/api/client";
-import { Badge } from "@/components/ui/badge";
+import { newCarWorkflow, prepareCar, saveCarCostsAndFacts, workflowPending } from "@/features/url-analysis/batch-workflow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ListingComparisonPanel } from "@/features/url-analysis/ListingComparisonPanel";
@@ -47,16 +47,21 @@ import { textareaClassName } from "@/features/url-analysis/presentation";
 import { validateListingUrlList, type NormalizedListingUrl } from "@/features/url-analysis/urls";
 import { useSystemStatus } from "@/hooks/use-system-status";
 import { householdApi, HouseholdApiError } from "@/features/household/api";
+import { validateVehicle } from "@/features/household/form-model";
 import { vehicleStateLabels } from "@/features/household/labels";
 import { useOptionalWorkspace } from "@/features/household/use-workspace";
 import { readListingForHouseholdDraft } from "@/features/household/listing-read";
-import {canonicalNumber,n,shiftDecimal,fromOrdinary} from "@/features/household/numbers";
+import {canonicalNumber,n,shiftDecimal,fromOrdinary,stringifyExact} from "@/features/household/numbers";
 import { listingNumberText } from "@/features/url-analysis/exact";
 import { vehicleChanged } from "@/lib/vehicle-events";
 import { useReviewWorkspace } from "@/features/url-analysis/review-workspace";
 import { reviewDraftApi, type ReviewDraftResponse } from "@/features/url-analysis/review-drafts-api";
 import { reviewDraftToItem } from "@/features/url-analysis/review-draft-state";
 import { validateReviewDraft } from "@/features/url-analysis/validation";
+import { factErrors } from "@/features/comparison/preview";
+import { useOptionalComparison } from "@/features/comparison/use-comparison";
+import { costResource, factsResource } from "@/components/editing/resources";
+import { WorkflowNavigationGuard } from "@/features/url-analysis/WorkflowNavigationGuard";
 import { EditorDialog } from "@/components/editing/EditorDialog";
 
 type BatchMode = "analyze" | "manual";
@@ -109,8 +114,12 @@ export function UrlAnalysisPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const householdWorkspace = useOptionalWorkspace();
+  const comparisonWorkspace = useOptionalComparison()?.workspace;
+  const carWrites = useRef(new Set<string>());
+  const allowNavigation = useRef(false);
   const [calculationStatuses, setCalculationStatuses] = useState<Record<string, string>>({});
   const systemStatus = useSystemStatus();
+  const [savingBatch, setSavingBatch] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [urlErrors, setUrlErrors] = useState<Record<string, string>>({});
   const { items, setItems } = useReviewWorkspace();
@@ -175,6 +184,23 @@ export function UrlAnalysisPage() {
     };
   }, [setItems]);
 
+  useEffect(() => {
+    if (items.some(item => item.saved && !item.workflow))
+      setItems(current => current.map(item => item.saved && !item.workflow ? { ...item,
+        workflow: { ...newCarWorkflow(), selected: false, existing: true, costsSaved: true, factsSaved: true } } : item));
+  }, [items, setItems]);
+
+  const preparingItems = useRef(new Set<string>());
+  const prepareUnopened = useEffectEvent(prepareItem);
+  useEffect(() => {
+    for (const item of items) {
+      if (!item.saved && !item.controller && !preparingItems.current.has(item.id) && !item.workflow?.writing && !item.workflow?.error &&
+          (!item.workflow || item.workflow.preparedListing !== JSON.stringify(item.draft)) &&
+          ["complete", "partial"].includes(item.phase) && !Object.keys(validateReviewDraft(item.draft)).length)
+        void prepareUnopened(item);
+    }
+  }, [items]);
+
   const deepLink = searchParams.get("reviewDraftId") ?? searchParams.get("vehicleId") ?? searchParams.get("analysisId");
   const deepLinkKind = searchParams.has("reviewDraftId") ? "draft" : searchParams.has("vehicleId") ? "vehicle" : "analysis";
   useEffect(() => {
@@ -230,6 +256,20 @@ export function UrlAnalysisPage() {
   async function refreshReviewDrafts() {
     try { setReviewDrafts(await reviewDraftApi.list()); setReviewDraftError(null); }
     catch (error) { setReviewDraftError(savedErrorMessage(error)); }
+  }
+
+  async function prepareItem(item: ListingWorkspaceItem) {
+    if (preparingItems.current.has(item.id)) return;
+    preparingItems.current.add(item.id);
+    updateItem(item.id, current => ({ ...current, workflow: { ...(current.workflow ?? newCarWorkflow()), preparing: true, error: undefined } }));
+    try {
+      const workflow = await prepareCar(item);
+      updateItem(item.id, current => ({ ...current, workflow: JSON.stringify(current.draft) !== JSON.stringify(item.draft)
+        ? { ...current.workflow!, preparing: false }
+        : { ...workflow, selected: current.workflow?.selected ?? workflow.selected } }));
+    } catch (error) {
+      updateItem(item.id, current => ({ ...current, workflow: { ...(current.workflow ?? newCarWorkflow()), preparing: false, error: (error as Error).message } }));
+    } finally { preparingItems.current.delete(item.id); }
   }
 
   function openReviewDraft(value: ReviewDraftResponse) {
@@ -297,7 +337,7 @@ export function UrlAnalysisPage() {
         }
         throw error;
       }
-    }, controller.signal).then((response) => {
+    }, controller.signal).then(async (response) => {
       if (controllersRef.current.get(id) !== controller) return;
       controllersRef.current.delete(id);
       updateItem(id, (item) => {
@@ -307,6 +347,7 @@ export function UrlAnalysisPage() {
         submittedUrl: response.submittedUrl,
         normalizedUrl: response.normalizedUrl,
         phase: response.status,
+        workflow: !item.saved && ["complete", "partial"].includes(response.status) ? { ...newCarWorkflow(), preparing: true } : item.workflow,
         context: analysisResponseToContext(response),
         draft,
         baseline: item.saved || item.reviewDraft ? item.baseline : draft,
@@ -318,6 +359,8 @@ export function UrlAnalysisPage() {
         validationErrors: {},
         controller: null,
       }); });
+      // Prefill starts from committed workspace state in the effect above.
+      // A paint callback can run before React publishes a completed analysis.
     }).catch((error: unknown) => {
       if (controllersRef.current.get(id) !== controller) return;
       controllersRef.current.delete(id);
@@ -355,7 +398,7 @@ export function UrlAnalysisPage() {
   }
 
   function requestClose(item: ListingWorkspaceItem) {
-    if (item.dirty) {
+    if (item.dirty || workflowPending(item)) {
       setPendingClose({ itemId: item.id });
       focusAction();
       return;
@@ -508,6 +551,7 @@ export function UrlAnalysisPage() {
       }
       const saved = await reviewDraftApi.adopt(item.reviewDraft.id, revision, existing?.vehicleId, existing?.revision);
       acceptSavedResponse(item.id, saved, "Bilen har lagts till. Annonsutkastet har förbrukats.", item.draft);
+      if (existing) updateItem(item.id, current => ({ ...current, workflow: undefined }));
       if (existing) householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(existing.revision)));
       vehicleChanged(saved.vehicleId);
       setComparison(null); setPendingAttach(null);
@@ -655,6 +699,7 @@ export function UrlAnalysisPage() {
         listing: built.request.listing,
       });
       acceptSavedResponse(candidate.id, saved, "Den sparade bilen har ersatts med dina val.", candidate.draft);
+      updateItem(candidate.id, current => ({ ...current, workflow: undefined }));
       householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(comparison.existing.revision)));
       vehicleChanged(saved.vehicleId);
       setComparison(null);
@@ -708,6 +753,7 @@ export function UrlAnalysisPage() {
         listing: built.request.listing,
       });
       acceptSavedResponse(item.id, saved, "Annonsen har kopplats till bilen. Den sparade kalkylen finns kvar.", item.draft);
+      updateItem(item.id, current => ({ ...current, workflow: undefined }));
       householdWorkspace?.acknowledgeListingWrite(fromOrdinary(saved), n(listingNumberText(pendingAttach.expectedRevision)));
       vehicleChanged(saved.vehicleId);
       setPendingAttach(null);
@@ -817,7 +863,11 @@ export function UrlAnalysisPage() {
   }
 
   function updateItem(id: string, updater: (item: ListingWorkspaceItem) => ListingWorkspaceItem) {
-    setItems((current) => current.map((item) => item.id === id ? updater(item) : item));
+    setItems((current) => {
+      const next = current.map((item) => item.id === id ? updater(item) : item);
+      itemsRef.current = next;
+      return next;
+    });
   }
 
   function focusCard(id: string) {
@@ -834,19 +884,105 @@ export function UrlAnalysisPage() {
     queueMicrotask(() => actionRef.current?.focus());
   }
 
+  async function saveCar(initial: ListingWorkspaceItem): Promise<boolean> {
+    if (carWrites.current.has(initial.id) || initial.workflow?.preparing) return false;
+    carWrites.current.add(initial.id);
+    updateItem(initial.id, current => ({ ...current, workflow: current.workflow && { ...current.workflow, writing: true } }));
+    try { return await saveCarWork(initial); }
+    finally {
+      carWrites.current.delete(initial.id);
+      updateItem(initial.id, current => ({ ...current, workflow: current.workflow && { ...current.workflow, writing: false } }));
+    }
+  }
+
+  async function saveCarWork(initial: ListingWorkspaceItem): Promise<boolean> {
+    if (initial.saved && (initial.workflow?.existing || initial.workflow?.costsSaved && initial.workflow?.factsSaved)) {
+      const id = initial.saved.vehicleId;
+      const resources = [
+        householdWorkspace?.state.active.vehicleId === id ? costResource(householdWorkspace) : null,
+        comparisonWorkspace?.state.facts[id] ? factsResource(comparisonWorkspace, id) : null,
+      ];
+      for (const resource of resources) {
+        if (resource?.dirty && !await resource.save()) return false;
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      }
+      const current = itemsRef.current.find(item => item.id === initial.id);
+      return !!current && (!current.dirty || await saveItem(current));
+    }
+    if (!initial.workflow) return initial.reviewDraft && initial.draft.fields.registrationNumber.input
+      ? adoptReviewDraft(initial) : saveItem(initial);
+    let item = initial;
+    if (item.reviewDraft && !item.dirty && !item.draft.fields.registrationNumber.input) return true;
+    if (!item.saved || item.dirty) {
+      updateItem(item.id, current => ({ ...current, workflow: current.workflow && { ...current.workflow, stage: "listing" } }));
+      const ok = item.reviewDraft && item.draft.fields.registrationNumber.input
+        ? await adoptReviewDraft(item) : await saveItem(item);
+      if (!ok) return false;
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      item = itemsRef.current.find(value => value.id === initial.id)!;
+    }
+    if (!item.saved) return true;
+    const capturedCost = stringifyExact(item.workflow?.cost);
+    const capturedFacts = stringifyExact(item.workflow?.facts);
+    try {
+      await saveCarCostsAndFacts(item, (workflow, revision) => updateItem(initial.id, current => {
+        const laterCost = current.workflow && stringifyExact(current.workflow.cost) !== capturedCost &&
+          stringifyExact(current.workflow.cost) !== stringifyExact(workflow.cost);
+        const laterFacts = current.workflow && stringifyExact(current.workflow.facts) !== capturedFacts &&
+          stringifyExact(current.workflow.facts) !== stringifyExact(workflow.facts);
+        return { ...current, workflow: { ...workflow, selected: current.workflow?.selected ?? true,
+          ...(laterCost ? { cost: current.workflow!.cost, costsSaved: false } : {}),
+          ...(laterFacts ? { facts: current.workflow!.facts, factsSaved: false } : {}) },
+          saved: current.saved && { ...current.saved, revision } };
+      }));
+      return true;
+    } catch { return false; }
+  }
+
+  async function saveBatch() {
+    if (savingBatch) return;
+    setSavingBatch(true); setPageNotice(null);
+    const chosen = itemsRef.current.filter(item => item.workflow?.selected);
+    let failed = false;
+    try {
+      for (const initial of chosen) {
+        const item = itemsRef.current.find(value => value.id === initial.id);
+        if (!item || !await saveCar(item)) failed = true;
+      }
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      const laterEdits = chosen.some(original => {
+        const current = itemsRef.current.find(item => item.id === original.id);
+        return !current || current.dirty || workflowPending(current) ||
+          current.saved?.vehicleId === householdWorkspace?.state.active.vehicleId && !!householdWorkspace?.state.active.dirty ||
+          !!current.saved && !!comparisonWorkspace?.state.facts[current.saved.vehicleId]?.dirty;
+      });
+      if (failed || laterEdits) {
+        setPageNotice({ tone: "error", message: "Det valda arbetet är inte helt sparat. Varje bil visar vad som sparades; återstående ändringar finns kvar." });
+      } else if (chosen.some(original => itemsRef.current.find(item => item.id === original.id)?.saved)) { allowNavigation.current = true; navigate("/search"); }
+      else setPageNotice({ tone: "success", message: "Annonsutkasten är sparade. Komplettera registreringsnummer när du har dem." });
+    } finally { setSavingBatch(false); }
+  }
+
   const analyzing = items.filter((item) => ["queued", "analyzing", "retrying"].includes(item.phase)).length;
-  const analysisDisabled = extractorConfigured === false;
+  const selected = items.filter(item => item.workflow?.selected);
+  const selectedCars = selected.filter(item => item.draft.fields.registrationNumber.input.trim()).length;
+  const batchBlocked = savingBatch || analyzing > 0 || !selected.length || selected.some(item => item.saving || item.workflow?.writing || item.workflow?.preparing ||
+    (!item.saved && !!item.workflow?.error) || Object.keys(validateReviewDraft(item.draft)).length > 0 || !!item.draft.fields.registrationNumber.input && !!item.workflow && !item.workflow.existing && (Object.keys(validateVehicle(item.workflow.cost)).length > 0 || Object.keys(factErrors(item.workflow.facts, "facts")).length > 0));
+  const analysisDisabled = extractorConfigured === false || savingBatch;
   const openVehicleIds = new Set(items.flatMap((item) => item.saved ? [item.saved.vehicleId] : []));
 
   return (
     <div className="space-y-8">
+      <WorkflowNavigationGuard items={items} save={saveCar} allow={allowNavigation} discard={ids => setItems(current => current
+        .filter(item => !ids.includes(item.id) || !!item.saved || !!item.reviewDraft)
+        .map(item => ids.includes(item.id) ? { ...item, draft: item.baseline ?? item.draft, dirty: false, validationErrors: {},
+          workflow: item.workflow && { ...item.workflow, cost: item.workflow.costBaseline ?? item.workflow.cost,
+            facts: item.workflow.factsBaseline ?? item.workflow.facts, costsSaved: !!item.workflow.costBaselineSaved, factsSaved: !!item.workflow.factsBaselineSaved } } : item))} />
       <header className="border-b border-slate-800 pb-8">
-        <Badge variant="success">Tillgänglig</Badge>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Analysera URL:er</h1>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Lägg till bil</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-400">
           Klistra in upp till tio Blocket-annonser. En annons hämtas och tolkas åt gången.
-          Granska uppgifterna innan du sparar bilens aktuella annons.
-          Sparade och tillfälliga underlag kan vara öppna samtidigt.
+          Tillgängliga uppgifter följer med till jämförelsen. Du kan komplettera senare.
         </p>
       </header>
 
@@ -858,7 +994,7 @@ export function UrlAnalysisPage() {
       {deepLinkKind === "analysis" && deepLink && !items.some(item => item.id === deepLink) && <p role="alert">
         Det osparade annonsunderlaget finns inte kvar efter omladdningen. Öppna ett sparat utkast eller analysera annonsen igen.
       </p>}
-      <section className="space-y-3 rounded-xl border border-slate-700 p-4" aria-label="Sparade annonsutkast">
+      <details open={window.location.hash === "#review-drafts" || undefined} id="review-drafts" className="space-y-3 rounded-xl border border-slate-700 p-4"><summary className="cursor-pointer">Fortsätt med sparade annonsutkast ({reviewDrafts.length})</summary><section aria-label="Sparade annonsutkast">
         <h2 className="text-lg font-semibold">Sparade annonsutkast</h2>
         <p className="text-sm text-slate-400">Utkast ingår i jämförelsen först efter att du kompletterat registreringsnummer och valt Lägg till bil.</p>
         {reviewDraftError && <p role="alert">{reviewDraftError}</p>}
@@ -868,7 +1004,7 @@ export function UrlAnalysisPage() {
           <Button type="button" onClick={() => openReviewDraft(value)}>Öppna utkast</Button>
           <Button type="button" variant="ghost" onClick={() => setDeleteDraft(value)}>Radera utkast</Button>
         </div>)}
-      </section>
+      </section></details>
       {deleteDraft && <EditorDialog open title="Radera annonsutkast?" onClose={() => setDeleteDraft(null)} actions={<Button type="button" onClick={() => {
         void reviewDraftApi.remove(deleteDraft.id, deleteDraft.revision).then(async () => {
           setItems(current => current.filter(item => item.reviewDraft?.id !== deleteDraft.id)); setDeleteDraft(null); await refreshReviewDrafts();
@@ -901,7 +1037,7 @@ export function UrlAnalysisPage() {
         }}>Fortsätt kön</Button>
       </div>}
 
-      <SavedListingsPanel
+      <details><summary className="cursor-pointer">Sparade bilar</summary><SavedListingsPanel
         state={savedListState}
         listings={savedListings}
         calculationStatuses={householdWorkspace ? calculationStatuses : undefined}
@@ -912,7 +1048,7 @@ export function UrlAnalysisPage() {
         onOpen={(listing) => void openSavedListing(listing)}
         onCalculate={(listing) => navigate(`/manual?listingVehicleId=${listing.vehicleId}`)}
         onDelete={requestDelete}
-      />
+      /></details>
 
       {extractorConfigured === false && (
         <div role="status" className="flex gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
@@ -965,11 +1101,12 @@ export function UrlAnalysisPage() {
             <div className="flex flex-wrap gap-3">
               <Button type="submit" size="lg" disabled={analysisDisabled}>
                 {analyzing > 0 ? <LoaderCircle className="animate-spin" size={18} /> : <Sparkles size={18} />}
-                Analysera URL:er
+                Hämta annonser
               </Button>
               <Button type="button" size="lg" variant="secondary" onClick={() => requestBatch("manual")}>
                 <ListPlus size={18} /> Skapa manuella utkast
               </Button>
+              <Link to="/manual?newCar=1" className="self-center text-cyan-300 underline">Lägg till bil manuellt utan annons</Link>
             </div>
           </form>
         </CardContent>
@@ -1003,7 +1140,7 @@ export function UrlAnalysisPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Button disabled={items.find(item => item.id === pendingClose.itemId)?.saving} onClick={async () => {
               const item = itemsRef.current.find(item => item.id === pendingClose.itemId);
-              if (!item || !await saveItem(item)) return;
+              if (!item || !await saveCar(item)) return;
               await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
               if (!itemsRef.current.find(current => current.id === item.id)?.dirty) closeItem(item.id);
             }}>Spara och stäng</Button>
@@ -1071,18 +1208,31 @@ export function UrlAnalysisPage() {
           </div>
           {items.length > 0 && <span role="status" className="text-sm text-slate-400">{items.length} underlag, {analyzing} pågående</span>}
         </div>
+        {items.length > 0 && <div className="sticky top-16 z-20 flex flex-wrap items-center gap-3 rounded-xl border border-cyan-900 bg-slate-950 p-4 lg:top-0">
+          <Button disabled={batchBlocked} onClick={() => void saveBatch()}>Spara och jämför ({selectedCars} {selectedCars === 1 ? "bil" : "bilar"}, {selected.length - selectedCars} utkast)</Button>
+          {analyzing > 0 && <p role="status">Vänta tills alla annonser har hämtats.</p>}
+          <p className="text-sm text-slate-400">Uppgifterna sparas obekräftade. Saknade uppgifter kan kompletteras senare.</p>
+        </div>}
         {items.length === 0
           ? <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-500">Inga annonsunderlag är öppna ännu.</div>
           : items.map((item) => (
               <div id={`workspace-${item.id}`} key={item.id} tabIndex={-1} className="scroll-mt-6 outline-none focus:ring-2 focus:ring-cyan-400/50">
+                {item.workflow && <label className="mb-2 flex items-center gap-2"><input type="checkbox" checked={item.workflow.selected} disabled={savingBatch}
+                  onChange={event => updateItem(item.id, current => ({ ...current, workflow: current.workflow && { ...current.workflow, selected: event.target.checked } }))} />Ta med i samlad sparning</label>}
                 <ListingReviewCard
                   item={item}
                   calculationStatus={householdWorkspace && item.saved ? calculationStatuses[item.saved.vehicleId] ?? "Kalkylstatus kunde inte läsas" : undefined}
                   onChange={(draft, errors) => updateDraft(item.id, draft, errors)}
                   onRetry={() => retryItem(item)}
-                  onSave={() => saveItem(item)}
-                  onAdopt={item.reviewDraft ? () => adoptReviewDraft(item) : undefined}
-                  onDiscard={() => updateItem(item.id, current => ({ ...current, draft: current.baseline ?? createEmptyReviewDraft(), dirty: false, validationErrors: {} }))}
+                  onPrepare={() => void prepareItem(item)}
+                  onSave={() => saveCar(item)}
+                  onAdopt={item.reviewDraft ? () => saveCar(item) : undefined}
+                  onDiscard={() => updateItem(item.id, current => ({ ...current, draft: current.baseline ?? createEmptyReviewDraft(), dirty: false, validationErrors: {},
+                    workflow: current.workflow && { ...current.workflow,
+                      cost: current.workflow.costBaseline ?? current.workflow.cost,
+                      facts: current.workflow.factsBaseline ?? current.workflow.facts,
+                      costsSaved: current.saved ? !!current.workflow.costBaselineSaved : current.workflow.costsSaved,
+                      factsSaved: current.saved ? !!current.workflow.factsBaselineSaved : current.workflow.factsSaved } }))}
                   onCalculate={item.saved
                     ? () => navigate(`/manual?listingVehicleId=${item.saved!.vehicleId}`)
                     : undefined}

@@ -68,11 +68,17 @@ Issue #67, [tracker #12](https://github.com/Extender92/CarExpenseCalculator/issu
 and [milestone 3B](https://github.com/Extender92/CarExpenseCalculator/milestone/3)
 are closed after the final delivery audit.
 
-Issue #95 is the user-assigned first priority: the [review workflow](docs/review-and-calculation-workflow.md) adds registration-free drafts, contextual editors, explicit fact confirmation, listing reuse and per-car electric shares. See its [verification status](docs/issue-95-verification-report.md). AI review (#14/#69), registry access
-(#68), and mileage-based service planning (#70) still need refinement;
-automatic discovery (#13) and image review (#15) remain on hold. See the
+Direct Blocket retrieval (PR #93), mobile reports and Swedish seller types
+(PR #94), the [#95 review workflow](docs/review-and-calculation-workflow.md)
+(PR #96), and [prebuilt images with one-command updates](docs/deployment-images.md)
+(PR #97) are merged. Historical verification reports retain their dated results.
+
+The next delivery is the [simplified car workflow](docs/frontend-simplification.md):
+a short start page, optional introduction, automatic missing-only listing reuse
+and **Spara och jämför**. It precedes registry-access preparation (#68), then
+advisory-AI preparation (#14/#69). Discovery (#13) and image review (#15) remain
+paused; mileage-based service (#70) still needs refinement. See the
 [current planning checkpoint](docs/roadmap.md#current-planning-checkpoint).
-Completing 3B does not start preparation or implementation of a later milestone.
 
 Stage 3A Core implements shared household inputs, purchase financing, and
 independent ownership-cost sections for energy, depreciation, service, repairs
@@ -122,19 +128,35 @@ docker compose up --detach api web
 
 Open [http://localhost:8088](http://localhost:8088). The dashboard should report a healthy system and available database. Only this web port is published; Nginx forwards `/api` to the internal API container.
 
-Open **Manuell kalkyl** (`/manual`) to edit the shared household profile and purchase/lease inputs. Previews refresh after 500 ms; **Beräkna nu** runs immediately. **Spara hushållsprofil**, **Spara bilunderlag**, and **Spara utkast** write separate resources explicitly. Ordinary Swedish registration identifies saved vehicles. **Granska äldre underlag** guides the atomic transition; **Äldre kalkyler** (`/manual/legacy`) retains the v1 editor for unconverted data. See the [workspace guide](docs/household-workspace.md).
+Open **Gemensamma uppgifter** (`/manual`) to edit household assumptions.
+Manual car entry is available from **Lägg till bil**. Previews refresh after
+500 ms; **Beräkna nu** runs immediately. **Spara bil** saves the car's changed
+resources in order; household assumptions and buying rules are saved separately.
+Ordinary Swedish registration identifies saved vehicles. **Granska äldre
+underlag** guides the atomic transition; **Äldre kalkyler** (`/manual/legacy`)
+retains the v1 editor for unconverted data. See the
+[workspace guide](docs/household-workspace.md).
 
 In **Jämförelse** (`/search`), choose **Öppna rapport** after the current
-comparison finishes, then **Skriv ut / Spara som PDF**. Choose **Spara som PDF**,
+comparison finishes, then **Skriv ut / Spara som PDF**. **Sammanfattning** is
+the default; choose **Fullständigt underlag** for original advertisements and
+all detailed tables. Choose **Spara som PDF**,
 all pages and A4 landscape in the browser dialog. The report includes every car,
 regardless of the displayed page or collapsed sections. Valid partial results
 retain their gaps; stale comparisons require **Beräkna nu** first. Returning
 keeps unsaved editing but releases the report; reloading the report requires a
 new capture. See the [report guide and verification](docs/comparison-pdf.md).
 
-Open **URL-analys** to analyze one through ten Blocket car listing URLs, processing one complete analysis at a time. Extracted facts remain visibly unverified and can be corrected or completed manually. Add an ordinary Swedish registration number to save a reviewed listing or explicitly save it to the shared household draft slot. A saved listing opens the household workspace through a reload-safe link. Advertised values and listing-version review require explicit choices. Transient URL cards disappear on reload; the explicitly saved shared draft survives. A missing Codex login disables automatic extraction without disabling manual entry or saved data.
+Open **Lägg till bil** to retrieve one through ten Blocket car advertisements.
+New cars receive unambiguous missing cost and fact inputs before saving.
+**Spara och jämför** persists selected cars and opens the complete comparison;
+advertisements without registration numbers become separate review drafts.
+Unconfirmed values remain unconfirmed. Full original content stays available
+behind details. A missing Codex login disables automatic extraction without
+disabling manual entry or saved data. See the
+[simplified workflow](docs/frontend-simplification.md).
 
-The current [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93)
+The merged [PR #93](https://github.com/Extender92/CarExpenseCalculator/pull/93)
 retrieves the Blocket HTML document directly, preserves original descriptions,
 specifications, equipment and seller answers, then asks Codex to interpret the
 captured text with web search disabled. Sources distinguish **directly retrieved**
@@ -144,8 +166,8 @@ not yet supported. CLI 0.153.0, `gpt-5.6-luna`, medium reasoning and ChatGPT log
 remain unchanged. Four sequential live checks passed all **576** reference and
 provenance assertions. See the [contract](docs/complete-listing-extraction.md)
 and [acceptance report](docs/listing-extraction-verification-report.md), including
-earlier failed hosted-retrieval attempts. This is verified branch work, pending
-separate merge approval; it is not a deployment to existing user installations.
+earlier failed hosted-retrieval attempts. These historical checks describe the
+delivered retrieval implementation; they do not imply a new deployment.
 
 The default Compose password is development-only. For a persistent local installation, copy `.env.example` to `.env`, replace `POSTGRES_PASSWORD`, and then start the stack. Stop and remove the local containers with:
 

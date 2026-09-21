@@ -686,7 +686,7 @@ test("two browsers share explicit saves while later edits and unsaved reloads re
     await closeEditor(page, "discard");
     await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("26000");
     await page
-      .getByRole("button", { name: "Spara bilunderlag", exact: true })
+      .getByRole("button", { name: "Spara bil", exact: true })
       .click();
     await expect((await editingScope(page)).getByText("Bilunderlaget har sparats.")).toBeVisible();
     expect(

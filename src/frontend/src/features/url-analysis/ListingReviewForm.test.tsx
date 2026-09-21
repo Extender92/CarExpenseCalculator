@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { savedListingResponse } from "@/test/listing-analysis";
@@ -31,4 +31,26 @@ describe("listing review evidence and error targets", () => {
     expect(screen.getByLabelText("Sittplatser")).toHaveFocus();
     expect(screen.getByLabelText("Sittplatser")).toBeVisible();
   });
+});
+
+it("offers an empty confirmation selection, confirms only chosen current values, and never assigns registry evidence", async () => {
+  let item: ListingWorkspaceItem = { ...savedListingToReviewState(savedListingResponse), id: "selection", dirty: false,
+    error: null, persistenceNotice: null, saving: false, validationErrors: {}, controller: null };
+  function Harness() {
+    const [current, setCurrent] = useState(item);
+    return <ListingReviewForm item={current} onChange={draft => { item = { ...current, draft }; setCurrent(item); }} />;
+  }
+  render(<Harness />);
+  await userEvent.click(screen.getByRole("button", { name: "Bekräfta uppgifter" }));
+  const dialog = screen.getByRole("dialog");
+  for (const checkbox of within(dialog).getAllByRole("checkbox")) expect(checkbox).not.toBeChecked();
+  expect(within(dialog).getByRole("button", { name: "Bekräfta valda värden" })).toBeDisabled();
+  await userEvent.click(within(dialog).getByRole("checkbox", { name: "Antal ägare: 4" }));
+  await userEvent.click(within(dialog).getByRole("button", { name: "Bekräfta valda värden" }));
+  expect(item.draft.fields.ownerCount.provenance?.verification).toBe("userConfirmed");
+  expect(item.draft.fields.ownerCount.provenance?.origin).toBe("user");
+  expect(item.draft.fields.priceSek.provenance?.verification).toBe("unverified");
+  await userEvent.clear(screen.getByLabelText("Antal ägare"));
+  await userEvent.type(screen.getByLabelText("Antal ägare"), "5");
+  expect(item.draft.fields.ownerCount.provenance?.verification).toBe("unverified");
 });

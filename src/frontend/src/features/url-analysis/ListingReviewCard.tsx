@@ -3,16 +3,18 @@ import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { deriveMissingFields, type ListingReviewDraft, type ListingWorkspaceItem } from "./review-model";
-import { formatDateTime, formatMoneyInput } from "./presentation";
+import { editScalarField, type ListingReviewDraft, type ListingWorkspaceItem } from "./review-model";
+import { formatDateTime, formatMoneyInput, fuelOptions, technicalFields, inputClassName } from "./presentation";
 import { validateReviewDraft } from "./validation";
-import { ListingDraftAction } from "@/features/household/ListingDraftAction";
-import { CarEditor } from "@/components/editing/CarEditor";
+import { reuseWarnings } from "@/features/household/apply-listing-reuse";
+import { listingReuseValue } from "@/features/household/reuse-value";
+import { CarEditor, type CarEditorTab } from "@/components/editing/CarEditor";
 
 interface ListingReviewCardProps {
   item: ListingWorkspaceItem;
   onChange: (draft: ListingReviewDraft, errors?: Record<string, string>) => void;
   onRetry: () => void;
+  onPrepare?: () => void;
   onSave: () => Promise<boolean> | void;
   onDiscard?: () => void;
   onAdopt?: () => Promise<boolean>;
@@ -37,6 +39,7 @@ export function ListingReviewCard({
   item,
   onChange,
   onRetry,
+  onPrepare,
   onSave,
   onDiscard,
   onAdopt,
@@ -46,11 +49,11 @@ export function ListingReviewCard({
   onDelete,
   onCompareLatest,
 }: ListingReviewCardProps) {
+  const [editorTab, setEditorTab] = useState<CarEditorTab>("listing");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [retryConfirmation, setRetryConfirmation] = useState(false);
   const [closedRequest, setClosedRequest] = useState<number | undefined>();
-  const busy = ["queued", "analyzing", "retrying"].includes(item.phase) || item.saving;
-  const missing = deriveMissingFields(item.draft);
+  const busy = ["queued", "analyzing", "retrying"].includes(item.phase) || item.saving || item.workflow?.writing || item.workflow?.preparing;
   const fields = item.draft.fields;
   const heading = fields.vehicleLabel.input || [fields.make.input, fields.model.input, fields.variant.input].filter(Boolean).join(" ") || "Tillfälligt annonsutkast";
   const isReviewOpen = reviewOpen || (item.editorRequest !== undefined && item.editorRequest !== closedRequest);
@@ -66,7 +69,7 @@ export function ListingReviewCard({
   }
 
   function requestRetry() {
-    if (item.dirty) {
+    if (item.dirty || item.workflow && (JSON.stringify(item.workflow.cost) !== JSON.stringify(item.workflow.costBaseline) || JSON.stringify(item.workflow.facts) !== JSON.stringify(item.workflow.factsBaseline))) {
       setRetryConfirmation(true);
     } else {
       onRetry();
@@ -81,7 +84,6 @@ export function ListingReviewCard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={phaseBadge(item.phase)}>{phaseLabels[item.phase]}</Badge>
-              <Badge variant="muted">{missing.length} okända fält</Badge>
               <Badge variant={item.saved && !item.dirty ? "success" : "warning"}>
                 {item.saved || item.reviewDraft ? (item.dirty ? "Ändrad sedan sparning" : item.reviewDraft ? "Sparat annonsutkast" : "Sparad") : "Osparat utkast"}
               </Badge>
@@ -92,16 +94,7 @@ export function ListingReviewCard({
                   : <Badge variant="muted">Manuell kalkyl</Badge>)}
             </div>
             <CardTitle className="mt-3 break-words">{heading}</CardTitle>
-            <dl className="mt-2 space-y-1 text-xs text-slate-400">
-              <div className="flex flex-col gap-1 sm:flex-row">
-                <dt className="font-semibold text-slate-500">Inskickad URL:</dt>
-                <dd className="break-all">{item.submittedUrl}</dd>
-              </div>
-              <div className="flex flex-col gap-1 sm:flex-row">
-                <dt className="font-semibold text-slate-500">Normaliserad URL:</dt>
-                <dd className="break-all">{item.normalizedUrl}</dd>
-              </div>
-            </dl>
+
           </div>
           <div className="flex flex-wrap gap-2">
             {!busy && (!item.saved || item.dirty) && (
@@ -129,7 +122,7 @@ export function ListingReviewCard({
                 <Calculator size={15} /> {calculationStatus ? "Öppna hushållskalkyl" : item.saved.hasSavedCostScenario ? "Öppna kalkyl" : "Skapa kalkyl"}
               </Button>
             )}
-            <ListingDraftAction item={item} />
+
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               {item.saved ? <X size={15} /> : <Trash2 size={15} />}
               {item.saved ? "Stäng kort" : "Ta bort utkast"}
@@ -139,7 +132,7 @@ export function ListingReviewCard({
 
         {busy && (
           <p role="status" className="flex items-center gap-2 text-sm text-cyan-300">
-            <LoaderCircle className="animate-spin" size={17} /> {phaseLabels[item.phase]}…
+            <LoaderCircle className="animate-spin" size={17} /> {item.workflow?.writing ? "Sparar bilens underlag" : item.workflow?.preparing ? "Förbereder kalkyl" : phaseLabels[item.phase]}…
           </p>
         )}
         {item.error && (
@@ -157,19 +150,11 @@ export function ListingReviewCard({
             Analysen avslutades utan användbara fordonsuppgifter. Underlaget kan kompletteras manuellt.
           </Notice>
         )}
-        {!item.saved && (
-          <p className="text-xs text-slate-500">Spara bilen innan du skapar en kopplad kalkyl.</p>
-        )}
+
         {item.phase === "unavailable" && !item.context.requestedModel && (
           <Notice tone="warning">
             Utkastet skapades utan automatisk extraktion och kan fyllas i helt manuellt.
           </Notice>
-        )}
-        {item.context.requestedModel && (
-          <p className="text-xs leading-5 text-slate-500">
-            Analyserad {formatDateTime(item.context.analyzedAtUtc)} med begärd modell {item.context.requestedModel}.
-            Modellnamnet visar konfigurationen och bevisar inte leverantörens faktiska routning.
-          </p>
         )}
         {item.saving && (
           <p role="status" className="flex items-center gap-2 text-sm text-cyan-300">
@@ -183,6 +168,43 @@ export function ListingReviewCard({
           {!item.context.sources.some(s => s.matchesSubmittedUrl) && " Metadata om öppnad sida saknas. Annonsadressen är en referens; granska uppgifterna."}
         </p>}
         <Summary draft={item.draft} />
+        {!item.saved && <label className="block text-sm font-medium">Komplettera registreringsnummer
+          <input className={`${inputClassName} mt-2`} value={fields.registrationNumber.input} disabled={busy}
+            onChange={event => onChange(editScalarField(item.draft, "registrationNumber", event.target.value, item.normalizedUrl))} />
+        </label>}
+        {item.workflow && <div className="space-y-2 text-sm">
+          {item.workflow.preparing ? <p role="status">Förbereder tillgängliga kostnadsuppgifter…</p> :
+            <p>{item.workflow.applied.length ? "Tillgängliga annonsuppgifter har förifyllts. Övriga kostnader är okända." : "Inga ytterligare kostnadsuppgifter har fyllts i."}</p>}
+          {!item.workflow.existing && !item.workflow.preparing && <details><summary>Uppgifter till kalkylen</summary>
+            <p>Inköpspris: {listingReuseValue(item.workflow.cost.priceSek, "purchasePriceSek")} kr.</p>
+            <p>Årlig skatt: {listingReuseValue(item.workflow.cost.tax?.items?.[0]?.amountSek?.single, "annualVehicleTaxSek")} kr.</p>
+            {item.workflow.cost.energySources?.map(source => <p key={source.key}>
+              {listingReuseValue(source.fuel, "fuelTypes")}: {listingReuseValue(source.consumptionPer100Kilometres?.single, "consumption")} {source.unit === "kilowattHour" ? "kWh" : source.unit === "kilogram" ? "kg" : "liter"}/100 km
+              {source.consumptionLabel ? ` · ${source.consumptionLabel}` : ""}.
+            </p>)}
+            <p>Jämförelsefakta följer annonsen och sparas obekräftade.</p>
+          </details>}
+          {item.workflow.warnings.map(warning => <p key={warning} className="text-amber-200">{reuseWarnings[warning] ?? warning}
+            <button className="ml-2 text-cyan-300 underline" onClick={() => { setEditorTab("cost"); setReviewOpen(true); }}>Komplettera kostnader</button></p>)}
+          {item.workflow.stage && !item.draft.fields.registrationNumber.input ? <p role="status">Annonsutkast: {item.reviewDraft && !item.dirty ? "sparat" : "kvar att spara"}. Ingår inte i jämförelsen.</p> : item.workflow.stage && <p role="status">Annons: {item.saved || item.reviewDraft ? "sparad" : "kvar att spara"} · Kostnader: {item.workflow.costsSaved ? "sparade" : "kvar att spara"} · Jämförelsefakta: {item.workflow.factsSaved ? "sparade" : "kvar att spara"}</p>}
+          {item.workflow.error && <div role="alert" className="text-rose-300"><p>{item.workflow.error}</p>{!item.saved && <Button variant="secondary" onClick={onPrepare}>Försök förifylla igen</Button>}</div>}
+        </div>}
+        <details><summary>Källor och analysinformation</summary>            <dl className="mt-2 space-y-1 text-xs text-slate-400">
+              <div className="flex flex-col gap-1 sm:flex-row">
+                <dt className="font-semibold text-slate-500">Inskickad URL:</dt>
+                <dd className="break-all">{item.submittedUrl}</dd>
+              </div>
+              <div className="flex flex-col gap-1 sm:flex-row">
+                <dt className="font-semibold text-slate-500">Normaliserad URL:</dt>
+                <dd className="break-all">{item.normalizedUrl}</dd>
+              </div>
+            </dl>        {item.context.requestedModel && (
+          <p className="text-xs leading-5 text-slate-500">
+            Analyserad {formatDateTime(item.context.analyzedAtUtc)} med begärd modell {item.context.requestedModel}.
+            Modellnamnet visar konfigurationen och bevisar inte leverantörens faktiska routning.
+          </p>
+        )}
+</details>
         {!fields.registrationNumber.input && <p className="flex items-center gap-2 text-sm text-rose-300">
           <AlertTriangle aria-hidden="true" size={16} /> Registreringsnummer saknas för att lägga till i jämförelsen. Du kan spara utkastet.
         </p>}
@@ -209,7 +231,7 @@ export function ListingReviewCard({
         </button>
 
         {isReviewOpen && (
-          <CarEditor open vehicleId={item.saved?.vehicleId ?? null} onClose={() => { setReviewOpen(false); setClosedRequest(item.editorRequest); }}
+          <CarEditor initialTab={editorTab} open vehicleId={item.saved?.vehicleId ?? null} onClose={() => { setReviewOpen(false); setClosedRequest(item.editorRequest); }}
             listingEditor={{ item, onChange, save: requestSave, discard: () => onDiscard?.(), adopt: onAdopt }} />
         )}
       </CardContent>
@@ -226,11 +248,13 @@ function Summary({ draft }: { draft: ListingReviewDraft }) {
     ["Modellår", fields.modelYear.input || "Okänt"],
     ["Ägare", fields.ownerCount.input || "Okänt"],
     ["Dragkrok", fields.towBar.input === "true" ? "Ja" : fields.towBar.input === "false" ? "Nej" : "Okänt"],
+    ["Drivmedel", draft.fuelTypes.mode === "values" ? draft.fuelTypes.values.map(value => fuelOptions.find(option => option.value === value)?.label ?? value).join(", ") : "Okänt"],
+    ["Växellåda", technicalFields.find(f => f.name === "transmission")?.options?.find(option => option.value === fields.transmission.input)?.label ?? "Okänt"],
   ];
   return (
-    <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <dl className="grid grid-cols-2 gap-3 xl:grid-cols-3">
       {summaries.map(([label, value]) => (
-        <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+        <div key={label} className="min-w-0 break-words rounded-xl border border-slate-800 bg-slate-950/50 p-3">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
           <dd className="mt-1 text-sm font-semibold text-slate-100">{value}</dd>
         </div>

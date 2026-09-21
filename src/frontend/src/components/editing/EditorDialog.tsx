@@ -16,13 +16,14 @@ interface Props {
   children: ReactNode;
   resources?: EditingResource[];
   activeResource?: string;
+  saveAllLabel?: string;
   /** Navigation owns the URL transition; callers must not replace its history entry. */
   onClose: (navigating?: boolean) => void;
   actions?: ReactNode;
 }
 let modalCount = 0;
 let priorBodyOverflow = "";
-export function EditorDialog({ open, title, children, resources = [], activeResource, onClose, actions }: Props) {
+export function EditorDialog({ open, title, children, resources = [], activeResource, saveAllLabel, onClose, actions }: Props) {
   const id = useId();
   const element = useRef<HTMLDialogElement>(null);
   const latest = useRef({ resources, onClose });
@@ -92,7 +93,7 @@ export function EditorDialog({ open, title, children, resources = [], activeReso
     if (asking) { question.current?.scrollIntoView?.({ block: "nearest" }); question.current?.querySelector("button")?.focus(); }
   }, [asking]);
 
-  async function saveChanged() {
+  async function saveChanged(close = true) {
     setSavingAll(true);
     setMessage(null);
     const saved: string[] = [];
@@ -115,7 +116,8 @@ export function EditorDialog({ open, title, children, resources = [], activeReso
         setMessage("Sparningen är klar, men det finns senare ändringar kvar att spara.");
         return;
       }
-      finishClose();
+      if (close) finishClose();
+      else setMessage("Bilens ändringar har sparats.");
     } catch {
       setMessage(saved.length ? `Sparat: ${saved.join(", ")}. Återstående ändringar finns kvar.`
         : "Sparningen misslyckades. Dina ändringar finns kvar.");
@@ -157,7 +159,8 @@ export function EditorDialog({ open, title, children, resources = [], activeReso
         {children}
       </div>
       <footer className="flex shrink-0 flex-wrap items-center gap-3 border-t border-slate-700 bg-slate-950 p-4">
-        {active && <Button type="button" disabled={!active.dirty || busy} onClick={() => void active.save()}>Spara {active.label.toLocaleLowerCase("sv-SE")}</Button>}
+        {saveAllLabel && <Button type="button" disabled={busy || !resources.some(r => r.dirty)} onClick={() => void saveChanged(false)}>{saveAllLabel}</Button>}
+        {!saveAllLabel && active && <Button type="button" disabled={!active.dirty || busy} onClick={() => void active.save()}>Spara {active.label.toLocaleLowerCase("sv-SE")}</Button>}
         {actions}
         <Button type="button" variant="secondary" onClick={() => void requestClose()}>Stäng</Button>
       </footer>
