@@ -31,6 +31,7 @@ function setup(fault = "") {
   if (fault === "identity") list.find(image => image.Id === id(10)).Config.Labels["org.opencontainers.image.revision"] = previous;
   if (fault === "protected") state.protectedId = id(1);
   if (fault === "foreign-tag") list[0].RepoTags.push("another-application:latest");
+  if (fault === "unidentified") list.push(makeImage("api", 98, null, ["car-expense-calculator-api:unknown-old-build"], []));
   fs.writeFileSync(path.join(dir, "state.json"), JSON.stringify(state));
   fs.writeFileSync(path.join(dir, "release.json"), JSON.stringify({ tag_name: bundle.manifest.version, draft: false, prerelease: false,
     assets: [{ name: "unraid-bundle.tar.gz", browser_download_url: "https://test.invalid/bundle" }, { name: "unraid-bundle.tar.gz.sha256", browser_download_url: "https://test.invalid/checksum" }] }));
@@ -109,6 +110,12 @@ test("a stale latest release cannot downgrade an existing installation", () => {
   fs.writeFileSync(path.join(stateDir, "current.json"), JSON.stringify(current));
   const result = fixture.run(); assert.notEqual(result.status, 0); assert.match(result.stderr, /äldre/);
   assert(!fixture.state().events.includes("stop"));
+});
+
+test("unlabelled old app tags outside observed installation history are reported and retained", () => {
+  const fixture = setup("unidentified"), result = fixture.run();
+  assert.equal(result.status, 2, result.stdout + result.stderr); assert.match(result.stderr, /Kan inte säkert identifiera äldre image/);
+  assert(result.stderr.includes(id(98))); assert(fixture.state().images.some(image => image.Id === id(98)));
 });
 
 test("an altered already-installed version is rejected before maintenance", () => {

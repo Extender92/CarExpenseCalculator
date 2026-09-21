@@ -115,10 +115,15 @@ verify_image() {
   ' "$work/image-$1.json" >/dev/null || fail "Image-identiteten för $1 stämmer inte."
 }
 remember_images() {
-  local ids
+  local ids service
   [[ -f "$state/images.json" ]] || printf '[]\n' >"$state/images.json"
   # Include verified app-labelled images from earlier interrupted pulls.
-  ids=$(docker image ls --quiet --no-trunc --filter "label=org.opencontainers.image.source=$source_repository" | sort -u)
+  docker image ls --quiet --no-trunc --filter "label=org.opencontainers.image.source=$source_repository" >"$work/discovered-ids"
+  # Old locally built tags without labels are reported, not assumed safe to delete.
+  for service in api web codex-extractor; do
+    docker image ls --quiet --no-trunc --filter "reference=car-expense-calculator-$service:*" >>"$work/discovered-ids"
+  done
+  ids=$(sort -u "$work/discovered-ids")
   printf '[]\n' >"$work/discovered-images.json"
   if [[ -n "$ids" ]]; then
     readarray -t discovered_ids <<< "$ids"
@@ -126,7 +131,7 @@ remember_images() {
   fi
   jq -s '.[0] + [.[1][] | {id:.Image, reference:.Config.Image, legacy:true}] +
     [.[2:][][] | {id:.Id, reference:(.RepoDigests[0] // .RepoTags[0]), legacy:false}] |
-    unique_by(.id)' "$state/images.json" "$work/existing.json" \
+    group_by(.id) | map((map(select(.legacy == true))[0]) // .[0])' "$state/images.json" "$work/existing.json" \
     "$work/image-api.json" "$work/image-web.json" "$work/image-codex-extractor.json" "$work/discovered-images.json" >"$state/images.next.json"
   mv -f -- "$state/images.next.json" "$state/images.json"
 }
@@ -176,23 +181,23 @@ activate_bundle() {
   fi
 }
 clean_images() {
-  local current_ids all_containers available_ids failed_cleanup=0 id reference inspect tags component
+  local current_ids all_containers available_ids failed_cleanup=0 id reference legacy inspect tags component
   current_ids=$(jq -s '[.[][] | .Id]' "$work/image-api.json" "$work/image-web.json" "$work/image-codex-extractor.json") || return 1
   all_containers=$(inspect_containers 2>>"$work/cleanup.log") || return 1
   jq -e 'type == "array"' <<< "$all_containers" >/dev/null || return 1
   available_ids=$(docker image ls --quiet --no-trunc) || return 1
-  jq -er '.[] | [.id,.reference] | @tsv' "$state/images.json" >"$work/cleanup-candidates.tsv" || return 1
-  while IFS=$'\t' read -r id reference; do
+  jq -er '.[] | [.id,.reference,.legacy] | @tsv' "$state/images.json" >"$work/cleanup-candidates.tsv" || return 1
+  while IFS=$'\t' read -r id reference legacy; do
     [[ "$id" =~ ^sha256:[a-f0-9]{64}$ ]] || { failed_cleanup=1; continue; }
     if jq -e --arg id "$id" 'index($id) != null' <<< "$current_ids" >/dev/null; then continue; fi
     if jq -e --arg id "$id" 'any(.[]; .Image == $id)' <<< "$all_containers" >/dev/null; then
       echo "Behåller image som används av en container: $id" >&2; failed_cleanup=1; continue
     fi
     if ! grep -Fxq -- "$id" <<< "$available_ids"; then continue; fi
-    inspect=$(docker image inspect "$id" 2>/dev/null) || { failed_cleanup=1; continue; }
+    inspect=$(docker image inspect "$id" 2>/dev/null) || { echo "Kunde inte kontrollera image: $id" >&2; failed_cleanup=1; continue; }
     component=$(jq -r '.[0].Config.Labels["se.car-expense-calculator.component"] // ""' <<< "$inspect")
     if [[ ! "$component" =~ ^(api|web|codex-extractor)$ ]]; then
-      [[ "$reference" =~ ^car-expense-calculator-(api|web|codex-extractor):local$ ]] || {
+      [[ "$legacy" == true && "$reference" =~ ^car-expense-calculator-(api|web|codex-extractor):local$ ]] || {
         echo "Kan inte säkert identifiera äldre image: $id" >&2; failed_cleanup=1; continue;
       }
     else

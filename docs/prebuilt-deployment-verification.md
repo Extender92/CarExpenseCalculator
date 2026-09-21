@@ -21,7 +21,7 @@ server has been updated, and no live listing/AI calls were made.
 | .NET 10.0.400 restore/build/test, PostgreSQL 18 Testcontainers | 1,169 passed; 0 failed/skipped; build 0 warnings/errors |
 | Node 22.22.2 `npm ci`, lint, Vitest, production build | 305 passed; 0 failed/skipped; lint/build passed |
 | Bash ShellCheck | Passed |
-| Update/publication regressions | 35 passed; 0 failed/skipped |
+| Update/publication regressions | 36 passed; 0 failed/skipped |
 | Real registry/PostgreSQL upgrade in disposable Docker daemon | 1 passed; 0 failed/skipped |
 | Chromium, one worker, fake extractor, port 8091 | 77 passed; 0 failed/skipped on full rerun |
 | Log-content scanner | 3 passed; 0 failed/skipped |

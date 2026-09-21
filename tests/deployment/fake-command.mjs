@@ -41,7 +41,11 @@ if (command === "curl") {
     output(["api", "web", "codex-extractor", ...(!args.includes("--filter") && state.protectedId ? ["unrelated"] : [])].join("\n") + "\n");
   } else if (args[0] === "pull") { record(`pull:${args[1]}`); if (state.fault === "pull" && args[1].includes("-web@")) die(); output("pulled\n"); }
   else if (args[0] === "image" && args[1] === "inspect") { const values = args.slice(2).map(image); if (values.some(value => !value)) die(); output(values); }
-  else if (args[0] === "image" && args[1] === "ls") output(state.images.filter(value => !args.includes("--filter") || value.Config.Labels["se.car-expense-calculator.component"]).map(value => value.Id).join("\n") + "\n");
+  else if (args[0] === "image" && args[1] === "ls") {
+    const filter = args.includes("--filter") ? args[args.indexOf("--filter") + 1] : null;
+    output(state.images.filter(value => !filter || (filter.startsWith("label=") ? value.Config.Labels["se.car-expense-calculator.component"] :
+      value.RepoTags.some(tag => tag.startsWith(filter.slice("reference=".length).replace("*", ""))))).map(value => value.Id).join("\n") + "\n");
+  }
   else if (args[0] === "image" && args[1] === "rm") {
     record(`remove:${args[2]}`); if (state.fault === "cleanup") die();
     const value = image(args[2]); state.images = state.images.filter(candidate => candidate !== value); save();
