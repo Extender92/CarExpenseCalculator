@@ -115,6 +115,12 @@ jobs:
       WEB_PORT: '8091'
       E2E_BASE_URL: http://localhost:8091
     steps:
+      - name: Use the same Docker image store for build, verification and publication
+        uses: docker/setup-docker-action@v5.5.0
+        with:
+          version: v29.8.0
+          set-host: true
+          daemon-config: '{"features":{"containerd-snapshotter":true}}'
       - name: Check out repository
         uses: actions/checkout@v7
       - name: Set up Node.js
@@ -196,6 +202,12 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
+      - name: Load verified images with the same Docker image store
+        uses: docker/setup-docker-action@v5.5.0
+        with:
+          version: v29.8.0
+          set-host: true
+          daemon-config: '{"features":{"containerd-snapshotter":true}}'
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:

@@ -9,6 +9,12 @@ CLI 0.153.0, `gpt-5.6-luna` and `medium` remain pinned. The browser suite uses
 fake extraction; the real sidecar is checked for process health and CLI version,
 without a login or AI turn.
 
+Build, isolated verification and publication all use Docker 29.8.0 with the
+containerd image store. Keeping this consistent preserves exported image IDs
+across daemons; mixing classic and containerd stores changes their identity
+representation. The server itself uses its existing supported Docker/Compose
+installation and validates running IDs against its own digest-pulled images.
+
 Only a successful push to this repository's `main` can publish, after backend,
 frontend, OpenAPI, deployment regression, Compose, Chromium and URL acceptance
 checks. The container job exports `docker save` plus expected image IDs/commit;

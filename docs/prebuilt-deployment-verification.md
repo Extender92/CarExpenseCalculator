@@ -77,6 +77,11 @@ The 1,169 backend tests comprise 603 Core, 100 extractor, 281 API integration,
   updater invocation: 35 of 36 checks passed before the fix. Image inventory now
   filters empty entries and keeps diagnostics private; the full regression suite
   was rerun before delivery.
+- The first GitHub container run passed Chromium but failed the new upgrade
+  fixture: the runner's classic Docker image IDs did not resolve after loading
+  into containerd. Build, test and publication now pin Docker 29.8.0 and the
+  same containerd store. Exact image-ID assertions remain in place. Older
+  superseded CI runs were cancelled; final results refer to the published head.
 - The OpenAPI hash check initially detected Windows CRLF versus generated LF.
   A content comparison and Git diff confirmed no schema changes. Starting a
   separate local API process was rejected by automatic command review; the

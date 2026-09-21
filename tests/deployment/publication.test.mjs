@@ -30,6 +30,10 @@ test("publication cannot run until every verification job succeeds and never run
   assert.match(publishJob, /queue: max/);
   assert.doesNotMatch(publishJob, /if:.*(?:always|failure|cancelled)\(\).*\n\s+runs-on/);
   assert.doesNotMatch(publishJob, /docker (?:build|compose.*build)/);
+  for (const section of [workflow.split("\n  containers:\n")[1].split("\n  publish:\n")[0], publishJob]) {
+    assert.match(section, /uses: docker\/setup-docker-action@v5\.5\.0/);
+    assert.match(section, /version: v29\.8\.0\s+set-host: true\s+daemon-config: '\{"features":\{"containerd-snapshotter":true\}\}'/);
+  }
   const { result, state } = publish("", null, { GITHUB_EVENT_NAME: "pull_request" });
   assert.notEqual(result.status, 0); assert.equal(state.events.length, 0);
 });
