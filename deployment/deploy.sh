@@ -27,7 +27,7 @@ docker compose version >"$work/compose-version.log" 2>&1
 docker inspect postgresql18 >"$work/postgres.json" 2>"$work/postgres.log"
 jq -e 'length == 1 and .[0].State.Running == true and .[0].NetworkSettings.Networks["car-expense-network"] != null' "$work/postgres.json" >/dev/null
 docker network inspect car-expense-network >"$work/network.json" 2>"$work/network.log"
-docker exec postgresql18 pg_isready --quiet >"$work/postgres-ready.log" 2>&1
+docker exec postgresql18 sh -c 'pg_isready --quiet --username="${POSTGRES_USER:-postgres}" --dbname="${POSTGRES_DB:-${POSTGRES_USER:-postgres}}"' >"$work/postgres-ready.log" 2>&1
 echo 'Hämtar senaste publicerade versionen…'
 step='hämtning av versionsinformation'
 release_api=${CEC_RELEASE_API:-https://api.github.com/repos/Extender92/CarExpenseCalculator/releases/latest}
