@@ -2,10 +2,7 @@ name: car-expense-calculator
 
 services:
   codex-extractor:
-    build:
-      context: .
-      dockerfile: src/backend/CarExpenseCalculator.CodexExtractor/Dockerfile
-    image: car-expense-calculator-codex-extractor:local
+    image: ${CEC_EXTRACTOR_IMAGE:?Run update.sh with a published deployment bundle}
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -26,10 +23,7 @@ services:
       - car-expense-network
 
   api:
-    build:
-      context: .
-      dockerfile: src/backend/CarExpenseCalculator.Api/Dockerfile
-    image: car-expense-calculator-api:local
+    image: ${CEC_API_IMAGE:?Run update.sh with a published deployment bundle}
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -45,10 +39,7 @@ services:
       - car-expense-network
 
   web:
-    build:
-      context: .
-      dockerfile: src/frontend/Dockerfile
-    image: car-expense-calculator-web:local
+    image: ${CEC_WEB_IMAGE:?Run update.sh with a published deployment bundle}
     restart: unless-stopped
     environment:
       COMPARISON_MAX_REQUEST_BYTES: ${COMPARISON_MAX_REQUEST_BYTES:-33554432}

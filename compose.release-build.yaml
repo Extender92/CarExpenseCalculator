@@ -1,0 +1,20 @@
+# Applied only while building the images that CI verifies and exports.
+services:
+  api:
+    build:
+      labels:
+        org.opencontainers.image.source: https://github.com/Extender92/CarExpenseCalculator
+        org.opencontainers.image.revision: ${CEC_BUILD_COMMIT:?Set the tested commit}
+        se.car-expense-calculator.component: api
+  web:
+    build:
+      labels:
+        org.opencontainers.image.source: https://github.com/Extender92/CarExpenseCalculator
+        org.opencontainers.image.revision: ${CEC_BUILD_COMMIT:?Set the tested commit}
+        se.car-expense-calculator.component: web
+  codex-extractor:
+    build:
+      labels:
+        org.opencontainers.image.source: https://github.com/Extender92/CarExpenseCalculator
+        org.opencontainers.image.revision: ${CEC_BUILD_COMMIT:?Set the tested commit}
+        se.car-expense-calculator.component: codex-extractor

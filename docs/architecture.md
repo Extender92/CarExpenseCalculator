@@ -36,6 +36,23 @@ Browser
 
 The production browser sees one HTTP origin. Nginx serves the React build and proxies `/api` to the internal API service, avoiding a public API port and cross-origin configuration.
 
+## Deployment artifact boundary
+
+Local Compose builds from source. Unraid consumes a complete release manifest
+with three immutable image digests and no build contexts. The CI container job
+builds once, exercises the same images, and transfers them as an artifact to
+the main-only publication job. A serialized publisher verifies anonymous GHCR
+pulls before exposing the complete GitHub Release as latest. No application
+contract or database version changes are introduced by this deployment format.
+
+The Bash updater controls one installation with `flock`, downloads and validates
+the complete bundle, pulls all images before maintenance, explicitly migrates,
+starts and verifies identity/health, then records the active runtime. Cleanup
+checks references from every running and stopped container and is restricted
+to known application images. A separate disposable Docker daemon verifies this
+flow against a local registry and PostgreSQL 18 without exposing the developer's
+Docker socket to the test runner. See [deployment design](deployment-images.md).
+
 ## Backend boundaries
 
 - **Api** owns HTTP contracts, OpenAPI, health endpoints, configuration, and dependency injection.

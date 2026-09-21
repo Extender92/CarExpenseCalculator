@@ -11,6 +11,9 @@ const verificationEnvironment = {
   POSTGRES_PASSWORD: "compose-boundary-verification-only",
   CODEX_HOME_PATH: "/tmp/car-expense-codex-boundary-verification",
   COMPARISON_MAX_REQUEST_BYTES: "41943040",
+  CEC_API_IMAGE: `ghcr.io/extender92/car-expense-calculator-api@sha256:${"a".repeat(64)}`,
+  CEC_WEB_IMAGE: `ghcr.io/extender92/car-expense-calculator-web@sha256:${"b".repeat(64)}`,
+  CEC_EXTRACTOR_IMAGE: `ghcr.io/extender92/car-expense-calculator-codex-extractor@sha256:${"c".repeat(64)}`,
 };
 
 const local = resolveCompose("compose.yaml");
@@ -32,6 +35,7 @@ verifyCodexBoundary(local, "volume", "codex-home", "local Compose");
 
 verifyPublishedPorts(unraid, "Unraid Compose");
 assert(!("postgres" in unraid.services), "Unraid Compose must not define a replacement PostgreSQL service.");
+assert(Object.values(unraid.services).every(service => !service.build && service.image?.includes("@sha256:")), "Unraid uses digest-pinned published images without a build context.");
 verifySharedNetwork(unraid, ["api", "codex-extractor", "web"], "car-expense-network", "Unraid Compose");
 assert(unraid.networks["car-expense-network"]?.external === true, "Unraid must use an external car-expense-network.");
 verifyCodexBoundary(unraid, "bind", "/tmp/car-expense-codex-boundary-verification", "Unraid Compose");
