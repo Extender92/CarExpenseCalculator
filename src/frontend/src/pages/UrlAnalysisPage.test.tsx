@@ -54,6 +54,12 @@ const healthyStatus = {
   integrations: { codexListingExtractionConfigured: true },
 };
 
+
+async function pasteUrls(user: ReturnType<typeof userEvent.setup>, value: string) {
+  await user.click(screen.getByLabelText("URL:er"));
+  await user.paste(value);
+}
+
 beforeEach(() => {
   navigateMock.mockReset();
   vi.mocked(getSystemStatus).mockResolvedValue(healthyStatus);
@@ -76,7 +82,7 @@ describe("Swedish URL analysis workspace", () => {
     try {
       const user = userEvent.setup();
       render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
-      await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
+      await pasteUrls(user, completeListingAnalysisResponse.submittedUrl);
       await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
       await waitFor(() => expect(prepare).toHaveBeenCalledOnce());
       await waitFor(() => expect(screen.getByRole("button", { name: /^Spara och jämför/ })).toBeEnabled());
@@ -88,7 +94,7 @@ describe("Swedish URL analysis workspace", () => {
       .mockResolvedValue(completeListingAnalysisResponse);
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
-    await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
+    await pasteUrls(user, "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByRole("button", { name: "Fortsätt kön" });
     expect(analyzeListing).toHaveBeenCalledTimes(1);
@@ -100,7 +106,7 @@ describe("Swedish URL analysis workspace", () => {
     vi.mocked(analyzeListing).mockRejectedValueOnce(new ListingAnalysisApiError("Vänta på Blocket.", 429, "listingSourceRateLimited", undefined, 60));
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
-    await user.type(screen.getByLabelText("URL:er"), "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
+    await pasteUrls(user, "https://www.blocket.se/mobility/item/1\nhttps://www.blocket.se/mobility/item/2");
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await user.click(await screen.findByRole("button", { name: "Fortsätt kön" }));
     expect(await screen.findByText(/innan kön återupptas/)).toBeInTheDocument();
@@ -115,7 +121,7 @@ describe("Swedish URL analysis workspace", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Ange minst en");
     expect(screen.getByRole("alert")).toHaveFocus();
 
-    await user.type(screen.getByLabelText("URL:er"), [
+    await pasteUrls(user, [
       "http://localhost/item/1",
       "https://cars.example/item/1?ci=2",
       "http://cars.example/item/1/",
@@ -131,7 +137,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
+    await pasteUrls(user, completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
 
     expect(await screen.findByText("Volvo V70 2.4")).toBeInTheDocument();
@@ -151,7 +157,7 @@ describe("Swedish URL analysis workspace", () => {
 
     const make = screen.getByLabelText("Märke");
     await user.clear(make);
-    await user.type(make, "Saab");
+    await user.paste("Saab");
     expect(screen.getAllByText(/Användare · Manuell · Obekräftad/).length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Modell")).toHaveValue("V70");
     expect(screen.getByText((content) => content.startsWith("Motsvarar") && content.includes("167") && content.includes("km"))).toBeInTheDocument();
@@ -170,7 +176,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), "https://cars.example/item/manual");
+    await pasteUrls(user, "https://cars.example/item/manual");
     await waitFor(() => expect(screen.getByRole("button", { name: "Hämta annonser" })).toBeDisabled());
     expect(screen.getByText(/inte konfigurerad/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Skapa manuella utkast" }));
@@ -192,7 +198,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), [
+    await pasteUrls(user, [
       "https://cars.example/item/1",
       "https://cars.example/item/2",
       "https://cars.example/item/3",
@@ -227,7 +233,7 @@ describe("Swedish URL analysis workspace", () => {
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
     const urls = Array.from({ length: 10 }, (_, index) => `https://cars.example/item/${index + 1}`);
-    await user.type(screen.getByLabelText("URL:er"), urls.join("\n"));
+    await pasteUrls(user, urls.join("\n"));
     expect(screen.getByRole("button", { name: "Hämta annonser" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
 
@@ -241,25 +247,26 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
+    await pasteUrls(user, completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Volvo V70 2.4");
-    await user.click(screen.getByRole("button", { name: "Redigera bil" }));
-    await user.clear(screen.getByLabelText("Märke"));
-    await user.type(screen.getByLabelText("Märke"), "Saab");
+    // The inline field can be edited while the card's retry action remains
+    // accessible, without interacting with the inert background of a modal.
+    await user.clear(screen.getByLabelText("Komplettera registreringsnummer"));
+    await user.paste("ZZZ999");
     await user.click(screen.getByRole("button", { name: "Analysera igen" }));
 
     expect(screen.getByRole("alertdialog", { name: "Ersätt manuella ändringar?" })).toBeInTheDocument();
     expect(analyzeListing).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole("button", { name: "Analysera och ersätt" }));
     await waitFor(() => expect(analyzeListing).toHaveBeenCalledTimes(2));
-    expect(await screen.findByLabelText("Märke")).toHaveValue("Volvo");
+    expect(await screen.findByLabelText("Komplettera registreringsnummer")).toHaveValue("ABC123");
   });
 
   it("supports collection unknown, known-empty, and entered states with accessible controls", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
-    await user.type(screen.getByLabelText("URL:er"), "https://cars.example/item/manual");
+    await pasteUrls(user, "https://cars.example/item/manual");
     await user.click(screen.getByRole("button", { name: "Skapa manuella utkast" }));
 
     await user.click(screen.getByRole("button", { name: "Redigera bil" }));
@@ -345,7 +352,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
+    await pasteUrls(user, completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Volvo V70 2.4");
     await user.click(await screen.findByRole("button", { name: "Lägg till bil" }));
@@ -399,7 +406,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), candidate.submittedUrl);
+    await pasteUrls(user, candidate.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Saab V70 2.4");
     await user.click(await screen.findByRole("button", { name: "Lägg till bil" }));
@@ -447,7 +454,7 @@ describe("Swedish URL analysis workspace", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><UrlAnalysisPage /></MemoryRouter>);
 
-    await user.type(screen.getByLabelText("URL:er"), completeListingAnalysisResponse.submittedUrl);
+    await pasteUrls(user, completeListingAnalysisResponse.submittedUrl);
     await user.click(screen.getByRole("button", { name: "Hämta annonser" }));
     await screen.findByText("Volvo V70 2.4");
     await user.click(await screen.findByRole("button", { name: "Lägg till bil" }));

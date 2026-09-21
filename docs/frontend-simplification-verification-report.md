@@ -104,6 +104,11 @@ failed. The ordinary reporter exposed an incomplete API mock's unhandled
 rejection. After correcting the mock, the ordinary command exited successfully
 with 323 passing tests and no unhandled errors.
 
+The first PR frontend CI run hit the five-second deadline in two UI tests,
+while the parallel push run passed. URL fixtures now use actual paste operations
+instead of typing every character; retry editing uses the accessible inline
+registration field. Assertions and timeouts are unchanged.
+
 ## Delivery and cleanup
 
 Helpers, logs, PDFs and temporary builds use the ignored
