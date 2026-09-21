@@ -56,18 +56,21 @@ export function CarEditor({ open, vehicleId, listingEditor, initialTab = "listin
   const existing = items.find(item => item.saved?.vehicleId === vehicleId);
   const item = listingEditor?.item ?? existing;
   const localCost = listingEditor?.item.workflow && !listingEditor.item.workflow.existing && (!listingEditor.item.workflow.costsSaved || !listingEditor.item.workflow.factsSaved) ? listingEditor.item.workflow : undefined;
-  const costReady = !localCost && !!h && (vehicleId ? h.active.vehicleId === vehicleId : !listingEditor);
+  const canLoadSaved = !localCost && !item?.workflow?.writing;
+  const costReady = canLoadSaved && !!h && (vehicleId ? h.active.vehicleId === vehicleId : !listingEditor);
   const source = costReady ? h?.active.listingSource : null;
   const f = vehicleId ? comparison?.state.facts[vehicleId] : undefined;
 
   useEffect(() => {
-    if (!open || !vehicleId || !household || requested.current === vehicleId) return;
+    // Adoption persists the listing before costs/facts. Read the saved editor only
+    // after that sequence, so an empty intermediate response cannot become its base.
+    if (!open || !vehicleId || !household || !canLoadSaved || requested.current === vehicleId) return;
     requested.current = vehicleId;
     void (async () => {
       if (household.state.active.vehicleId !== vehicleId) await household.openVehicle(vehicleId);
       await comparison?.workspace.select(vehicleId);
     })();
-  }, [open, vehicleId, household, comparison?.workspace]);
+  }, [open, vehicleId, household, comparison?.workspace, canLoadSaved]);
   useEffect(() => {
     if (!source || listingEditor || existing) return;
     const state = savedListingToReviewState(source);

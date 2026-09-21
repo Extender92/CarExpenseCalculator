@@ -115,6 +115,12 @@ The first Docker CI run passed 84 browser tests but exposed test teardown racing
 with post-adoption cost/fact writes. The adoption test now awaits the complete
 car-save acknowledgement before deleting its fixtures; revision checks remain
 strict, without retrying conflicting deletes.
+The initial acknowledgement selector addressed the existing-car dialog message
+instead of the new-car step status and failed. Inspecting the resulting screen
+also exposed an intermediate empty cost read during adoption. The editor now
+loads saved resources after all adoption writes finish; the regression checks
+the displayed purchase price immediately after saving. All 11 affected browser
+tests and all 324 frontend tests passed after this correction.
 
 ## Delivery and cleanup
 
