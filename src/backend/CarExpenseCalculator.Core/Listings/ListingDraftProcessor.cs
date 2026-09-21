@@ -678,7 +678,7 @@ public sealed partial class ListingDraftProcessor
         var isManual = enumValuesAreValid
             && provenance.Origin == FieldOrigin.User
             && provenance.ExtractionMethod == ExtractionMethod.Manual
-            && provenance.Verification == VerificationStatus.UserConfirmed;
+            && provenance.Verification is VerificationStatus.Unverified or VerificationStatus.UserConfirmed;
 
         if (!enumValuesAreValid || (!isAi && !isManual))
         {
@@ -686,7 +686,7 @@ public sealed partial class ListingDraftProcessor
                 mode,
                 errors,
                 $"{path}.provenance",
-                "Only listing/ai-or-html/unverified and user/manual/userConfirmed provenance is supported.");
+                "Only listing/ai-or-html/unverified and user/manual/unverified-or-userConfirmed provenance is supported.");
             return null;
         }
 

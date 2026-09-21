@@ -93,10 +93,11 @@ public interface IHouseholdTransitionStore
 }
 
 public sealed class HouseholdStoreException(string code, string message, Guid? vehicleId = null,
-    long? expectedRevision = null, long? actualRevision = null) : Exception(message)
+    long? expectedRevision = null, long? actualRevision = null, Guid? reviewDraftId = null) : Exception(message)
 {
     public string Code { get; } = code;
     public Guid? VehicleId { get; } = vehicleId;
     public long? ExpectedRevision { get; } = expectedRevision;
     public long? ActualRevision { get; } = actualRevision;
+    public Guid? ReviewDraftId { get; } = reviewDraftId;
 }

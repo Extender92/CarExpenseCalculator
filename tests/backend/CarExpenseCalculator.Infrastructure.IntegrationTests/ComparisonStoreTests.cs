@@ -181,7 +181,7 @@ public sealed class ComparisonStoreTests(PostgreSqlFixture fixture) : HouseholdT
     }
 
     [Fact]
-    public async Task Rollback_preserves_existing_data_and_reapply_starts_empty()
+    public async Task Rollback_rejects_current_facts_and_preserves_existing_data_and_confirmations()
     {
         await Fixture.ResetDatabaseAsync();
         await using var db = Fixture.CreateDbContext();
@@ -190,13 +190,15 @@ public sealed class ComparisonStoreTests(PostgreSqlFixture fixture) : HouseholdT
         await new RuleProfileStore(db).SaveAsync(new(), 0);
         await Facts(db).SaveAsync(car.VehicleId, 1, new(new(), CostConfirmation: CostConfirmationAction.Confirm));
         var migrator = db.Database.GetService<IMigrator>();
-        await migrator.MigrateAsync("20260906151351_AddHouseholdPersistence");
+        var before = await Facts(db).GetAsync(car.VehicleId);
+        var error = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => migrator.MigrateAsync("20260906151351_AddHouseholdPersistence"));
+        Assert.Contains("Cannot downgrade listing review workflow", error.MessageText);
         Assert.Equal(1, await CountAsync("vehicles")); Assert.Equal(1, await CountAsync("vehicle_cost_inputs"));
         Assert.Equal(1, await ScalarAsync<long>("SELECT profile_revision FROM household_state"));
-        Assert.False(await ScalarAsync<bool>("SELECT to_regclass('public.rule_profile') IS NOT NULL"));
+        Assert.True(await ScalarAsync<bool>("SELECT to_regclass('public.rule_profile') IS NOT NULL"));
         await migrator.MigrateAsync();
-        Assert.Null((await Facts(db).GetAsync(car.VehicleId))!.Input);
-        Assert.Equal(new SavedRuleProfile(null, 0), await new RuleProfileStore(db).GetAsync());
+        Assert.Equivalent(before, await Facts(db).GetAsync(car.VehicleId), strict: true);
+        Assert.Equal(1, (await new RuleProfileStore(db).GetAsync()).Revision);
         Assert.False(db.Database.HasPendingModelChanges());
     }
 }

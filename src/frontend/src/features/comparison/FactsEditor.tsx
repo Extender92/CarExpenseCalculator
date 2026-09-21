@@ -50,7 +50,7 @@ function displayedValue(value: unknown, key?: string): string {
   if (Array.isArray(value))
     return value.length
       ? value.map((v) => displayedValue(v, key)).join(", ")
-      : "Bekräftad tom samling";
+      : "Uttryckligen tom samling";
   return (
     criteria
       .find((c) => c.key === key)
@@ -218,10 +218,12 @@ function FactRow({
   ];
   if (fact?.state === "conflicting")
     options.push([
-      manualMode ? "manual" : "resolve",
-      "Lös konflikten uttryckligen",
+      manualMode ? "editManual" : "resolveUnverified",
+      "Lös konflikten med en obekräftad uppgift",
     ]);
-  else options.push(["manual", "Ange manuellt och bekräfta värdet"]);
+  else options.push(["editManual", "Ändra manuellt utan bekräftelse"]);
+  options.push([fact?.state === "conflicting" && !manualMode ? "resolve" : "manual", "Ange och bekräfta ett kontrollerat värde"]);
+  if (fact?.state === "known" && !manualMode) options.push(["confirmCurrent", "Bekräfta det aktuella värdet"]);
   if (!manualMode && proposal?.state === "known")
     options.push(["listing", "Hämta annonsvärdet"]);
   options.push(["conflict", "Ange motstridiga värden"]);
@@ -255,7 +257,7 @@ function FactRow({
             onChange(
               kind === "preserve"
                 ? undefined
-                : kind === "manual" || kind === "resolve"
+                : ["manual", "resolve", "editManual", "resolveUnverified"].includes(kind)
                   ? {
                       kind,
                       manual: {
@@ -266,15 +268,15 @@ function FactRow({
                     ? {
                         kind,
                         observations: [
-                          { kind: "manual", manual: { value: null } },
-                          { kind: "manual", manual: { value: null } },
+                          { kind: "editManual", manual: { value: null } },
+                          { kind: "editManual", manual: { value: null } },
                         ],
                       }
                     : { kind },
             );
           }}
         />
-        {(kind === "manual" || kind === "resolve") && (
+        {["manual", "resolve", "editManual", "resolveUnverified"].includes(kind) && (
           <>
             <ValueField
               field={field}
@@ -300,9 +302,8 @@ function FactRow({
               }
             />
             <p className="text-xs text-slate-400">
-              Det manuella värdet blir användarbekräftat när åtgärden används.
-              Tidigare verifiering följer inte med; ingen registerverifiering
-              skapas.
+              {kind === "manual" || kind === "resolve" ? "Du har valt att uttryckligen bekräfta detta värde." : "Värdet sparas som manuellt och obekräftat."}
+              {" "}En ändring tar bort tidigare bekräftelse. Ingen registerverifiering skapas.
             </p>
           </>
         )}
@@ -331,7 +332,8 @@ function FactRow({
                         : observation.kind
                     }
                     options={[
-                      ["manual", "Manuell uppgift"],
+                      ["editManual", "Manuell obekräftad uppgift"],
+                      ["manual", "Manuell uttryckligen bekräftad uppgift"],
                       ...(!manualMode && proposal?.state === "known"
                         ? [["listing", "Aktuellt annonsförslag"] as const]
                         : []),
@@ -354,11 +356,11 @@ function FactRow({
                             }
                           : kind === "listing"
                             ? { kind: "listing" }
-                            : { kind: "manual", manual: { value: null } },
+                            : { kind: kind === "manual" ? "manual" : "editManual", manual: { value: null } },
                       )
                     }
                   />
-                  {observation.kind === "manual" && (
+                  {(observation.kind === "manual" || observation.kind === "editManual") && (
                     <ValueField
                       field={field}
                       value={observation.manual?.value}
@@ -366,7 +368,7 @@ function FactRow({
                       errors={errors}
                       onChange={(value) =>
                         update({
-                          kind: "manual",
+                          kind: observation.kind,
                           manual: { ...observation.manual, value },
                         })
                       }
@@ -396,7 +398,7 @@ function FactRow({
                   kind: "conflict",
                   observations: [
                     ...(action?.observations ?? []),
-                    { kind: "manual", manual: { value: null } },
+                    { kind: "editManual", manual: { value: null } },
                   ],
                 })
               }
@@ -555,7 +557,7 @@ export function FactsEditor({
                     ...input.edits,
                     conditionNotes: [
                       ...notes,
-                      { kind: "manual", manual: { value: "" } },
+                      { kind: "editManual", manual: { value: "" } },
                     ],
                   })
                 }

@@ -80,6 +80,9 @@ public sealed record HouseholdEnergySource
     public SensitivityValue? ConsumptionPer100Kilometres { get; init; }
     public ConsumptionBasis? ConsumptionBasis { get; init; }
     public ElectricityBasis? ElectricityBasis { get; init; }
+    public string? ConsumptionLabel { get; init; }
+    public ListingValueSource? FuelSource { get; init; }
+    public ListingValueSource? ConsumptionSource { get; init; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -95,6 +98,7 @@ public sealed record HouseholdCostItem
     public int? DueMonthOfYear { get; init; }
     public string? EvidenceNote { get; init; }
     public string? SourceUrl { get; init; }
+    public ListingValueSource? ListingSource { get; init; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -142,15 +146,24 @@ public sealed record HouseholdLeaseInput
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record VehicleElectricShare
+{
+    public required ElectricShareMode Mode { get; init; }
+    public SensitivityValue? Value { get; init; }
+}
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record VehicleCostInput
 {
     [Required(AllowEmptyStrings = true)]
     public required string CandidateKey { get; init; }
     public AcquisitionType AcquisitionType { get; init; }
     public decimal? PriceSek { get; init; }
+    public ListingValueSource? PriceSource { get; init; }
     public HouseholdResidualInput? Residual { get; init; }
     public HouseholdLeaseInput? Lease { get; init; }
     public IReadOnlyList<HouseholdEnergySource>? EnergySources { get; init; }
+    public VehicleElectricShare? ElectricDrivingShare { get; init; }
     public HouseholdCostCategoryInput? Tax { get; init; }
     public HouseholdCostCategoryInput? Insurance { get; init; }
     public HouseholdCostCategoryInput? Service { get; init; }

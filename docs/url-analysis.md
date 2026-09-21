@@ -1,5 +1,16 @@
 # URL analysis specification
 
+## Review workflow extension (#95)
+
+URL results now open an essential-first editor while retaining complete original
+content in expandable sections. Several registration-free drafts can be saved
+independently; they are outside inventory/comparison until explicit adoption.
+Normal saved vehicles still require registration. Manual edits remain
+unverified until a separate confirmation action. See the
+[workflow contract](review-and-calculation-workflow.md) for draft endpoints,
+revision conflicts, source reuse and migration compatibility. Extraction prompt
+4/schema 3 and the one-at-a-time Blocket retrieval controls are unchanged.
+
 ## Status and purpose
 
 This document defines the target behavior for milestone 2. The dependency-free

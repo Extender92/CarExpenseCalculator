@@ -4,6 +4,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { WorkspaceProvider } from "@/features/household/WorkspaceProvider";
 import { ComparisonProvider } from "@/features/comparison/Provider";
+import { NavigationGuardProvider } from "@/components/editing/NavigationGuard";
+import { ReviewWorkspaceProvider } from "@/features/url-analysis/ReviewWorkspaceProvider";
 
 const ComparisonPage = lazy(() =>
   import("@/pages/ComparisonPage").then((module) => ({
@@ -41,6 +43,8 @@ export function App() {
   return (
     <WorkspaceProvider>
       <ComparisonProvider>
+        <NavigationGuardProvider>
+        <ReviewWorkspaceProvider>
         <Suspense
           fallback={
             <p role="status" className="p-8 text-slate-300">
@@ -64,6 +68,8 @@ export function App() {
             </Route>
           </Routes>
         </Suspense>
+        </ReviewWorkspaceProvider>
+        </NavigationGuardProvider>
       </ComparisonProvider>
     </WorkspaceProvider>
   );

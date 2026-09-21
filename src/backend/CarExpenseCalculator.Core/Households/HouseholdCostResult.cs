@@ -5,8 +5,8 @@ namespace CarExpenseCalculator.Core.Households;
 
 public static class HouseholdCalculationVersions
 {
-    public const int Calculation = 2;
-    public const int ResultSchema = 2;
+    public const int Calculation = 3;
+    public const int ResultSchema = 3;
 }
 
 public enum CostSectionState { Complete, Partial, Unavailable, Invalid, NotApplicable }
@@ -49,7 +49,8 @@ public sealed record VehicleCostResult(
     HouseholdCashReconciliation Reconciliation);
 
 public sealed record HouseholdDepreciationResult(CostSectionResult Cost, decimal? ResidualValueSek);
-public sealed record HouseholdEnergyResult(CostSectionResult Cost, IReadOnlyList<HouseholdEnergySourceResult> Sources, bool IsIncluded = false);
+public sealed record HouseholdEnergyResult(CostSectionResult Cost, IReadOnlyList<HouseholdEnergySourceResult> Sources,
+    bool IsIncluded = false, EffectiveElectricShare? ElectricDrivingShare = null);
 public sealed record HouseholdEnergySourceResult(
     string Key,
     FuelType? Fuel,

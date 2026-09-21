@@ -1,5 +1,14 @@
 # Roadmap
 
+## Immediate priority: issue #95
+
+The user assigned [#95](https://github.com/Extender92/CarExpenseCalculator/issues/95)
+as first priority before registry lookup and advisory AI. The
+[review workflow](review-and-calculation-workflow.md) improves drafts, dialogs,
+confirmation, reuse and individual electric shares. Its
+[verification report](issue-95-verification-report.md) records delivery status.
+This does not activate a new integration milestone or authorize deployment.
+
 ## Current planning checkpoint
 
 Audited on 2026-09-09 after approved [PR #91](https://github.com/Extender92/CarExpenseCalculator/pull/91),

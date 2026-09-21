@@ -1,5 +1,20 @@
 # Architecture
 
+## Review workflow extension (#95)
+
+The [workflow contract](review-and-calculation-workflow.md) supersedes earlier
+storage-version and inline-editor descriptions below. Core owns deterministic
+reuse suggestions, source-claim validation and per-car electric-share resolution.
+Infrastructure stores independent `listing_review_drafts` and performs atomic,
+revision-checked adoption; the API maps the new typed contracts. The frontend
+retains the shared workspaces and uses a single data-router navigation guard for
+native editor dialogs. No dependency direction or extraction behavior changes.
+
+Listing storage is now 3, vehicle cost/shared-draft/fact storage 2, household
+calculation/result 3, and complete comparison transport 3. Old input formats
+remain readable. Rule/scoring versions, profile storage and extraction 4/3 are
+unchanged. The additional migration does not rewrite previous migrations.
+
 ## System shape
 
 Car Expense Calculator is a modular monolith in a monorepo:

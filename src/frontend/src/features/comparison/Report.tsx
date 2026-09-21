@@ -1,4 +1,5 @@
 import { ListingContent } from "@/features/url-analysis/ListingContent";
+import { ElectricShareSource } from "@/features/household/ElectricShareSource";
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatNumeric } from "@/features/household/numbers";
@@ -391,6 +392,7 @@ export const ReportDocument = memo(function ReportDocument({
         return (
           <section key={r.vehicleId} data-report-details={r.vehicleId}>
             <h3>{r.registrationNumber}</h3>
+            <ElectricShareSource value={r.cost.energy.electricDrivingShare} />
             {unsaved(r) && (
               <p className="report-notice">Osparat: {unsaved(r)}.</p>
             )}
@@ -446,6 +448,7 @@ export const ReportDocument = memo(function ReportDocument({
                   exact={false}
                   value={{
                     totals: c.cost.totals,
+                    electricDrivingShare: c.cost.energy.electricDrivingShare,
                     startupBudget: c.cost.startupBudget,
                     monthlyBudget: c.cost.monthlyBudget,
                     inputErrors: c.cost.inputErrors,

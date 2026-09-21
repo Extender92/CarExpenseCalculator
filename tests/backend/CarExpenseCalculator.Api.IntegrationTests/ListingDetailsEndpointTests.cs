@@ -38,13 +38,13 @@ public sealed class ListingDetailsEndpointTests(SavedListingApiFactory factory) 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var saved = await Json(created, HttpStatusCode.Created);
         Assert.False(saved["sourcePageObserved"]!.GetValue<bool>());
-        Assert.Equal(2, saved["listingSchemaVersion"]!.GetValue<int>());
+        Assert.Equal(3, saved["listingSchemaVersion"]!.GetValue<int>());
         var id = saved["vehicleId"]!.GetValue<string>();
         var loaded = await Json(await client.GetAsync($"/api/saved-listings/{id}"));
         Assert.True(JsonNode.DeepEquals(saved["listing"], loaded["listing"]));
         var baseline = await Json(await client.GetAsync("/api/comparisons/baseline"));
         var result = await Json(await client.PostAsJsonAsync(CompleteComparisonApiData.Route, CompleteComparisonApiData.Stored(baseline)));
-        Assert.Equal(2, result["transportVersion"]!.GetValue<int>());
+        Assert.Equal(3, result["transportVersion"]!.GetValue<int>());
         var listing = Assert.Single(result["listings"]!.AsArray())!;
         Assert.True(JsonNode.DeepEquals(saved["listing"], listing["listing"]));
         var details = listing["listing"]!["details"]!;

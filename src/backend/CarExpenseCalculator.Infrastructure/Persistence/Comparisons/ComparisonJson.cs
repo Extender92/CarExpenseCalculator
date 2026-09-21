@@ -10,6 +10,7 @@ namespace CarExpenseCalculator.Infrastructure.Persistence.Comparisons;
 internal static class ComparisonJson
 {
     public const int Version = 1;
+    public const int FactsVersion = 2;
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
@@ -25,7 +26,8 @@ internal static class ComparisonJson
     }
     public static T Read<T>(string json, int version)
     {
-        if (version != Version) throw new ComparisonStoreException("unsupportedComparisonStorageVersion", "The comparison storage version is not supported.");
+        if (version != Version && (version != FactsVersion || typeof(T) != typeof(FactsPayload)))
+            throw new ComparisonStoreException("unsupportedComparisonStorageVersion", "The comparison storage version is not supported.");
         return JsonSerializer.Deserialize<T>(json, Options) ?? throw new JsonException("Stored input is missing.");
     }
     public static T Decode<T>(Func<T> read)

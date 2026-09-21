@@ -32,7 +32,7 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         Assert.Equal("ABC12D", saved.RegistrationNumber);
         Assert.Equal(1, saved.Revision);
         Assert.Equal(1, saved.ListingVersion);
-        Assert.Equal(2, saved.ListingSchemaVersion);
+        Assert.Equal(3, saved.ListingSchemaVersion);
         Assert.Equal(SavedListingTestData.AnalyzedAtUtc, saved.AnalyzedAtUtc);
         Assert.Equal("https://example.com/listings/abc12d?campaign=Autumn", saved.NormalizedUrl);
         Assert.Equal("gpt-5.6-luna", saved.RequestedModel);
@@ -63,7 +63,7 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         Assert.Equal("ABC123", saved.Listing.RegistrationNumber!.Value);
         Assert.Equal("user", JsonName(saved.Listing.RegistrationNumber.Provenance.Origin));
         Assert.Equal("manual", JsonName(saved.Listing.RegistrationNumber.Provenance.ExtractionMethod));
-        Assert.Equal("userConfirmed", JsonName(saved.Listing.RegistrationNumber.Provenance.Verification));
+        Assert.Equal("unverified", JsonName(saved.Listing.RegistrationNumber.Provenance.Verification));
         Assert.Null(saved.RequestedModel);
         Assert.Null(saved.PromptVersion);
         Assert.Null(saved.SchemaVersion);
@@ -462,9 +462,9 @@ public sealed class SavedListingEndpointTests(SavedListingApiFactory factory)
         finally
         {
             await factory.ExecuteDatabaseCommandAsync(
-                "UPDATE vehicle_listings SET listing_schema_version = 2; "
+                "UPDATE vehicle_listings SET listing_schema_version = 3; "
                 + "ALTER TABLE vehicle_listings ADD CONSTRAINT ck_vehicle_listings_versions "
-                + "CHECK (listing_version >= 1 AND listing_schema_version IN (1, 2))");
+                + "CHECK (listing_version >= 1 AND listing_schema_version IN (1, 2, 3))");
         }
 
         using var restoredGet = await _client.GetAsync($"/api/saved-listings/{created.VehicleId}");

@@ -70,7 +70,7 @@ const names: Record<string, string> = {
   verification: "Verifiering",
   observedAt: "Observerad tidpunkt",
   confirmedAt: "Bekräftad tidpunkt",
-  listingVersion: "Observationens annonsversion",
+  listingVersion: "Annonsversion",
   sourceListingVersion: "Observationens annonsversion",
   fuelType: "Drivmedel",
   sourceUrl: "Källänk",
@@ -186,6 +186,17 @@ const names: Record<string, string> = {
   unresolvedLegacyItems: "Kvarvarande äldre granskningsposter",
   costCompleteness: "Kostnadernas fullständighet",
   inspectionValidity: "Besiktningsgiltighet",
+  electricDrivingShare: "Bilens elandel av körsträckan",
+  priceSource: "Annonskälla för inköpspris",
+  fuelSource: "Annonskälla för drivmedel",
+  consumptionSource: "Annonskälla för förbrukning",
+  consumptionLabel: "Förbrukningens originalbeteckning",
+  listingSource: "Annonskälla för kostnadsuppgiften",
+  listingReference: "Annonsreferens",
+  originalLabel: "Originalbeteckning",
+  itemIndex: "Källpostens index",
+  field: "Källfält",
+  percent: "Andel (%)",
 };
 const options: Record<string, Record<string, string>> = {};
 function collect(fields: Field[]) {
@@ -224,7 +235,7 @@ Object.assign(options, {
     userConfirmed: "Användarbekräftat",
     registryVerified: "Registerverifierat",
   },
-  origin: { listing: "Annons", user: "Användare", registry: "Register" },
+  origin: { listing: "Annons", user: "Användare", registry: "Register", vehicle: "Bilens eget värde", household: "Hushållets värde" },
   extractionMethod: { manual: "Manuellt", ai: "AI-tolkat", html: "Direkt hämtat från annonsen" },
   acquisitionType: { purchase: "Köp", lease: "Leasing" },
   kind: {
@@ -244,6 +255,8 @@ Object.assign(options, {
     withinBudget: "Inom budgetgränsen",
   },
 });
+options.mode = { ...options.mode, inherit: "Använd hushållets värde", override: "Bilens eget värde" };
+options.field = { priceSek: "Annonspris", annualVehicleTaxSek: "Årlig fordonsskatt", fuelTypes: "Drivmedel", energyConsumptions: "Energiförbrukning" };
 
 export const reportLabel = (key: string) => names[key] ?? key;
 export function exactText(value: Numeric) {
@@ -426,7 +439,7 @@ export function inputRows(value: unknown, exact = true): ReportRow[] {
           walk(
             v,
             path ? `${path}.${k}` : k,
-            label ? `${label} – ${reportLabel(k)}` : reportLabel(k),
+            label ? `${label} – ${k === "mode" && key === "electricDrivingShare" ? "Val av elandel" : reportLabel(k)}` : reportLabel(k),
             k,
             inherit ? context : k,
           );

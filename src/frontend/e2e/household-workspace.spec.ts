@@ -1,3 +1,4 @@
+import { closeEditor, editingScope, openHouseholdProfile, showHouseholdResults, openListingEditor } from "./editor-helpers";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const owned = new Set<string>();
@@ -63,64 +64,38 @@ test.afterEach(async ({ request }) => {
   }
 });
 
-test("edits exact numbers, keeps unsaved navigation state and explicitly saves separate resources", async ({
-  page,
-}) => {
+test("edits exact numbers, guards navigation and explicitly saves separate resources", async ({ page }) => {
   let ai = 0;
-  page.on("request", (request) => {
-    if (request.url().includes("/api/listing-analyses")) ai++;
-  });
-  page.on("dialog", (dialog) => void dialog.accept());
+  page.on("request", request => { if (request.url().includes("/api/listing-analyses")) ai++; });
   await page.goto("/manual");
-  await expect(page.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
-    "100000",
-  );
-  await page
-    .getByLabel("Kontanter till bilköpet (kr)")
-    .fill("123,1234567890123456789");
+  await openHouseholdProfile(page);
+  await expect(page.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue("100000");
+  await page.getByLabel("Kontanter till bilköpet (kr)").fill("123,1234567890123456789");
   await page.getByLabel("Årlig körsträcka (mil)").fill("1,1234567890123456789");
-  await page.getByLabel("Registreringsnummer", { exact: true }).fill("HHH100");
-  owned.add("HHH100");
-  await page
-    .getByLabel("Inköpspris (kr)", { exact: true })
-    .fill("987,1234567890123456789");
-  await page
-    .getByRole("link", { name: "Granska äldre underlag", exact: true })
-    .click();
-  await page
-    .getByRole("link", { name: "Till hushållskalkylen", exact: true })
-    .click();
-  await expect(page.getByLabel("Inköpspris (kr)", { exact: true })).toHaveValue(
-    "987,1234567890123456789",
-  );
-  const saveProfile = page.waitForResponse(
-    (response) =>
-      response.url().endsWith("/api/household-profile") &&
-      response.request().method() === "PUT",
-  );
-  await page
-    .getByRole("button", { name: "Spara hushållsprofil", exact: true })
-    .click();
-  const savedProfile = await saveProfile;
+  const profileSaved = page.waitForResponse(r => r.url().endsWith("/api/household-profile") && r.request().method() === "PUT");
+  await page.getByRole("button", { name: "Spara hushållsprofil", exact: true }).click();
+  const savedProfile = await profileSaved;
   expect(savedProfile.status()).toBe(200);
-  expect(savedProfile.request().postData()).toContain(
-    '"annualDistanceKilometres":11.234567890123456789',
-  );
+  expect(savedProfile.request().postData()).toContain('"annualDistanceKilometres":11.234567890123456789');
   expect(await savedProfile.text()).toContain("123.1234567890123456789");
-  await expect(
-    page.getByText("Osparade biländringar", { exact: true }),
-  ).toBeVisible();
-  const saveCar = page.waitForResponse(
-    (response) =>
-      response.url().endsWith("/api/vehicle-cost-inputs") &&
-      response.request().method() === "POST",
-  );
-  await page
-    .getByRole("button", { name: "Spara bilunderlag", exact: true })
-    .click();
-  const savedCar = await saveCar;
+  await closeEditor(page);
+  await page.getByRole("button", { name: "Ny bil", exact: true }).click();
+  await page.getByRole("textbox", { name: "Registreringsnummer", exact: true }).fill("HHH100");
+  owned.add("HHH100");
+  await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("987,1234567890123456789");
+  await page.locator("dialog[open]").getByRole("button", { name: "Stäng", exact: true }).first().click();
+  await page.getByRole("button", { name: "Fortsätt redigera", exact: true }).click();
+  await expect(page.getByText("Osparade biländringar", { exact: true })).toBeVisible();
+  const carSaved = page.waitForResponse(r => r.url().endsWith("/api/vehicle-cost-inputs") && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Spara bilunderlag", exact: true }).click();
+  const savedCar = await carSaved;
   expect(savedCar.status()).toBe(201);
   expect(await savedCar.text()).toContain("987.1234567890123456789");
+  await closeEditor(page);
+  await page.getByRole("link", { name: "Granska äldre underlag", exact: true }).click();
+  await page.getByRole("link", { name: "Till hushållskalkylen", exact: true }).click();
+  await page.getByRole("button", { name: "Öppna HHH100", exact: true }).click();
+  await expect(page.getByLabel("Inköpspris (kr)", { exact: true })).toHaveValue(/^987[,.]1234567890123456789$/);
   expect(ai).toBe(0);
 });
 
@@ -130,11 +105,14 @@ test("renders complete purchase, fixed residual mismatch and keyboard-accessible
 }) => {
   const car = await create(request, "HHH101", purchase());
   await page.goto(`/manual?vehicleId=${car.vehicleId}`);
-  const results = page.getByRole("region", {
+  await showHouseholdResults(page);
+  const results = page.locator("dialog[open]").last().getByRole("region", {
     name: "Beräkningsresultat för vald bil",
   });
   await expect(results.getByText(/10\s000,00\s*kr/).first()).toBeVisible();
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("24");
+  await showHouseholdResults(page);
   await expect(
     page.getByLabel("Period för fast restvärde (månader)"),
   ).toHaveValue("12");
@@ -142,6 +120,7 @@ test("renders complete purchase, fixed residual mismatch and keyboard-accessible
     results.getByText(/Fast restvärde gäller en annan period/).first(),
   ).toBeVisible();
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("12");
+  await closeEditor(page);
   await expect(
     results.getByText("Periodens tillämpliga kostnader är kompletta."),
   ).toBeVisible();
@@ -203,7 +182,8 @@ test("shows lease payments, refunds and average budget without extending beyond 
     },
   });
   await page.goto(`/manual?vehicleId=${car.vehicleId}`);
-  const results = page.getByRole("region", {
+  await showHouseholdResults(page);
+  const results = page.locator("dialog[open]").last().getByRole("region", {
     name: "Beräkningsresultat för vald bil",
   });
   await expect(results.getByText(/60\s000,00\s*kr/).first()).toBeVisible();
@@ -211,7 +191,9 @@ test("shows lease payments, refunds and average budget without extending beyond 
   await expect(results.getByText(/63\s000,00\s*kr/).first()).toBeVisible();
   await expect(results.getByText(/3\s000,00\s*kr/).first()).toBeVisible();
   await expect(results.getByText("Inom budget")).toHaveCount(2);
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("36");
+  await showHouseholdResults(page);
   await expect(
     results.getByText(/Jämförelseperioden matchar inte/).first(),
   ).toBeVisible();
@@ -224,7 +206,8 @@ test("restores a draft after reload, requires saving its edits and atomically ad
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/manual");
   await expect(page.getByText("Utkastplatsen är tom.")).toBeVisible();
-  await page.getByLabel("Registreringsnummer", { exact: true }).fill("HHH103");
+  await page.getByRole("button", { name: "Ny bil", exact: true }).click();
+  await page.getByRole("textbox", { name: "Registreringsnummer", exact: true }).fill("HHH103");
   owned.add("HHH103");
   await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("15000");
   await page.getByRole("button", { name: "Spara utkast", exact: true }).click();
@@ -277,30 +260,32 @@ test("conflicts between browser contexts preserve local edits and deletion clear
     await page
       .getByRole("button", { name: "Spara bilunderlag", exact: true })
       .click();
-    await expect(page.getByText("Bilunderlaget har sparats.")).toBeVisible();
+    await expect((await editingScope(page)).getByText("Bilunderlaget har sparats.")).toBeVisible();
     await second
       .getByRole("button", { name: "Spara bilunderlag", exact: true })
       .click();
     await expect(
-      second.getByText(/Bilen har ändrats sedan den öppnades/),
+      (await editingScope(second)).getByText(/Bilen har ändrats sedan den öppnades/),
     ).toBeVisible();
     await expect(
       second.getByLabel("Inköpspris (kr)", { exact: true }),
     ).toHaveValue("52000");
-    await second.getByRole("button", { name: "Uppdatera serverläget" }).click();
+    await (await editingScope(second)).getByRole("button", { name: "Uppdatera serverläget" }).click();
     await expect(
       second.getByText(/Bilen har ändrats på servern/),
     ).toBeVisible();
+    await closeEditor(page);
     await page
       .getByRole("button", { name: "Radera HHH104", exact: true })
       .click();
     await expect(
       page.getByRole("button", { name: "Öppna HHH104" }),
     ).toHaveCount(0);
-    await second.getByRole("button", { name: "Uppdatera serverläget" }).click();
+    await (await editingScope(second)).getByRole("button", { name: "Uppdatera serverläget" }).click();
     await expect(
       second.getByLabel("Inköpspris (kr)", { exact: true }),
     ).toHaveValue("");
+    await openHouseholdProfile(second);
     await expect(second.getByLabel("Kontanter till bilköpet (kr)")).toHaveValue(
       "100000",
     );
@@ -352,7 +337,9 @@ test("reviews all 50+50 legacy posts and preserves unresolved inputs through the
   expect(created.status()).toBe(201);
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/manual/transition");
+  await openHouseholdProfile(page);
   await expect(page.getByLabel("Årlig körsträcka (mil)")).toHaveValue("1200");
+  if (await page.locator("dialog[open]").count()) await closeEditor(page);
   await expect(
     page.getByLabel("Period för fast restvärde (månader)"),
   ).toHaveValue("24");
@@ -388,6 +375,7 @@ test("reviews all 50+50 legacy posts and preserves unresolved inputs through the
   ).toHaveLength(49);
   expect(current.input.customCosts.items).toHaveLength(50);
   await page.goto(`/manual?vehicleId=${car.vehicleId}`);
+  await showHouseholdResults(page);
   await expect(
     page.getByText("Kalkylen är ofullständig. Kända delkostnader visas nedan."),
   ).toBeVisible();
@@ -407,16 +395,19 @@ test("previews without storage and keeps the mobile workspace inside the viewpor
       }),
   );
   await page.goto("/manual");
+  await page.getByRole("button", { name: "Ny bil", exact: true }).click();
+  await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("50000");
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("12");
   await page.getByLabel("Kontanter till bilköpet (kr)").fill("50000");
-  await page.getByLabel("Inköpspris (kr)", { exact: true }).fill("50000");
   const response = page.waitForResponse((response) =>
     response.url().endsWith("/api/household-calculations/preview"),
   );
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
+  await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
   expect((await response).status()).toBe(200);
+  await showHouseholdResults(page);
   await expect(
-    page.getByRole("region", { name: "Beräkningsresultat för vald bil" }),
+    page.locator("dialog[open]").last().getByRole("region", { name: "Beräkningsresultat för vald bil" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -518,12 +509,13 @@ for (const example of [
       energySources: example.sources,
     });
     await page.goto(`/manual?vehicleId=${car.vehicleId}`);
-    const results = page.getByRole("region", {
+    await showHouseholdResults(page);
+  const results = page.locator("dialog[open]").last().getByRole("region", {
       name: "Beräkningsresultat för vald bil",
     });
     await expect(results.getByText(example.total).first()).toBeVisible();
     const editor = page.getByRole("region", { name: "Bilredigering" });
-    await editor.getByText("Energi", { exact: true }).click();
+    await editor.locator("summary").filter({ hasText: /^Energi$/ }).click();
     for (let index = 0; index < example.fuels.length; index++)
       await expect(
         editor.getByLabel("Drivmedel", { exact: true }).nth(index),
@@ -542,6 +534,7 @@ test("saves an explicit reviewed URL draft in the same slot and adopts only its 
     .fill("https://cars.example/item/shared-draft");
   await page.getByRole("button", { name: "Skapa manuella utkast" }).click();
   const card = page.locator('[data-testid^="listing-card-"]');
+  await openListingEditor(card);
   await card.getByLabel("Registreringsnummer").fill("HHH106");
   await card.getByLabel("Annonspris").fill("123,1234567890123456789");
   const saved = page.waitForResponse(
@@ -549,12 +542,13 @@ test("saves an explicit reviewed URL draft in the same slot and adopts only its 
       response.url().endsWith("/api/vehicle-draft") &&
       response.request().method() === "PUT",
   );
-  await card
+  await card.getByRole("dialog")
     .getByRole("button", { name: "Spara gemensamt annonsutkast" })
     .click();
   const response = await saved;
   expect(response.status()).toBe(200);
   expect(await response.text()).toContain("123.1234567890123456789");
+  await closeEditor(page, "discard");
   await page.goto("/manual");
   await page.getByRole("button", { name: "Öppna sparat utkast" }).click();
   await page.getByRole("button", { name: "Ta utkastet i bruk" }).click();

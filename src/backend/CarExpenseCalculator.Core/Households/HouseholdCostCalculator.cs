@@ -56,12 +56,12 @@ public sealed class HouseholdCostCalculator
 
         var distance = CalculateDistance(context, true);
         var (depreciation, residual) = isLease ? (CostSection.Zero($"{path}.residual"), (decimal?)null) : CalculateDepreciation(car, path, context);
-        var (energy, energyResult) = HouseholdEnergyCalculator.Calculate(car.EnergySources, $"{path}.energySources",
+        var (energy, energyResult) = HouseholdEnergyCalculator.Calculate(car, path,
             isLease ? CalculateDistance(context) : distance, context, out var rawEnergySources);
         if (isLease && car.Lease?.EnergyIncluded == true)
         {
             energy = CostSection.Zero($"{path}.energySources");
-            energyResult = new(energy.Result(), Array.AsReadOnly(energyResult.Sources.Select(source => source with { Cost = energy.Result() }).ToArray()), true);
+            energyResult = energyResult with { Cost = energy.Result(), Sources = Array.AsReadOnly(energyResult.Sources.Select(source => source with { Cost = energy.Result() }).ToArray()), IsIncluded = true };
             rawEnergySources = [energy];
         }
         for (var sourceIndex = 0; sourceIndex < rawEnergySources.Count; sourceIndex++)

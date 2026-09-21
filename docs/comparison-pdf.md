@@ -1,5 +1,16 @@
 # Comparison PDF report (#66)
 
+## Review workflow extension (#95)
+
+The frozen report includes reused cost sources, original consumption labels and
+each vehicle's effective electric-driving share with its household/car origin.
+It consumes complete comparison transport 3 and household result 3. The capture
+is created before navigation's explicit save/discard decision; subsequent saves
+and later server changes do not recalculate it. Report opening/printing perform
+no new listing or AI requests. A4 landscape, wrapping and repeated table headers
+remain unchanged. See the [workflow contract](review-and-calculation-workflow.md)
+and [verification report](issue-95-verification-report.md).
+
 ## Delivery status
 
 Delivered through approved [PR #89](https://github.com/Extender92/CarExpenseCalculator/pull/89),

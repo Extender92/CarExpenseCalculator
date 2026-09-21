@@ -1,3 +1,4 @@
+import { closeEditor, openListingEditor, saveListingCard } from "./editor-helpers";
 import { expect, test, type Request } from "@playwright/test";
 
 test("analyzes independent URLs through the same-origin proxy and keeps review drafts in memory", async ({ page }) => {
@@ -35,7 +36,7 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await expect(completeCard.getByText("20 000 kr")).toBeVisible();
   await expect(completeCard.getByText("16710 mil")).toBeVisible();
   await expect(completeCard.getByText("Nej", { exact: true }).first()).toBeVisible();
-  await completeCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await openListingEditor(completeCard);
   await expect(completeCard.getByLabel("Säljartyp", { exact: true })).toHaveValue("private");
   await expect(completeCard.getByLabel("Säljartyp", { exact: true }).locator("..")).toContainText("Annons · Direkt hämtat · Inte verifierad");
   await expect(completeCard.getByLabel("Ort eller stad")).toHaveValue("Tenhult");
@@ -47,20 +48,23 @@ test("analyzes independent URLs through the same-origin proxy and keeps review d
   await completeCard.getByLabel("Märke").fill("Saab");
   await completeCard.getByLabel("Annonspris").fill("0");
   await expect(completeCard.getByText("0 kr")).toBeVisible();
-  await expect(completeCard.getByText(/Användare · Manuell · Bekräftad/).first()).toBeVisible();
+  await expect(completeCard.getByText(/Användare · Manuell · Obekräftad/).first()).toBeVisible();
 
+  await closeEditor(page, "discard");
   const resultCards = page.locator('[data-testid^="listing-card-"]');
   const unavailableCard = resultCards.nth(2);
-  await unavailableCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await openListingEditor(unavailableCard);
   await expect(unavailableCard.getByLabel("Säljartyp", { exact: true })).toHaveValue("");
   await unavailableCard.getByLabel("Registreringsnummer").fill("ABC123");
-  await expect(unavailableCard.getByText(/Användare · Manuell · Bekräftad/)).toBeVisible();
+  await expect(unavailableCard.getByText(/Användare · Manuell · Obekräftad/)).toBeVisible();
 
+  await closeEditor(page, "discard");
   const unmatchedCard = resultCards.nth(3);
-  await unmatchedCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await openListingEditor(unmatchedCard);
   await expect(unmatchedCard.getByText("Matchar annonsen")).toBeVisible();
   await expect(unmatchedCard.getByText("Kompletterande källa")).toHaveCount(0);
   await expect(unmatchedCard.getByText("Volvo V70 2.4")).toBeVisible();
+  await closeEditor(page);
 
   await page.reload();
   await expect(page.getByText("Inga annonsunderlag är öppna ännu.")).toBeVisible();
@@ -156,7 +160,7 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   const createPromise = page.waitForResponse((response) =>
     response.url().endsWith("/api/saved-listings") && response.request().method() === "POST",
   );
-  await draft.getByRole("button", { name: "Spara bil" }).click();
+  await saveListingCard(draft);
   const created = await createPromise;
   expect(created.status()).toBe(201);
   expectSameOrigin(page, created);
@@ -168,16 +172,24 @@ test("creates, compares, reopens, replaces, and permanently deletes a saved list
   await expect(savedSummary).toContainText("Volvo V70 2008");
   await savedSummary.getByRole("button", { name: "Öppna", exact: true }).click();
   const opened = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Volvo V70 2.4" });
-  await opened.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
-  await expect(opened.getByLabel("Registreringsnummer")).toHaveAttribute("readonly", "");
+  // Load the saved cost form before reopening. The helper must expand only
+  // Annons even when the other tab's controls are already mounted but hidden.
+  await opened.getByRole("button", { name: "Redigera bil", exact: true }).click();
+  const hiddenCost = opened.locator('[role="tabpanel"][id$="-panel-cost"]');
+  await expect(hiddenCost.getByLabel("Registreringsnummer", { exact: true })).toBeAttached();
+  await expect(hiddenCost).toBeHidden();
+  await closeEditor(page);
+  await openListingEditor(opened);
+  await expect(opened.getByRole("textbox", { name: "Registreringsnummer", exact: true })).toHaveAttribute("readonly", "");
+  await closeEditor(page);
   await opened.getByRole("button", { name: "Stäng kort" }).click();
 
   await page.getByLabel("URL:er").fill("https://cars.example/item/complete?new=1");
   await page.getByRole("button", { name: "Analysera URL:er" }).click();
   const candidate = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "complete" });
-  await candidate.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await openListingEditor(candidate);
   await candidate.getByLabel("Märke").fill("Saab");
-  await candidate.getByRole("button", { name: "Spara bil" }).click();
+  await saveListingCard(candidate);
 
   const comparison = page.getByRole("alertdialog", { name: /ABC123 finns redan/ });
   await expect(comparison).toBeVisible();
@@ -243,9 +255,10 @@ test("attaches a manual listing to a scenario-only vehicle and warns before dele
   await page.getByLabel("URL:er").fill(`https://cars.example/item/manual-${registrationNumber}`);
   await page.getByRole("button", { name: "Skapa manuella utkast" }).click();
   const draft = page.locator('[data-testid^="listing-card-"]');
+  await openListingEditor(draft);
   await draft.getByLabel("Registreringsnummer").fill(registrationNumber);
   await draft.getByLabel("Märke").fill("Volvo");
-  await draft.getByRole("button", { name: "Spara bil" }).click();
+  await saveListingCard(draft);
 
   const attach = page.getByRole("alertdialog", { name: /har redan en sparad kalkyl/ });
   await expect(attach).toBeVisible();
@@ -256,6 +269,7 @@ test("attaches a manual listing to a scenario-only vehicle and warns before dele
   expect((await attachPromise).status()).toBe(200);
   await expect(draft.getByText(/sparade kalkylen finns kvar/)).toBeVisible();
 
+  await closeEditor(page);
   await draft.getByRole("button", { name: "Radera bilen" }).click();
   const deletion = page.getByRole("alertdialog", { name: new RegExp(`Radera ${registrationNumber} permanent`) });
   await expect(deletion).toContainText("sparad kalkyl som raderas samtidigt");

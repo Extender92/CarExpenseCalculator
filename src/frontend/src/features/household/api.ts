@@ -47,6 +47,7 @@ export class HouseholdApiError extends Error {
     public readonly actualRevision?: Numeric | null,
     public readonly vehicleId?: string | null,
     public readonly recoveryRoute?: string | null,
+    public readonly reviewDraftId?: string | null,
   ) {
     super(
       messages[code] ??
@@ -58,6 +59,12 @@ export class HouseholdApiError extends Error {
 }
 
 const messages: Record<string, string> = {
+  reviewDraftNotFound: "Annonsutkastet finns inte längre. Dina ändringar finns kvar.",
+  reviewDraftAlreadyExists: "Det finns redan ett sparat utkast för denna annons. Öppna det eller granska skillnaderna innan det ersätts.",
+  reviewDraftRevisionConflict: "Annonsutkastet har ändrats. Läs den senaste versionen och granska skillnaderna innan du försöker igen.",
+  reviewDraftIdentityMismatch: "Utkastet tillhör en annan annonssida.",
+  registrationRequiredForAdoption: "Registreringsnummer saknas för att lägga till bilen i jämförelsen. Utkastet finns kvar.",
+  unsupportedReviewDraftVersion: "Annonsutkastet har ett format som denna version inte kan läsa.",
   profileNotFound: "Ingen hushållsprofil har sparats ännu.",
   vehicleNotFound:
     "Bilen finns inte längre. Öppna ett nytt underlag för att lägga till en bil.",
@@ -93,7 +100,7 @@ const messages: Record<string, string> = {
     "Underlaget är större än 2 MiB. Det har inte skickats eller delats automatiskt. Minska underlaget och försök igen.",
 };
 
-async function request<T>(
+export async function request<T>(
   route: keyof paths,
   method: string,
   body?: unknown,
@@ -139,6 +146,7 @@ async function request<T>(
       problem.actualRevision,
       problem.vehicleId,
       problem.recoveryRoute,
+      problem.reviewDraftId,
     );
   }
   try {

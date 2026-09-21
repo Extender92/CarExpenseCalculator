@@ -9,3 +9,10 @@ export function useComparison() {
   const state = useSyncExternalStore(workspace.subscribe, workspace.snapshot);
   return { workspace, state };
 }
+const noopSubscribe = () => () => {};
+const emptySnapshot = () => null;
+export function useOptionalComparison() {
+  const workspace = useContext(ComparisonContext);
+  const state = useSyncExternalStore(workspace?.subscribe ?? noopSubscribe, workspace?.snapshot ?? emptySnapshot);
+  return workspace && state ? { workspace, state } : null;
+}

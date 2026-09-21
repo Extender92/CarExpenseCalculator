@@ -1,5 +1,14 @@
 # Product requirements
 
+## Review workflow (#95)
+
+The [review and calculation workflow](review-and-calculation-workflow.md) adds
+registration-free listing review drafts outside the compared inventory, compact
+overviews and contextual editors, explicit confirmation, deterministic reuse of
+listing data, and a per-car electric-driving-share override. All advertisement
+content remains stored. Missing optional values remain unknown; invalid supplied
+values must be corrected. Registry access and advisory AI remain future work.
+
 ## Goal
 
 Help a household find and compare suitable used cars by combining explicit requirements, verified vehicle facts, ownership-cost calculations, and explainable review results.

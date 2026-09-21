@@ -24,7 +24,7 @@ test("comparison B1 travels through browser and Nginx without saving", async ({ 
     return { status: response.status, body: await response.json() };
   }, preview);
   expect(result.status).toBe(200);
-  expect(result.body).toMatchObject({ mode: "manual", storageChecked: false, ruleVersion: 1, calculationVersion: 2 });
+  expect(result.body).toMatchObject({ mode: "manual", storageChecked: false, ruleVersion: 1, calculationVersion: 3 });
   expect(result.body.candidates[0]).toMatchObject({ score: { lower: 85, upper: 85 }, coveragePercent: 100 });
 });
 

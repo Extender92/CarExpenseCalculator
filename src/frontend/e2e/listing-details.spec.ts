@@ -1,3 +1,4 @@
+import { closeEditor, openListingEditor, saveListingCard } from "./editor-helpers";
 import {expect, test} from "@playwright/test";
 import {readFile} from "node:fs/promises";
 
@@ -16,7 +17,7 @@ test("complete reference listings survive review, draft adoption, comparison and
     for (const [i,reference] of refs.entries()) {
       const card = cards.nth(i);
       await expect(card.getByText("Delvis extraktion")).toBeVisible();
-      await card.getByRole("button",{name:"Granska och komplettera alla uppgifter"}).click();
+      await openListingEditor(card);
       await expect(card.getByLabel("Hela beskrivningen")).toHaveValue(reference.draft.details.description);
       await expect(card.getByLabel("Sittplatser",{exact:true})).toHaveValue(String(reference.draft.details.seats));
       await expect(card.getByLabel("Registreringsnummer",{exact:true})).toHaveValue("");
@@ -27,18 +28,19 @@ test("complete reference listings survive review, draft adoption, comparison and
       await card.getByLabel("Registreringsnummer",{exact:true}).fill(`ULA10${i}`);
       if (i===0) {
         const save = page.waitForResponse(r=>r.url().endsWith("/api/saved-listings") && r.request().method()==="POST");
-        await card.getByRole("button",{name:"Spara bil",exact:true}).click();
+        await saveListingCard(card);
         const result=await save; expect(result.status(),await result.text()).toBe(201);
         const body=await result.json(); ids.push(body.vehicleId);
       } else {
         const save=page.waitForResponse(r=>r.url().endsWith("/api/vehicle-draft") && r.request().method()==="PUT");
-        await card.getByRole("button",{name:"Spara gemensamt annonsutkast"}).click();
+        await card.getByRole("dialog").getByRole("button",{name:"Spara gemensamt annonsutkast"}).click();
         const saved=await save; expect(saved.status(),await saved.text()).toBe(200);
         const slot=await saved.json();
         expect(slot.input.listing.draft.details.sellerAnswers[0].value.answer).toBe("Nej");
         const adopted=await request.post("/api/vehicle-draft/adopt",{data:{expectedRevision:slot.revision}});
         expect(adopted.status(),await adopted.text()).toBe(200); ids.push((await adopted.json()).vehicleId);
       }
+      await closeEditor(page, "discard");
       const persisted=await (await request.get(`/api/saved-listings/${ids[i]}`)).json();
       expect(persisted.listing.details.description.value).toBe(reference.draft.details.description);
       expect(persisted.listing.equipment.values).toEqual(reference.draft.equipment);
@@ -54,7 +56,7 @@ test("complete reference listings survive review, draft adoption, comparison and
     const comparison=page.waitForResponse(r=>r.url().endsWith("/api/comparisons/preview-all") && r.status()===200);
     await page.goto("/search");
     const result=await (await comparison).json();
-    expect(result.transportVersion).toBe(2); expect(result.listings).toHaveLength(2);
+    expect(result.transportVersion).toBe(3); expect(result.listings).toHaveLength(2);
     for (const mode of ["favorable","baseline","cautious"]) expect(result.views[mode].candidates).toHaveLength(2);
     await expect(page.getByRole("button",{name:"Öppna rapport",exact:true})).toBeEnabled();
     await page.getByRole("button",{name:"Öppna rapport",exact:true}).click();

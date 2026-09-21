@@ -1,5 +1,15 @@
 # Household calculations specification
 
+## Review workflow extension (#95)
+
+The [review workflow contract](review-and-calculation-workflow.md) extends the
+baseline below with per-car `electricDrivingShare` (`inherit` or `override`),
+validated listing sources for reused costs, and separate registration-free
+listing review drafts. Cost/shared-draft storage writes version 2 and still
+reads version 1. Household calculation and result versions are 3. The selected
+electric share is resolved before the existing energy formula; other ownership
+cost mathematics is unchanged.
+
 ## Status and scope
 
 Normative target for stage 3A, agreed 2026-09-06; **Core, persistence, HTTP and Swedish UI implemented**. The

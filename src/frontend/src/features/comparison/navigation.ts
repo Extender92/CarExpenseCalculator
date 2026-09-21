@@ -86,7 +86,8 @@ export function economicLink(
     field: normalized,
     returnTo: "comparison",
   });
-  return `/manual?${params}`;
+  if (!manual) params.set("tab", "cost");
+  return `${manual ? "/manual" : "/search"}?${params}`;
 }
 export function errorTarget(result: Result, path: string): string {
   if (path.startsWith("profile.")) return path;

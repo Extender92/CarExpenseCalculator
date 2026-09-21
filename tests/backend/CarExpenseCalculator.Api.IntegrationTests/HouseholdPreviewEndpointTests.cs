@@ -18,8 +18,8 @@ public sealed class HouseholdPreviewEndpointTests(ManualCalculationApiFactory fa
         request["vehicles"]![0]!["input"]!["candidateKey"] = " car ";
         var response = await Json(await Post(client, request));
         Assert.Equal("generation-1", response["requestId"]!.GetValue<string>());
-        Assert.Equal(2, response["calculationVersion"]!.GetValue<int>());
-        Assert.Equal(2, response["resultSchemaVersion"]!.GetValue<int>());
+        Assert.Equal(3, response["calculationVersion"]!.GetValue<int>());
+        Assert.Equal(3, response["resultSchemaVersion"]!.GetValue<int>());
         Assert.Equal("car", response["vehicles"]![0]!["input"]!["candidateKey"]!.GetValue<string>());
         Assert.True(response["vehicles"]![0]!["isCostComparable"]!.GetValue<bool>());
         var result = Sections(response);

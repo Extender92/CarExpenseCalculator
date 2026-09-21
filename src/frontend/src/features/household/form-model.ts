@@ -471,6 +471,21 @@ export function validateVehicle(input: VehicleInput): FormErrors {
     fields,
     "input",
   );
+  if (input.electricDrivingShare) {
+    const share = input.electricDrivingShare;
+    if (!["inherit", "override"].includes(share.mode)) errors["input.electricDrivingShare.mode"] = ["Välj arv eller egen elandel."];
+    if (share.mode === "inherit" && share.value != null) errors["input.electricDrivingShare.value"] = ["Arv får inte innehålla ett eget värde."];
+    Object.assign(errors, validateFields(share as Record<string, unknown>, [sensitivity("value", "Elandel")], "input.electricDrivingShare"));
+    for (const [key, entry] of Object.entries(share.value ?? {})) {
+      if (entry == null) continue;
+      try {
+        const text = canonicalNumber((entry as Numeric).text);
+        const [whole, fraction] = text.split(".");
+        if (text.startsWith("-") || BigInt(whole) > 100n || (BigInt(whole) === 100n && fraction))
+          errors[`input.electricDrivingShare.value.${key}`] = ["Ange en elandel inom 0–100 procent."];
+      } catch { /* The exact-number validator supplies the field error. */ }
+    }
+  }
   const keys = new Set<string>();
   const checkKey = (key: string, path: string) => {
     if (!key?.trim() || key.trim().length > 120 || keys.has(key.trim()))

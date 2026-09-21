@@ -14,7 +14,7 @@ internal sealed class VehicleListingEntityConfiguration
             {
                 table.HasCheckConstraint(
                     "ck_vehicle_listings_versions",
-                    "listing_version >= 1 AND listing_schema_version IN (1, 2)");
+                    "listing_version >= 1 AND listing_schema_version IN (1, 2, 3)");
                 table.HasCheckConstraint(
                     "ck_vehicle_listings_urls",
                     "length(submitted_url) BETWEEN 1 AND 2048 AND length(normalized_url) BETWEEN 1 AND 2048");

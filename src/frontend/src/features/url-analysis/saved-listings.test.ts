@@ -129,7 +129,7 @@ describe("saved listing comparisons", () => {
     expect(allComparisonChoicesSelected(differences, { make: "existing", equipment: "candidate" })).toBe(true);
   });
 
-  it("marks retained old values as manual and user-confirmed against the new URL", () => {
+  it("marks retained old values as manual and unverified against the new URL", () => {
     const existing = savedListingToReviewState(savedListingResponse).draft;
     let candidate = analysisResponseToDraft(completeListingAnalysisResponse);
     candidate = editScalarField(candidate, "make", "Saab", "https://cars.example/item/new");
@@ -148,7 +148,7 @@ describe("saved listing comparisons", () => {
       provenance: {
         origin: "user",
         extractionMethod: "manual",
-        verification: "userConfirmed",
+        verification: "unverified",
         sourceUrl: "https://cars.example/item/new",
       },
     });

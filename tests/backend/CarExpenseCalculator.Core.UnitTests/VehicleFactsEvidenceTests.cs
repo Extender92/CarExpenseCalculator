@@ -119,7 +119,6 @@ public sealed class VehicleFactsEvidenceTests
     [InlineData(FieldOrigin.Registry, ExtractionMethod.Ai, VerificationStatus.Unverified)]
     [InlineData(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.RegistryVerified)]
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Ai, VerificationStatus.RegistryVerified)]
-    [InlineData(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified)]
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Ai, VerificationStatus.UserConfirmed)]
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Html, VerificationStatus.UserConfirmed)]
     [InlineData(FieldOrigin.Listing, ExtractionMethod.Html, VerificationStatus.RegistryVerified)]
@@ -140,6 +139,21 @@ public sealed class VehicleFactsEvidenceTests
         {
             OwnerCount = new(2, new(origin, method, verification, Url)),
         })).Errors, error => error.Code == "unsupportedEvidence");
+    }
+
+    [Fact]
+    public void Manual_unverified_values_survive_normalization_and_listing_mapping_without_confirmation()
+    {
+        var evidence = new ComparisonEvidence(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified, Url);
+        var normalized = _processor.Normalize(new() { Seats = VehicleFact<int>.Known(5, evidence) });
+        Assert.Equal(evidence, Observation(normalized.Seats).Evidence);
+        var mapped = _processor.FromReviewedListing(Url, [], new()
+        {
+            OwnerCount = new(0, new(FieldOrigin.User, ExtractionMethod.Manual, VerificationStatus.Unverified, Url)),
+        });
+        Assert.Equal(0, Observation(mapped.OwnerCount).Value);
+        Assert.Equal(VerificationStatus.Unverified, Observation(mapped.OwnerCount).Evidence.Verification);
+        Assert.Null(Observation(mapped.OwnerCount).Evidence.ConfirmedAt);
     }
 
     [Fact]

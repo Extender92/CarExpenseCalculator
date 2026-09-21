@@ -1,3 +1,4 @@
+import { closeEditor, editingScope } from "./editor-helpers";
 import {
   expect,
   test,
@@ -105,14 +106,17 @@ async function create(
   return car;
 }
 const main = (page: Page) =>
-  page.getByRole("table", { name: "Huvudjämförelse", exact: true });
+  page.getByRole("table", { name: "Huvudjämförelse", exact: true, includeHidden: true });
 async function openReport(page: Page) {
-  const button = page.getByRole("button", {
+  const button = (await editingScope(page)).getByRole("button", {
     name: "Öppna rapport",
     exact: true,
   });
   await expect(button).toBeEnabled({ timeout: 30000 });
   await button.click();
+  const savingChoice = page.getByRole("button", { name: "Spara och stäng", exact: true });
+  await expect.poll(async () => page.url().endsWith("/search/report") || await savingChoice.isVisible()).toBe(true);
+  if (await savingChoice.isVisible()) await savingChoice.click();
   await expect(page).toHaveURL(/\/search\/report$/);
   await expect(
     page.getByRole("button", { name: "Skriv ut / Spara som PDF" }),
@@ -171,7 +175,7 @@ test("B1/B2: exports a frozen full/partial report, sources and dirty assumptions
   await page.goto("/search");
   await expect(main(page)).toContainText("[85,00, 85,00]");
   await page
-    .getByText("Hushållsprofil – visa och redigera", { exact: true })
+    .getByRole("button", { name: "Redigera hushållsprofil", exact: true })
     .click();
   await page
     .locator('[data-field-path="profile.purchaseCashSek"]')
@@ -215,12 +219,14 @@ test("B1/B2: exports a frozen full/partial report, sources and dirty assumptions
     await rm(directory, { recursive: true, force: true });
   }
   await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
+  await page.getByRole("button", { name: "Redigera hushållsprofil", exact: true }).click();
   await expect(
     page.locator('[data-field-path="profile.purchaseCashSek"]'),
-  ).toHaveValue("100001,1234567890123456789");
-  await expect(
-    page.getByText("Serverunderlaget har ändrats.", { exact: false }),
-  ).toBeVisible();
+  ).toHaveValue(/^100001[,.]1234567890123456789$/);
+  // Save-and-close persisted the profile before leaving. With no local rule
+  // edits, returning may accept the other client's current empty rule profile.
+  await closeEditor(page);
+  await expect(page.getByRole("status").filter({ hasText: /^Inga aktiva prioriteringar\.$/ })).toBeVisible();
 });
 
 test("all 250 cars and collapsed details are exported from page two using the server's full order", async ({
@@ -252,7 +258,7 @@ test("all 250 cars and collapsed details are exported from page two using the se
     costOrder = (await upstream.json()).views.baseline.costOrder;
     await route.fulfill({ response: upstream });
   });
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
+  await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
   await openReport(page);
   await expect(main(page).locator("tbody tr")).toHaveCount(250);
   await expect(page.locator("[data-report-details]")).toHaveCount(250);
@@ -266,7 +272,7 @@ test("all 250 cars and collapsed details are exported from page two using the se
   await expect(
     page.getByRole("table", {
       name: "PAA349 – Fordonsfakta och källor",
-      exact: true,
+      exact: true, includeHidden: true
     }),
   ).toBeAttached();
   await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
@@ -367,7 +373,7 @@ test("a malformed or stale next generation cannot be exported; direct report nav
   ).toBeVisible();
   await page.getByRole("link", { name: "Tillbaka till jämförelsen" }).click();
   await expect(
-    page.getByRole("button", { name: "Öppna rapport", exact: true }),
+    (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true }),
   ).toBeEnabled();
   await page.route("**/api/comparisons/preview-all", async (route) => {
     const upstream = await route.fetch();
@@ -376,14 +382,14 @@ test("a malformed or stale next generation cannot be exported; direct report nav
     await route.fulfill({ response: upstream, json: value });
   });
   try {
-    await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
+    await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
     // Busy state alone is insufficient: wait until the malformed response was
     // actually read and rejected before checking that export stays blocked.
     await expect(
       page.getByText(/Ett komplett jämförelsesvar kunde inte läsas/),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Öppna rapport", exact: true }),
+      (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true }),
     ).toBeDisabled();
     await expect(
       page.getByText("Resultaten är inaktuella.", { exact: false }),
@@ -453,14 +459,14 @@ test("A2/A8: report separates ownership cost, cash outflow and internal repair s
   await expect(main(page)).toContainText("7 200,00 kr");
   const payment = page.getByRole("table", {
     name: "PAA100 – Betalningsunderlag",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(
     payment.locator('[data-report-path="externalOutflow"]'),
   ).toContainText("80 750,00 kr");
   const repairs = page.getByRole("table", {
     name: "PAA101 – Betalningsunderlag",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(
     repairs.locator('[data-report-path="externalOutflow"]'),
@@ -470,7 +476,7 @@ test("A2/A8: report separates ownership cost, cash outflow and internal repair s
   ).toContainText("3 600,00 kr");
   const calendar = page.getByRole("table", {
     name: "PAA100 – Betalningskalender",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(
     calendar.locator('[data-report-month="11"]').getByRole("cell").first(),
@@ -519,16 +525,14 @@ test("A5/A6: prints hybrid energy amounts without weighting or charging-loss rec
     page
       .getByRole("table", {
         name: "PAA100 – Energi, skatt och försäkring",
-        exact: true,
-      })
+        exact: true, includeHidden: true})
       .locator('[data-report-path="energy.cost"]'),
   ).toContainText("9 504,00 kr");
   await expect(
     page
       .getByRole("table", {
         name: "PAA101 – Energi, skatt och försäkring",
-        exact: true,
-      })
+        exact: true, includeHidden: true})
       .locator('[data-report-path="energy.cost"]'),
   ).toContainText("10 320,00 kr");
 });
@@ -575,7 +579,7 @@ test("A9: prints the lease deposit, refund and authoritative startup/average bud
   await expect(main(page)).toContainText("60 000,00 kr");
   const p = page.getByRole("table", {
     name: "PAA100 – Betalningsunderlag",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(p.locator('[data-report-path="externalOutflow"]')).toContainText(
     "63 000,00 kr",
@@ -585,7 +589,7 @@ test("A9: prints the lease deposit, refund and authoritative startup/average bud
   );
   const budgets = page.getByRole("table", {
     name: "PAA100 – Kostnadsavstämning och budgetar",
-    exact: true,
+    exact: true, includeHidden: true
   });
   await expect(
     budgets.locator('[data-report-path="startupBudget.fundingRequired"]'),

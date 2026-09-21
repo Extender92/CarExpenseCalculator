@@ -35,7 +35,7 @@ public sealed class HouseholdMigrationTests(PostgreSqlFixture fixture) : Househo
     }
 
     [Fact]
-    public async Task Explicit_rollback_discards_household_data_and_orphans_preserving_listings_and_unconverted_cars()
+    public async Task Rollback_rejects_current_formats_and_preserves_all_household_listing_and_legacy_data()
     {
         await Fixture.ResetDatabaseAsync();
         await using var db = Fixture.CreateDbContext();
@@ -49,19 +49,20 @@ public sealed class HouseholdMigrationTests(PostgreSqlFixture fixture) : Househo
         await Legacy(db).CreateAsync(Reg("RST456"), ScenarioFactory.Replacement());
         await Drafts(db).SaveAsync(new(Reg(), Write(), BaseVehicleId: convertedOnly.VehicleId, BaseVehicleRevision: 2), 0);
         var migrator = db.Database.GetService<IMigrator>();
-        await MigrationTests.SeedLegacyListingFormatAsync(db);
-        await migrator.MigrateAsync(PreviousMigration);
-        Assert.Equal(3, await CountAsync("vehicles"));
+        var before = (await Costs(db).ListAsync()).Select(x => (x.VehicleId, x.Revision)).ToArray();
+        var error = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => migrator.MigrateAsync(PreviousMigration));
+        Assert.Contains("Cannot downgrade listing review workflow", error.MessageText);
+        Assert.Equal(5, await CountAsync("vehicles"));
         Assert.Equal(2, await CountAsync("vehicle_listings"));
         Assert.Equal(1, await CountAsync("saved_cost_scenarios"));
-        Assert.Equal(0, await ScalarAsync<long>("SELECT count(*) FROM vehicles WHERE registration_number IN ('ABC123', 'JKL789')"));
+        Assert.Equal(2, await ScalarAsync<long>("SELECT count(*) FROM vehicles WHERE registration_number IN ('ABC123', 'JKL789')"));
         foreach (var table in new[] { "household_state", "vehicle_cost_inputs", "vehicle_draft" })
-            Assert.False(await ScalarAsync<bool>($"SELECT to_regclass('public.{table}') IS NOT NULL"));
+            Assert.True(await ScalarAsync<bool>($"SELECT to_regclass('public.{table}') IS NOT NULL"));
         await migrator.MigrateAsync();
-        Assert.Equal(new SavedHouseholdProfile(null, 0), await new HouseholdProfileStore(db).GetAsync());
-        Assert.Equal(new SavedVehicleDraft(0, null), await Drafts(db).GetAsync());
-        Assert.Equal(0, await CountAsync("vehicle_cost_inputs"));
-        Assert.Equal(3, (await Costs(db).ListAsync()).Count);
+        Assert.NotNull((await new HouseholdProfileStore(db).GetAsync()).Input);
+        Assert.NotNull((await Drafts(db).GetAsync()).Input);
+        Assert.Equal(3, await CountAsync("vehicle_cost_inputs"));
+        Assert.Equal(before, (await Costs(db).ListAsync()).Select(x => (x.VehicleId, x.Revision)).ToArray());
         Assert.False(db.Database.HasPendingModelChanges());
     }
 }

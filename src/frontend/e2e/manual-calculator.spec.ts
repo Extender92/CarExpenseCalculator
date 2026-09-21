@@ -1,3 +1,4 @@
+import { closeEditor, openListingEditor, saveListingCard } from "./editor-helpers";
 import { expect, test, type Page, type Response } from "@playwright/test";
 
 test("calculates the documented manual ownership scenario through the single origin", async ({ page }) => {
@@ -29,7 +30,7 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
   const createResponsePromise = page.waitForResponse((response) =>
     response.url().endsWith("/api/saved-cost-scenarios") && response.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Spara bil" }).click();
+  await page.getByRole("button", { name: "Spara bil", exact: true }).click();
   const createResponse = await createResponsePromise;
   expect(createResponse.status()).toBe(201);
   expectSameOrigin(page, createResponse);
@@ -43,7 +44,7 @@ test("saves, reopens, replaces, and deletes a vehicle through PostgreSQL", async
   const replaceResponsePromise = page.waitForResponse((response) =>
     response.url().includes("/api/saved-cost-scenarios/") && response.request().method() === "PUT",
   );
-  await page.getByRole("button", { name: "Spara ändringar" }).click();
+  await page.getByRole("button", { name: "Spara ändringar", exact: true }).click();
   const replaceResponse = await replaceResponsePromise;
   expect(replaceResponse.status()).toBe(200);
   expectSameOrigin(page, replaceResponse);
@@ -81,16 +82,18 @@ test("links a saved listing, detects listing drift, and reviews the current vers
   await page.getByRole("button", { name: "Analysera URL:er" }).click();
   const listingCard = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "complete" });
   await expect(listingCard.getByText("Volvo V70 2.4")).toBeVisible();
-  await listingCard.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await openListingEditor(listingCard);
   await listingCard.getByLabel("Registreringsnummer").fill(registrationNumber);
   const listingCreate = page.waitForResponse((response) =>
     response.url().endsWith("/api/saved-listings") && response.request().method() === "POST",
   );
-  await listingCard.getByRole("button", { name: "Spara bil" }).click();
+  await saveListingCard(listingCard);
   expect((await listingCreate).status()).toBe(201);
 
+  await closeEditor(page);
   await listingCard.getByRole("button", { name: "Öppna hushållskalkyl" }).click();
   await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  await closeEditor(page);
   await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Annonsuppgifter för kalkylen" })).toBeVisible();
   await expect(page.getByLabel("Registreringsnummer")).toHaveValue(registrationNumber);
@@ -112,17 +115,19 @@ test("links a saved listing, detects listing drift, and reviews the current vers
   await expect(summary.getByText(/Äldre kalkyl – väntar på övergång/)).toBeVisible();
   await summary.getByRole("button", { name: "Öppna", exact: true }).click();
   const opened = page.locator('[data-testid^="listing-card-"]').filter({ hasText: "Volvo V70 2.4" });
-  await opened.getByRole("button", { name: "Granska och komplettera alla uppgifter" }).click();
+  await openListingEditor(opened);
   await opened.getByLabel("Annonspris").fill("21000");
   const listingReplace = page.waitForResponse((response) =>
     response.url().includes("/api/saved-listings/") && response.request().method() === "PUT",
   );
-  await opened.getByRole("button", { name: "Spara ändringar" }).click();
+  await saveListingCard(opened);
   expect((await listingReplace).status()).toBe(200);
   await expect(opened.getByText(/Annonsgranskning behövs/)).toBeVisible();
 
+  await closeEditor(page);
   await opened.getByRole("button", { name: "Öppna hushållskalkyl" }).click();
   await expect(page).toHaveURL(/\/manual\?listingVehicleId=/);
+  await closeEditor(page);
   await page.getByRole("link", { name: "Äldre kalkyler", exact: true }).click();
   await expect(page.getByText("Tidigare kalkyl är inaktuell")).toBeVisible();
   await expect(page.getByLabel(/Inköpspris/)).toHaveValue("20000");
@@ -136,7 +141,7 @@ test("links a saved listing, detects listing drift, and reviews the current vers
     response.url().includes("/api/saved-cost-scenarios/")
       && response.request().method() === "PUT",
   );
-  await page.getByRole("button", { name: "Spara ändringar" }).click();
+  await page.getByRole("button", { name: "Spara ändringar", exact: true }).click();
   expect((await reviewSave).status()).toBe(200);
   await expect(page.getByText("Kopplad till aktuell annons")).toBeVisible();
 

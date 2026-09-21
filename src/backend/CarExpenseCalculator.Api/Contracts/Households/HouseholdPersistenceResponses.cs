@@ -22,6 +22,7 @@ public sealed class HouseholdProblemDetails : ProblemDetails
 {
     public required string Code { get; init; }
     public Guid? VehicleId { get; init; }
+    public Guid? ReviewDraftId { get; init; }
     public long? ExpectedRevision { get; init; }
     public long? ActualRevision { get; init; }
     public string? RecoveryRoute { get; init; }

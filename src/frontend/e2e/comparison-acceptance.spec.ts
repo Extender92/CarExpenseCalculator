@@ -1,3 +1,4 @@
+import { closeEditor, editingScope, openHouseholdProfile } from "./editor-helpers";
 import {
   expect,
   test,
@@ -112,7 +113,7 @@ async function facts(
   return (await saved.json()) as Schema<"VehicleFactsResponse">;
 }
 const main = (page: Page) =>
-  page.getByRole("table", { name: "Huvudjämförelse", exact: true });
+  page.getByRole("table", { name: "Huvudjämförelse", exact: true, includeHidden: true });
 const row = (page: Page, id: string) =>
   main(page).locator(`[data-vehicle-id="${id}"]`);
 async function openDetails(section: Locator) {
@@ -123,7 +124,7 @@ async function enter(page: Page) {
   await page.goto("/search");
   await page.getByLabel("Utvärderingsdatum", { exact: true }).fill(date);
   await expect(
-    page.getByRole("button", { name: "Öppna rapport", exact: true }),
+    (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true }),
   ).toBeEnabled();
 }
 async function calculate(page: Page): Promise<Complete> {
@@ -133,7 +134,7 @@ async function calculate(page: Page): Promise<Complete> {
       r.request().method() === "POST" &&
       r.status() === 200,
   );
-  await page.getByRole("button", { name: "Beräkna nu", exact: true }).click();
+  await (await editingScope(page)).getByRole("button", { name: "Beräkna nu", exact: true }).click();
   const response = await pending;
   const result = (await response.json()) as Complete;
   expect(result.views.baseline.asOfDate).toBe(date);
@@ -143,9 +144,12 @@ async function calculate(page: Page): Promise<Complete> {
   return result;
 }
 async function report(page: Page) {
-  const open = page.getByRole("button", { name: "Öppna rapport", exact: true });
+  const open = (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true });
   await expect(open).toBeEnabled({ timeout: 30000 });
   await open.click();
+  const savingChoice = page.getByRole("button", { name: "Spara och stäng", exact: true });
+  await expect.poll(async () => page.url().endsWith("/search/report") || await savingChoice.isVisible()).toBe(true);
+  if (await savingChoice.isVisible()) await savingChoice.click();
   await expect(page).toHaveURL(/\/search\/report$/);
   await expect(
     page.getByRole("button", { name: "Skriv ut / Spara som PDF" }),
@@ -157,7 +161,7 @@ async function saveFacts(page: Page) {
       r.url().includes("/api/vehicle-facts/") && r.request().method() === "PUT",
   );
   await page
-    .getByRole("button", { name: "Spara biluppgifter", exact: true })
+    .getByRole("button", { name: "Spara jämförelsefakta", exact: true })
     .click();
   const response = await saved;
   expect(response.status(), await response.text()).toBe(200);
@@ -226,7 +230,7 @@ test("all twenty criteria use explicit editor goals, evidence and authoritative 
     serviceDocumentation: { kind: "manual", manual: { value: "documented" } },
   });
   await enter(page);
-  await page.getByText("Köpkrav och prioriteringar", { exact: true }).click();
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   // Fixed independent examples: ten numeric criteria score 50, eight choices 100.
   const numeric = [
     ["purchasePriceSek", "12000", "0", "24000", 12000],
@@ -346,21 +350,22 @@ test("all twenty criteria use explicit editor goals, evidence and authoritative 
     expect(result.score).toEqual({ lower: 72.22, upper: 72.22 });
     expect(result.coveragePercent).toBe(100);
   }
-  await expect(row(page, car.vehicleId)).toContainText("[72,22, 72,22]");
-  await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
-  const details = page.getByRole("table", {
-    name: "Krav, prioriteringar och källor",
-    exact: true,
-  });
-  await expect(details.getByText(/ · Uppfyllt$/, { exact: false })).toHaveCount(
-    20,
-  );
   await page
     .getByRole("button", {
       name: "Spara köpkrav och prioriteringar",
       exact: true,
     })
     .click();
+  await closeEditor(page);
+  await expect(row(page, car.vehicleId)).toContainText("[72,22, 72,22]");
+  await page.getByRole("button", { name: "Öppna alla", exact: true }).click();
+  const details = page.getByRole("table", {
+    name: "Krav, prioriteringar och källor",
+    exact: true, includeHidden: true
+  });
+  await expect(details.getByText(/ · Uppfyllt$/, { exact: false })).toHaveCount(
+    20,
+  );
   await expect
     .poll(
       async () =>
@@ -422,7 +427,8 @@ test("inspection date boundaries and stronger evidence survive editing, persiste
     );
   }
   await saveFacts(page);
-  await page.getByText("Köpkrav och prioriteringar", { exact: true }).click();
+  await closeEditor(page);
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const rule = page.locator('[data-criterion="inspectionValidThrough"]');
   await openDetails(rule);
   await rule.getByLabel("Kravets verifiering").selectOption("registryVerified");
@@ -505,9 +511,8 @@ test("listing adoption, economic changes, explicit confirmation and frozen repor
     source.input.facts.transmission.observations[0].evidence.verification,
   ).toBe("unverified");
   for (const price of ["35000", ""]) {
-    await page
-      .getByRole("link", { name: "Redigera kalkylpriset", exact: true })
-      .click();
+    await page.getByRole("tab", { name: "Kalkyl", exact: true }).click();
+    await page.getByLabel("Inköpspris (kr)", { exact: true }).focus();
     const priceField = page.getByLabel("Inköpspris (kr)", { exact: true });
     await expect(priceField).toBeFocused();
     await priceField.fill(price);
@@ -525,9 +530,7 @@ test("listing adoption, economic changes, explicit confirmation and frozen repor
       await request.get(`/api/vehicle-facts/${car.vehicleId}`)
     ).json();
     expect(source.costConfirmedAt).toBeNull();
-    await page
-      .getByRole("link", { name: "Tillbaka till jämförelsen", exact: true })
-      .click();
+    await page.getByRole("tab", { name: "Jämförelsefakta", exact: true }).click();
     await expect(row(page, car.vehicleId)).toContainText("[40,00, 100,00]");
     let current = (await calculate(page)).views.baseline.candidates[0];
     expect(current.effectiveCostInput!.priceSek).toBe(price ? 35000 : null);
@@ -551,7 +554,7 @@ test("listing adoption, economic changes, explicit confirmation and frozen repor
     data: { expectedRevision: oldListing.revision, listing: listing("manual") },
   });
   expect(replaced.status(), await replaced.text()).toBe(200);
-  await page
+  await (await editingScope(page))
     .getByRole("button", { name: "Läs aktuellt serverunderlag", exact: true })
     .click();
   await expect(gear).toContainText("Annonsförslag: Manuell");
@@ -592,7 +595,7 @@ test("two browsers recover a saved-rule conflict and capture only reviewed curre
     transmission: { kind: "manual", manual: { value: "automatic" } },
   });
   await enter(page);
-  await page.getByText("Köpkrav och prioriteringar", { exact: true }).click();
+  await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
   const rule = page.locator('[data-criterion="purchasePriceSek"]');
   await openDetails(rule);
   await rule.getByLabel("Vikt (0–5)").fill("1");
@@ -601,7 +604,7 @@ test("two browsers recover a saved-rule conflict and capture only reviewed curre
     const second = await other.newPage();
     await enter(second);
     await second
-      .getByText("Köpkrav och prioriteringar", { exact: true })
+      .getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true })
       .click();
     const secondRule = second.locator('[data-criterion="purchasePriceSek"]');
     await openDetails(secondRule);
@@ -630,13 +633,13 @@ test("two browsers recover a saved-rule conflict and capture only reviewed curre
     expect((await conflict).status()).toBe(409);
     await expect(rule.getByLabel("Vikt (0–5)")).toHaveValue("1");
     await expect(
-      page.getByRole("button", { name: "Öppna rapport", exact: true }),
+      (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true }),
     ).toBeDisabled();
     expect(
       (await (await request.get("/api/rule-profile")).json()).input
         .preferences[0].weight,
     ).toBe(5);
-    await page
+    await (await editingScope(page))
       .getByRole("button", { name: "Läs aktuellt serverunderlag", exact: true })
       .click();
     await expect(
@@ -659,18 +662,10 @@ test("two browsers recover a saved-rule conflict and capture only reviewed curre
     await page
       .getByRole("link", { name: "Tillbaka till jämförelsen", exact: true })
       .click();
+    await page.getByRole("button", { name: "Redigera köpkrav och prioriteringar", exact: true }).click();
     await expect(rule.getByLabel("Vikt (0–5)")).toHaveValue("1");
-    const saved = page.waitForResponse(
-      (r) =>
-        r.url().endsWith("/api/rule-profile") && r.request().method() === "PUT",
-    );
-    await page
-      .getByRole("button", {
-        name: "Spara köpkrav och prioriteringar",
-        exact: true,
-      })
-      .click();
-    expect((await saved).status()).toBe(200);
+    // The explicit save-and-close choice before report navigation persisted this revision.
+    expect((await (await request.get("/api/rule-profile")).json()).input.preferences[0].weight).toBe(1);
     await second.reload();
     await expect(row(second, car.vehicleId)).toContainText("[91,67, 91,67]");
   } finally {
@@ -765,8 +760,10 @@ test("atomic legacy review retains all 50+50 sources through comparison, report 
   await expect(
     first.getByLabel("Beslut för Engång 49", { exact: true }),
   ).toHaveValue("keepForReview");
+  await openHouseholdProfile(page);
   await page.getByLabel("Ägandeperiod (månader, 1–120)").fill("24");
   await page.getByLabel("Årlig körsträcka (mil)").fill("1200");
+  if (await page.locator("dialog[open]").count()) await closeEditor(page);
   const transition = page.waitForResponse(
     (r) =>
       r.url().endsWith("/api/household-transition") &&
@@ -839,9 +836,7 @@ test("atomic legacy review retains all 50+50 sources through comparison, report 
     .getByRole("button", { name: "Spara bilunderlag", exact: true })
     .click();
   expect((await save).status()).toBe(200);
-  await page
-    .getByRole("link", { name: "Tillbaka till jämförelsen", exact: true })
-    .click();
+  await closeEditor(page);
   const mapped = (await calculate(page)).views.baseline.candidates.find(
     (c) => c.vehicleId === ids[0],
   )!;
@@ -942,7 +937,7 @@ test("URL deletion clears compared facts, costs and the matching draft without r
   await page.getByRole("link", { name: "Jämförelse", exact: true }).click();
   await expect(row(page, car.vehicleId)).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Öppna rapport", exact: true }),
+    (await editingScope(page)).getByRole("button", { name: "Öppna rapport", exact: true }),
   ).toBeDisabled();
   expect(
     (await (await request.get("/api/comparisons/baseline")).json())

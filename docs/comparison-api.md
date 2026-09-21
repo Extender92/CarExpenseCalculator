@@ -1,5 +1,15 @@
 # Comparison persistence and HTTP contract
 
+## Review workflow extension (#95)
+
+Current complete response transport and household calculation/result versions
+are **3**. Comparison fact storage is **2**, retaining version-1 reads; rule
+storage, rule/result and score versions are unchanged. Fact operations add
+unverified manual editing and explicit confirmation of the selected current
+value. Existing confirmation operations retain their original semantics.
+Source validation, new listing-review drafts and reuse preview are detailed in
+the [workflow contract](review-and-calculation-workflow.md).
+
 ## Delivery status
 
 Implemented for issue #64 through approved

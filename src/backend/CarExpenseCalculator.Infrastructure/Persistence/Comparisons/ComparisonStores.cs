@@ -58,7 +58,7 @@ public sealed class VehicleFactsStore(CarExpenseDbContext db, TimeProvider timeP
         var json = ComparisonJson.Serialize(ComparisonJson.FactsPayload.From(input));
         var confirmedAt = Confirmation(write.CostConfirmation, saved.CostConfirmedAt, CostInput(vehicle), now);
         var row = vehicle.ComparisonFacts ??= new() { VehicleId = vehicle.Id, Vehicle = vehicle, InputJson = json };
-        row.InputJson = json; row.SchemaVersion = ComparisonJson.Version; row.CostConfirmedAt = confirmedAt;
+        row.InputJson = json; row.SchemaVersion = ComparisonJson.FactsVersion; row.CostConfirmedAt = confirmedAt;
         if (write.ReviewCurrentListing) row.ReviewedListingVersion = saved.CurrentListingVersion;
         vehicle.Revision = checked(vehicle.Revision + 1); vehicle.UpdatedAtUtc = now;
         var result = Read(vehicle);

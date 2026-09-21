@@ -1,8 +1,14 @@
 # Complete Blocket retrieval and unconfirmed listing input
 
-This contract is implemented on `fix/codex-login-status`, not yet a merged
-delivery. The [acceptance report](listing-extraction-verification-report.md)
+The retrieval contract was delivered through merged PR #93. The [acceptance report](listing-extraction-verification-report.md)
 records integration, four live reference checks and prior failed retrieval attempts.
+
+The [#95 review workflow](review-and-calculation-workflow.md) extends its review
+and persistence boundaries: listing storage writes version 3 while reading 1/2,
+manual edits remain unverified until explicit confirmation, and independent
+UUID drafts may lack registration. Registration is still required to add a car
+to comparison. Retrieval, original content, source marking and extraction
+prompt/schema 4/3 are unchanged.
 
 ## Retrieval and evidence
 
