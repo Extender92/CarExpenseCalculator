@@ -73,6 +73,10 @@ The 1,169 backend tests comprise 603 Core, 100 extractor, 281 API integration,
   the local runner lacked `E2E_POSTGRES_USER`/`E2E_POSTGRES_DB` for its custom
   disposable database. Supplying those existing variables resolved it; all
   77 tests passed in a full rerun. No tests were weakened or skipped.
+- Extending cleanup discovery exposed an empty-line fixture case on a second
+  updater invocation: 35 of 36 checks passed before the fix. Image inventory now
+  filters empty entries and keeps diagnostics private; the full regression suite
+  was rerun before delivery.
 - The OpenAPI hash check initially detected Windows CRLF versus generated LF.
   A content comparison and Git diff confirmed no schema changes. Starting a
   separate local API process was rejected by automatic command review; the

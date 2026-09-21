@@ -118,16 +118,16 @@ remember_images() {
   local ids service
   [[ -f "$state/images.json" ]] || printf '[]\n' >"$state/images.json"
   # Include verified app-labelled images from earlier interrupted pulls.
-  docker image ls --quiet --no-trunc --filter "label=org.opencontainers.image.source=$source_repository" >"$work/discovered-ids"
+  docker image ls --quiet --no-trunc --filter "label=org.opencontainers.image.source=$source_repository" >"$work/discovered-ids" 2>"$work/image-inventory.log"
   # Old locally built tags without labels are reported, not assumed safe to delete.
   for service in api web codex-extractor; do
-    docker image ls --quiet --no-trunc --filter "reference=car-expense-calculator-$service:*" >>"$work/discovered-ids"
+    docker image ls --quiet --no-trunc --filter "reference=car-expense-calculator-$service:*" >>"$work/discovered-ids" 2>>"$work/image-inventory.log"
   done
-  ids=$(sort -u "$work/discovered-ids")
+  ids=$(awk 'NF' "$work/discovered-ids" | sort -u)
   printf '[]\n' >"$work/discovered-images.json"
   if [[ -n "$ids" ]]; then
     readarray -t discovered_ids <<< "$ids"
-    docker image inspect "${discovered_ids[@]}" >"$work/discovered-images.json"
+    docker image inspect "${discovered_ids[@]}" >"$work/discovered-images.json" 2>>"$work/image-inventory.log"
   fi
   jq -s '.[0] + [.[1][] | {id:.Image, reference:.Config.Image, legacy:true}] +
     [.[2:][][] | {id:.Id, reference:(.RepoDigests[0] // .RepoTags[0]), legacy:false}] |
